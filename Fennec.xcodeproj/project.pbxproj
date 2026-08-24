@@ -90,6 +90,13 @@
 		F88DA786ECA2EE544AA47377 /* RepairGovernor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92F80F62BC00CAD462C6079 /* RepairGovernor.swift */; };
 		B458D427AD417C2644B87C82 /* RepairGovernor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92F80F62BC00CAD462C6079 /* RepairGovernor.swift */; };
 		7807EDE166E72D665F8F4E9D /* RepairGovernorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52BDA5C884966B4725C0A2CF /* RepairGovernorTests.swift */; };
+		B5AEF99F6BEF808081AC239A /* HelperIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */; };
+		F49EF2285D28DB237948483C /* HelperIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */; };
+		084CEC2A86884EBEDC096878 /* Uninstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E25A70DAA04F3A79401019 /* Uninstaller.swift */; };
+		2E1A6CEFAF4900506117116A /* HelperIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */; };
+		F737DFE6A886F7065ED40A37 /* Uninstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E25A70DAA04F3A79401019 /* Uninstaller.swift */; };
+		DF4BE0122C23ED5B35E04838 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */; };
+		8DB547A04E8D966F3B118A2A /* UninstallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB135AAE4E46F154D69E127 /* UninstallTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -193,6 +200,10 @@
 		9138C747DC013328BFA964FF /* PauseScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseScheduleTests.swift; sourceTree = "<group>"; };
 		C92F80F62BC00CAD462C6079 /* RepairGovernor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairGovernor.swift; sourceTree = "<group>"; };
 		52BDA5C884966B4725C0A2CF /* RepairGovernorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairGovernorTests.swift; sourceTree = "<group>"; };
+		396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperIdentity.swift; sourceTree = "<group>"; };
+		C4E25A70DAA04F3A79401019 /* Uninstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstaller.swift; sourceTree = "<group>"; };
+		0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		BDB135AAE4E46F154D69E127 /* UninstallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -270,6 +281,9 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */,
+				C4E25A70DAA04F3A79401019 /* Uninstaller.swift */,
+				396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */,
 				C92F80F62BC00CAD462C6079 /* RepairGovernor.swift */,
 				D07F76B831790C08A080C071 /* PauseSchedule.swift */,
 				5173B95783B02F00AC1D08BD /* InstallLocation.swift */,
@@ -341,6 +355,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				BDB135AAE4E46F154D69E127 /* UninstallTests.swift */,
 				52BDA5C884966B4725C0A2CF /* RepairGovernorTests.swift */,
 				9138C747DC013328BFA964FF /* PauseScheduleTests.swift */,
 				931713A1E3250114DCB23200 /* FirstRunTests.swift */,
@@ -483,6 +498,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F49EF2285D28DB237948483C /* HelperIdentity.swift in Sources */,
 				554AD40B194C6FA89FE36C86 /* HelperService.swift in Sources */,
 				F65BF058088393B8CFE952EF /* main.swift in Sources */,
 				22E10D42E43A20D8ABC383B8 /* AppConstants.swift in Sources */,
@@ -495,6 +511,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DF4BE0122C23ED5B35E04838 /* AboutView.swift in Sources */,
+				084CEC2A86884EBEDC096878 /* Uninstaller.swift in Sources */,
+				B5AEF99F6BEF808081AC239A /* HelperIdentity.swift in Sources */,
 				F88DA786ECA2EE544AA47377 /* RepairGovernor.swift in Sources */,
 				09F9AF82B2D78C47232155D2 /* PauseSchedule.swift in Sources */,
 				CDCD234F27D08BAF57FDFF30 /* InstallLocation.swift in Sources */,
@@ -537,6 +556,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8DB547A04E8D966F3B118A2A /* UninstallTests.swift in Sources */,
+				2E1A6CEFAF4900506117116A /* HelperIdentity.swift in Sources */,
+				F737DFE6A886F7065ED40A37 /* Uninstaller.swift in Sources */,
 				7807EDE166E72D665F8F4E9D /* RepairGovernorTests.swift in Sources */,
 				B458D427AD417C2644B87C82 /* RepairGovernor.swift in Sources */,
 				10C7BC2509B9D6C2702AC247 /* PauseScheduleTests.swift in Sources */,

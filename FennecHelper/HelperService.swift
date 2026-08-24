@@ -32,7 +32,12 @@ final class HelperService: NSObject, FennecHelperProtocol, NSXPCListenerDelegate
     }
 
     func ping(withReply reply: @escaping (String) -> Void) {
-        reply("Fennec helper ready (euid \(geteuid())).")
+        // Parseable rather than prose, so the app can tell whether the helper
+        // running as root is the one that shipped with it. No protocol change:
+        // the reply was always a String.
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        let path = Bundle.main.executablePath ?? CommandLine.arguments.first ?? "unknown"
+        reply(HelperIdentity.format(build: build, path: path, euid: geteuid()))
     }
 
     func restartCoreAudio(withReply reply: @escaping (Bool, String) -> Void) {

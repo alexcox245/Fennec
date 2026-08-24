@@ -265,6 +265,7 @@ struct SettingsView: View {
             HStack {
                 Button("Refresh") { model.refreshAll() }
                 Button("Reveal Event Log") { model.openEventLog() }
+                Button("About & Uninstall…") { model.showAboutWindow() }
                 Spacer()
                 if let lastRepairDate = model.lastRepairDate {
                     Text("Last repair \(lastRepairDate.formatted(date: .abbreviated, time: .standard))")

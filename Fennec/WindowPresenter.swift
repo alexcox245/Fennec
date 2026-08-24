@@ -48,6 +48,20 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         }
     }
 
+    /// The privilege panel. Replaces the standard About panel, which shows a
+    /// version number and a copyright line — not what anyone wants to know
+    /// about an app that installs a root LaunchDaemon.
+    func showAbout(model: AppModel) {
+        show(
+            id: ID.about,
+            title: "About Fennec",
+            size: CGSize(width: 580, height: 660),
+            minSize: CGSize(width: 540, height: 480)
+        ) {
+            AboutView(model: model).tint(FennecBrand.sky)
+        }
+    }
+
     func showSettings(model: AppModel) {
         show(id: ID.settings, title: "Fennec Settings", size: CGSize(width: 650, height: 580), resizable: false) {
             SettingsView(model: model).tint(FennecBrand.sky)

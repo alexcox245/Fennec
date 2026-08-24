@@ -413,14 +413,19 @@ struct MenuView: View {
 
             Spacer()
 
-            Button {
-                model.showWelcomeWindow()
+            Menu {
+                Button("What Fennec Does") { model.showWelcomeWindow() }
+                Button("About & Uninstall…") { model.showAboutWindow() }
+                Divider()
+                Button("Reveal Event Log in Finder") { model.openEventLog() }
             } label: {
-                Label("What Fennec Does", systemImage: "info.circle")
+                Label("More", systemImage: "info.circle")
                     .labelStyle(.iconOnly)
             }
-            .buttonStyle(.plain)
-            .help("What Fennec does to this Mac, and how to set it up.")
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("What Fennec does to this Mac, the event log, and how to remove it.")
 
             Button("Quit") { model.quit() }
                 .buttonStyle(.plain)

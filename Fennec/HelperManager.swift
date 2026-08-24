@@ -157,6 +157,15 @@ struct HelperClient: Sendable {
 final class HelperManager: ObservableObject {
     @Published private(set) var state: RepairHelperState = .notConfigured
     @Published private(set) var lastError: String?
+    /// Who answered the last `ping`. Shown in About so the disclosure
+    /// describes the helper that is actually running, not the one in this
+    /// bundle.
+    @Published private(set) var identity: HelperIdentity?
+
+    /// This copy of Fennec's build number, for comparison.
+    var appBuild: String? { Bundle.main.infoDictionary?["CFBundleVersion"] as? String }
+
+    var versionMismatch: String? { identity?.mismatch(againstAppBuild: appBuild) }
 
     private let service = SMAppService.daemon(plistName: AppConstants.helperPlistName)
     private let client = HelperClient()
@@ -172,10 +181,12 @@ final class HelperManager: ObservableObject {
             guard testReachability else { return }
             Task {
                 do {
-                    _ = try await client.ping()
+                    let reply = try await client.ping()
+                    identity = HelperIdentity.parse(reply)
                     state = .enabled(reachable: true)
                     lastError = nil
                 } catch {
+                    identity = nil
                     state = .enabled(reachable: false)
                     lastError = error.localizedDescription
                 }
@@ -218,6 +229,7 @@ final class HelperManager: ObservableObject {
                 try service.unregister()
             }
             lastError = nil
+            identity = nil
             state = .notConfigured
         } catch {
             lastError = error.localizedDescription

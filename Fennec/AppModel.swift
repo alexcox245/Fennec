@@ -242,6 +242,12 @@ final class AppModel: ObservableObject {
         WindowPresenter.shared.showWelcome(model: self)
     }
 
+    /// The privilege panel: what Fennec can do, what is running as root right
+    /// now, how to verify the build, and how to remove all of it.
+    func showAboutWindow() {
+        WindowPresenter.shared.showAbout(model: self)
+    }
+
     var installLocation: InstallLocation { InstallLocation.current() }
 
     var statusDetail: String {

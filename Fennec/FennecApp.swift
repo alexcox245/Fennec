@@ -50,7 +50,7 @@ struct FennecCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
-            Button("About Fennec") { showAboutPanel() }
+            Button("About Fennec") { WindowPresenter.shared.showAbout(model: model) }
         }
 
         CommandGroup(replacing: .newItem) { }
@@ -62,6 +62,7 @@ struct FennecCommands: Commands {
 
         CommandGroup(replacing: .help) {
             Button("What Fennec Does") { model.showWelcomeWindow() }
+            Button("About Fennec, in Detail") { WindowPresenter.shared.showAbout(model: model) }
         }
 
         CommandMenu("Audio") {
@@ -85,19 +86,4 @@ struct FennecCommands: Commands {
         }
     }
 
-    /// The standard panel, with the two facts a person evaluating a
-    /// root-privileged utility actually wants, stated where they will look.
-    private func showAboutPanel() {
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        let credits = NSAttributedString(
-            string: "Watches Core Audio for the overload that starts crackling, and restarts it "
-                + "before you have to.\n\nLocal only. No network, no account, no telemetry.",
-            attributes: [
-                .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
-                .foregroundColor: NSColor.secondaryLabelColor
-            ]
-        )
-        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
-    }
 }
