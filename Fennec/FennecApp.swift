@@ -60,6 +60,10 @@ struct FennecCommands: Commands {
                 .keyboardShortcut(",", modifiers: .command)
         }
 
+        CommandGroup(replacing: .help) {
+            Button("What Fennec Does") { model.showWelcomeWindow() }
+        }
+
         CommandMenu("Audio") {
             Button("Repair Audio Now") { model.requestManualRepair() }
                 .keyboardShortcut("r", modifiers: .command)

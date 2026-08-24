@@ -39,16 +39,26 @@ enum MenuBarIconState: String, CaseIterable, Sendable {
 @MainActor
 enum MenuBarIcon {
     /// Apple's guidance for menu-bar extras. The glyph is drawn to fill it.
-    static let size = NSSize(width: 18, height: 18)
+    nonisolated static let size = NSSize(width: 18, height: 18)
 
     /// Design space. The path below is authored at 24×24 and scaled down, so
     /// the numbers stay readable and the shape stays resolution independent.
     private nonisolated static let designSize: CGFloat = 24
 
-    private static var cache: [MenuBarIconState: NSImage] = [:]
+    private struct CacheKey: Hashable {
+        let state: MenuBarIconState
+        let width: CGFloat
+        let height: CGFloat
+    }
 
-    static func image(for state: MenuBarIconState) -> NSImage {
-        if let cached = cache[state] { return cached }
+    private static var cache: [CacheKey: NSImage] = [:]
+
+    /// `size` exists so the first-run window can show the *actual* mark at a
+    /// legible size rather than a description of it — the glyph is drawn, not
+    /// scaled, so it stays crisp at any size.
+    static func image(for state: MenuBarIconState, size: NSSize = MenuBarIcon.size) -> NSImage {
+        let key = CacheKey(state: state, width: size.width, height: size.height)
+        if let cached = cache[key] { return cached }
 
         let image = NSImage(size: size, flipped: false) { rect in
             let scale = min(rect.width, rect.height) / designSize
@@ -85,7 +95,7 @@ enum MenuBarIcon {
 
         image.isTemplate = true
         image.accessibilityDescription = state.accessibilityLabel
-        cache[state] = image
+        cache[key] = image
         return image
     }
 

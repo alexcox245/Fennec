@@ -327,8 +327,18 @@ struct MenuView: View {
 
             Spacer()
 
+            Button {
+                model.showWelcomeWindow()
+            } label: {
+                Label("What Fennec Does", systemImage: "info.circle")
+                    .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.plain)
+            .help("What Fennec does to this Mac, and how to set it up.")
+
             Button("Quit") { model.quit() }
                 .buttonStyle(.plain)
+                .help("Quit Fennec. It stops listening until you open it again.")
         }
         .font(.caption)
     }

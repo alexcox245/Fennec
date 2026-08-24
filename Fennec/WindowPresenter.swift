@@ -35,6 +35,19 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     /// Owning the window means ⌘, , the menu item, the popover's Settings
     /// button, and a Dock reopen all take one code path that demonstrably
     /// works, instead of three that hope.
+    /// The first-run window. Full-size content so the masthead runs under the
+    /// title bar; there is no title worth showing above "Fennec".
+    func showWelcome(model: AppModel) {
+        show(
+            id: ID.welcome,
+            title: "Welcome to Fennec",
+            size: CGSize(width: 620, height: 720),
+            minSize: CGSize(width: 560, height: 520)
+        ) {
+            WelcomeView(model: model).tint(FennecBrand.sky)
+        }
+    }
+
     func showSettings(model: AppModel) {
         show(id: ID.settings, title: "Fennec Settings", size: CGSize(width: 650, height: 580), resizable: false) {
             SettingsView(model: model).tint(FennecBrand.sky)

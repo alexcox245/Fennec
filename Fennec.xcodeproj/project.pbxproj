@@ -76,6 +76,14 @@
 		D52397C63E853B59B144B5B3 /* WindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE1CD6A11F82FE1AD27AF54 /* WindowPresenter.swift */; };
 		7B1AAE847BC7EAB8B6A09487 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F75FAD430D0AD74E6A1A85D6 /* AppDelegate.swift */; };
 		C51A70451F47F7187447B4E3 /* SetupStepRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8256C3F2EE28EA749B10D72B /* SetupStepRow.swift */; };
+		CDCD234F27D08BAF57FDFF30 /* InstallLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5173B95783B02F00AC1D08BD /* InstallLocation.swift */; };
+		ED3D5C8CB17248480738E370 /* PrivilegeDisclosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBAFA0BA109FAFD5F9FA052 /* PrivilegeDisclosure.swift */; };
+		37E95F32D0426A41A9BD224C /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C65349612BF044FB58CB02C7 /* WelcomeView.swift */; };
+		F838AA11520103AC0CE44625 /* ConfirmationPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB56015915F498FF0E3CB40 /* ConfirmationPresentation.swift */; };
+		491DFC9F71AC855DE64982C0 /* InstallLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5173B95783B02F00AC1D08BD /* InstallLocation.swift */; };
+		BB2FAF224D6441CBD8FD47F0 /* PrivilegeDisclosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBAFA0BA109FAFD5F9FA052 /* PrivilegeDisclosure.swift */; };
+		5BAA8BB4B39BE8B339CFAA22 /* FirstRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931713A1E3250114DCB23200 /* FirstRunTests.swift */; };
+		884D466211641FEC13BE3AF7 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D829C0EC13A8BD0AE0098EE4 /* SettingsStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -170,6 +178,11 @@
 		FAE1CD6A11F82FE1AD27AF54 /* WindowPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPresenter.swift; sourceTree = "<group>"; };
 		F75FAD430D0AD74E6A1A85D6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		8256C3F2EE28EA749B10D72B /* SetupStepRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupStepRow.swift; sourceTree = "<group>"; };
+		5173B95783B02F00AC1D08BD /* InstallLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstallLocation.swift; sourceTree = "<group>"; };
+		8FBAFA0BA109FAFD5F9FA052 /* PrivilegeDisclosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegeDisclosure.swift; sourceTree = "<group>"; };
+		C65349612BF044FB58CB02C7 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		9FB56015915F498FF0E3CB40 /* ConfirmationPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationPresentation.swift; sourceTree = "<group>"; };
+		931713A1E3250114DCB23200 /* FirstRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -247,6 +260,10 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				5173B95783B02F00AC1D08BD /* InstallLocation.swift */,
+				8FBAFA0BA109FAFD5F9FA052 /* PrivilegeDisclosure.swift */,
+				C65349612BF044FB58CB02C7 /* WelcomeView.swift */,
+				9FB56015915F498FF0E3CB40 /* ConfirmationPresentation.swift */,
 				8256C3F2EE28EA749B10D72B /* SetupStepRow.swift */,
 				FAE1CD6A11F82FE1AD27AF54 /* WindowPresenter.swift */,
 				F75FAD430D0AD74E6A1A85D6 /* AppDelegate.swift */,
@@ -312,6 +329,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				931713A1E3250114DCB23200 /* FirstRunTests.swift */,
 				8BF3A1DBFA4C1AD8AEA54200 /* NotificationBudgetTests.swift */,
 				38777CC9BF8FA1EA443340EA /* SetupChecklistTests.swift */,
 				00A7550D2019F59A504F3724 /* RepairHistoryStoreTests.swift */,
@@ -463,6 +481,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CDCD234F27D08BAF57FDFF30 /* InstallLocation.swift in Sources */,
+				ED3D5C8CB17248480738E370 /* PrivilegeDisclosure.swift in Sources */,
+				37E95F32D0426A41A9BD224C /* WelcomeView.swift in Sources */,
+				F838AA11520103AC0CE44625 /* ConfirmationPresentation.swift in Sources */,
 				C51A70451F47F7187447B4E3 /* SetupStepRow.swift in Sources */,
 				D52397C63E853B59B144B5B3 /* WindowPresenter.swift in Sources */,
 				7B1AAE847BC7EAB8B6A09487 /* AppDelegate.swift in Sources */,
@@ -499,6 +521,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				884D466211641FEC13BE3AF7 /* SettingsStore.swift in Sources */,
+				5BAA8BB4B39BE8B339CFAA22 /* FirstRunTests.swift in Sources */,
+				491DFC9F71AC855DE64982C0 /* InstallLocation.swift in Sources */,
+				BB2FAF224D6441CBD8FD47F0 /* PrivilegeDisclosure.swift in Sources */,
 				509835A308073938B26119FF /* PrivilegedPromptRepair.swift in Sources */,
 				13658AEC65AFDDB5652DFDBD /* NotificationBudgetTests.swift in Sources */,
 				49D4728514DC5C2DFE34C005 /* PendingConfirmation.swift in Sources */,

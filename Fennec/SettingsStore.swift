@@ -12,6 +12,7 @@ final class SettingsStore: ObservableObject {
         static let notifyOnRepair = "notifyOnRepair"
         static let notifyOnDetection = "notifyOnDetection"
         static let cooldownSeconds = "cooldownSeconds"
+        static let hasCompletedFirstRun = "hasCompletedFirstRun"
     }
 
     private let defaults: UserDefaults
@@ -55,6 +56,13 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(cooldownSeconds, forKey: Key.cooldownSeconds) }
     }
 
+    /// Set when the user presses Done in the first-run window. Until then
+    /// Fennec opens that window on every launch, because an app whose entire
+    /// UI is one menu-bar glyph has no other way to be found.
+    @Published var hasCompletedFirstRun: Bool {
+        didSet { defaults.set(hasCompletedFirstRun, forKey: Key.hasCompletedFirstRun) }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
 
@@ -68,5 +76,6 @@ final class SettingsStore: ObservableObject {
         notifyOnRepair = defaults.object(forKey: Key.notifyOnRepair) as? Bool ?? true
         notifyOnDetection = defaults.object(forKey: Key.notifyOnDetection) as? Bool ?? true
         cooldownSeconds = defaults.object(forKey: Key.cooldownSeconds) as? Double ?? 45
+        hasCompletedFirstRun = defaults.object(forKey: Key.hasCompletedFirstRun) as? Bool ?? false
     }
 }

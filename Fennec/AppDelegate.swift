@@ -38,7 +38,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainActor.assumeIsolated {
             guard !flag else { return true }
             guard let model = Self.model else { return true }
-            WindowPresenter.shared.showSettings(model: model)
+            // Show the thing they were looking for: setup if it is unfinished,
+            // Settings if it is not.
+            if model.isFullySetUp {
+                WindowPresenter.shared.showSettings(model: model)
+            } else {
+                WindowPresenter.shared.showWelcome(model: model)
+            }
             return true
         }
     }

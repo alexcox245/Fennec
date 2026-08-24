@@ -84,6 +84,16 @@ final class AppModel: ObservableObject {
         // cannot find the app has not done.
         AppDelegate.model = self
 
+        if !settings.hasCompletedFirstRun {
+            // Next run loop turn: the scene has not finished building yet, and
+            // opening a window from inside a StateObject's init is a good way
+            // to get a window that never becomes key.
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                WindowPresenter.shared.showWelcome(model: self)
+            }
+        }
+
         startMonitoring()
         // The graph Fennec just attached to may already have signals queued
         // against it, and a login launch lands in the middle of the same
@@ -126,6 +136,20 @@ final class AppModel: ObservableObject {
     func acknowledgeAttention() {
         needsAttention = false
     }
+
+    /// The user pressed Done in the first-run window.
+    func completeFirstRun() {
+        settings.hasCompletedFirstRun = true
+    }
+
+    /// Reopens first run on demand — the disclosure it carries is the answer
+    /// to "what can this thing actually do", and that question does not stop
+    /// being asked after day one.
+    func showWelcomeWindow() {
+        WindowPresenter.shared.showWelcome(model: self)
+    }
+
+    var installLocation: InstallLocation { InstallLocation.current() }
 
     var statusDetail: String {
         switch monitoringState {
