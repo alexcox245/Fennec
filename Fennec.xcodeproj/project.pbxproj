@@ -84,6 +84,9 @@
 		BB2FAF224D6441CBD8FD47F0 /* PrivilegeDisclosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBAFA0BA109FAFD5F9FA052 /* PrivilegeDisclosure.swift */; };
 		5BAA8BB4B39BE8B339CFAA22 /* FirstRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931713A1E3250114DCB23200 /* FirstRunTests.swift */; };
 		884D466211641FEC13BE3AF7 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D829C0EC13A8BD0AE0098EE4 /* SettingsStore.swift */; };
+		09F9AF82B2D78C47232155D2 /* PauseSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07F76B831790C08A080C071 /* PauseSchedule.swift */; };
+		FD6F2C2BE3F64B0BE649F2FB /* PauseSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D07F76B831790C08A080C071 /* PauseSchedule.swift */; };
+		10C7BC2509B9D6C2702AC247 /* PauseScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9138C747DC013328BFA964FF /* PauseScheduleTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -183,6 +186,8 @@
 		C65349612BF044FB58CB02C7 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		9FB56015915F498FF0E3CB40 /* ConfirmationPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationPresentation.swift; sourceTree = "<group>"; };
 		931713A1E3250114DCB23200 /* FirstRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunTests.swift; sourceTree = "<group>"; };
+		D07F76B831790C08A080C071 /* PauseSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseSchedule.swift; sourceTree = "<group>"; };
+		9138C747DC013328BFA964FF /* PauseScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseScheduleTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -260,6 +265,7 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				D07F76B831790C08A080C071 /* PauseSchedule.swift */,
 				5173B95783B02F00AC1D08BD /* InstallLocation.swift */,
 				8FBAFA0BA109FAFD5F9FA052 /* PrivilegeDisclosure.swift */,
 				C65349612BF044FB58CB02C7 /* WelcomeView.swift */,
@@ -329,6 +335,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				9138C747DC013328BFA964FF /* PauseScheduleTests.swift */,
 				931713A1E3250114DCB23200 /* FirstRunTests.swift */,
 				8BF3A1DBFA4C1AD8AEA54200 /* NotificationBudgetTests.swift */,
 				38777CC9BF8FA1EA443340EA /* SetupChecklistTests.swift */,
@@ -481,6 +488,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				09F9AF82B2D78C47232155D2 /* PauseSchedule.swift in Sources */,
 				CDCD234F27D08BAF57FDFF30 /* InstallLocation.swift in Sources */,
 				ED3D5C8CB17248480738E370 /* PrivilegeDisclosure.swift in Sources */,
 				37E95F32D0426A41A9BD224C /* WelcomeView.swift in Sources */,
@@ -521,6 +529,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				10C7BC2509B9D6C2702AC247 /* PauseScheduleTests.swift in Sources */,
+				FD6F2C2BE3F64B0BE649F2FB /* PauseSchedule.swift in Sources */,
 				884D466211641FEC13BE3AF7 /* SettingsStore.swift in Sources */,
 				5BAA8BB4B39BE8B339CFAA22 /* FirstRunTests.swift in Sources */,
 				491DFC9F71AC855DE64982C0 /* InstallLocation.swift in Sources */,

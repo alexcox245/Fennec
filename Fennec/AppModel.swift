@@ -50,6 +50,7 @@ final class AppModel: ObservableObject {
     /// work, not less.
     private var lastRepairAttemptDate: Date?
     private var detectionNotificationBudget = NotificationBudget()
+    private var pauseTimer: Timer?
 
     init() {
         settings = SettingsStore()
@@ -83,6 +84,11 @@ final class AppModel: ObservableObject {
         // clicks the menu-bar item, which is exactly the thing a user who
         // cannot find the app has not done.
         AppDelegate.model = self
+
+        // Resolve any pause that expired while Fennec was not running.
+        pauseState = settings.pauseState.resolved()
+        settings.pauseState = pauseState
+        schedulePauseExpiry()
 
         if !settings.hasCompletedFirstRun {
             // Next run loop turn: the scene has not finished building yet, and
@@ -122,6 +128,7 @@ final class AppModel: ObservableObject {
     var menuBarIconState: MenuBarIconState {
         if isRepairing { return .repairing }
         if needsAttention { return .attention }
+        if isPaused { return .paused }
         switch monitoringState {
         case .monitoring, .starting: return .listening
         case .stopped: return .paused
@@ -135,6 +142,62 @@ final class AppModel: ObservableObject {
 
     func acknowledgeAttention() {
         needsAttention = false
+    }
+
+    // MARK: Pause
+
+    @Published private(set) var pauseState: PauseState = .running
+
+    var isPaused: Bool { pauseState.isPaused() }
+
+    /// "Paused · resumes in 42 min", or `nil` while running.
+    var pauseStatusText: String? { pauseState.statusText() }
+
+    func pause(_ option: PauseSchedule.Option) {
+        applyPause(.make(for: option, from: Date()))
+        record(.init(
+            kind: .paused,
+            summary: "Automatic repair paused \(option.title.lowercased()).",
+            details: ["option": option.rawValue]
+        ))
+    }
+
+    func resume() {
+        guard isPaused else { return }
+        applyPause(.running)
+        record(.init(kind: .resumed, summary: "Automatic repair resumed."))
+    }
+
+    private func applyPause(_ state: PauseState) {
+        settings.pauseState = state
+        pauseState = state
+        schedulePauseExpiry()
+    }
+
+    /// Refreshes the countdown text and resumes on its own when the window
+    /// closes. A pause that outlives its own expiry is the failure mode that
+    /// makes people distrust the feature.
+    private func schedulePauseExpiry() {
+        pauseTimer?.invalidate()
+        pauseTimer = nil
+        guard pauseState.isPaused(), !pauseState.isIndefinite else { return }
+
+        pauseTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                guard self.pauseState.isPaused() else {
+                    self.applyPause(.running)
+                    self.record(.init(
+                        kind: .resumed,
+                        summary: "Pause expired; Fennec is watching \(self.currentDevice.name) again."
+                    ))
+                    self.notificationController.postResumed(device: self.currentDevice.name)
+                    return
+                }
+                // Nudge the published value so the countdown re-renders.
+                self.pauseState = self.settings.pauseState
+            }
+        }
     }
 
     /// The user pressed Done in the first-run window.
@@ -152,6 +215,11 @@ final class AppModel: ObservableObject {
     var installLocation: InstallLocation { InstallLocation.current() }
 
     var statusDetail: String {
+        if isPaused {
+            // The device card must not claim to be watching while the user
+            // has explicitly told Fennec not to act.
+            return "Automatic repair is paused. Fennec is still counting signals on \(currentDevice.name)."
+        }
         switch monitoringState {
         case .starting:
             return "Attaching to the current Core Audio output device…"
@@ -450,6 +518,14 @@ final class AppModel: ObservableObject {
     /// restarts Core Audio". Every early return is a refusal the user is
     /// entitled to see, so each one records a reason.
     private func respondToDetection(_ decision: DetectionDecision, device: AudioDeviceSnapshot) async {
+        if isPaused {
+            // Deliberately silent and deliberately above every other gate: the
+            // user asked for quiet, and a banner explaining why Fennec is quiet
+            // would defeat the point.
+            recordSkipped(pauseStatusText ?? "Fennec is paused.")
+            return
+        }
+
         guard settings.autoRepairEnabled else {
             recordSkipped("Automatic repair is turned off.")
             notifyUnrepaired(decision, blocker: "Automatic repair is turned off.")

@@ -138,6 +138,17 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
     private enum Identifier {
         static let detection = "fennec.detection"
         static let repair = "fennec.repair"
+        static let pause = "fennec.pause"
+    }
+
+    /// One quiet line when a pause runs out, so the user is never surprised
+    /// to find Fennec active again.
+    func postResumed(device: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "Fennec is listening again"
+        content.body = "The pause expired. Watching \(device)."
+        content.interruptionLevel = .passive
+        post(content, identifier: Identifier.pause)
     }
 
     private func post(_ content: UNMutableNotificationContent, identifier: String) {

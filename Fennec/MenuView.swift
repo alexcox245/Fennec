@@ -49,17 +49,56 @@ struct MenuView: View {
                     Circle()
                         .fill(statusColor)
                         .frame(width: 7, height: 7)
-                    Text(model.monitoringState.title)
+                    Text(statusTitle)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Fennec, \(model.monitoringState.title)")
+            .accessibilityLabel("Fennec, \(statusTitle)")
 
-            Spacer()
+            Spacer(minLength: 8)
 
             repairTally
+        }
+    }
+
+    /// Pause is a header control, not a setting: it is the thing a person
+    /// reaches for in the ten seconds before they hit record.
+    private var pauseControl: some View {
+        Group {
+            if model.isPaused {
+                HStack(spacing: 8) {
+                    Button {
+                        model.resume()
+                    } label: {
+                        Label("Resume Watching", systemImage: "play.fill")
+                    }
+                    .controlSize(.small)
+                    .help("Start watching for crackling again now.")
+                    Spacer()
+                }
+            } else {
+                HStack(spacing: 8) {
+                    Menu {
+                        ForEach(PauseSchedule.Option.allCases) { option in
+                            Button(option.title) { model.pause(option) }
+                        }
+                    } label: {
+                        Label("Pause", systemImage: "pause.circle")
+                    }
+                    .menuStyle(.button)
+                    .controlSize(.small)
+                    .fixedSize()
+                    .help("Stop repairing automatically for a while. Repair Audio Now still works.")
+
+                    Text("Stops automatic repair only.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    Spacer()
+                }
+            }
         }
     }
 
@@ -151,6 +190,8 @@ struct MenuView: View {
             }
             .toggleStyle(.switch)
             .disabled(!helper.state.isReachable)
+
+            pauseControl
 
             if !model.remainingSetupSteps.isEmpty {
                 setupCard
@@ -355,6 +396,9 @@ struct MenuView: View {
     }
 
     private var autoRepairDetail: String {
+        if let pauseStatus = model.pauseStatusText {
+            return "\(pauseStatus). Repair Audio Now still works."
+        }
         guard helper.state.isReachable else {
             return "Enable the helper below to let Fennec repair without a password prompt."
         }
@@ -364,7 +408,14 @@ struct MenuView: View {
         return settings.sensitivity.detail
     }
 
+    /// While paused, the pause is the status. Nothing else about Fennec
+    /// matters more to a user who deliberately switched it off.
+    private var statusTitle: String {
+        model.pauseStatusText ?? model.monitoringState.title
+    }
+
     private var statusColor: Color {
+        if model.isPaused { return FennecBrand.dune }
         switch model.monitoringState {
         case .monitoring: return FennecBrand.sky
         case .starting: return FennecBrand.sand

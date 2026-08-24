@@ -13,6 +13,8 @@ final class SettingsStore: ObservableObject {
         static let notifyOnDetection = "notifyOnDetection"
         static let cooldownSeconds = "cooldownSeconds"
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
+        static let pausedUntil = "pausedUntil"
+        static let pausedIndefinitely = "pausedIndefinitely"
     }
 
     private let defaults: UserDefaults
@@ -63,6 +65,25 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(hasCompletedFirstRun, forKey: Key.hasCompletedFirstRun) }
     }
 
+    /// Persisted as two plain values so a stale timestamp can never outlive
+    /// its meaning: an expired date simply resolves to "running" on the next
+    /// read, including after a reboot.
+    @Published var pausedUntil: Date? {
+        didSet { defaults.set(pausedUntil, forKey: Key.pausedUntil) }
+    }
+
+    @Published var pausedIndefinitely: Bool {
+        didSet { defaults.set(pausedIndefinitely, forKey: Key.pausedIndefinitely) }
+    }
+
+    var pauseState: PauseState {
+        get { PauseState(isIndefinite: pausedIndefinitely, until: pausedUntil) }
+        set {
+            pausedIndefinitely = newValue.isIndefinite
+            pausedUntil = newValue.until
+        }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
 
@@ -77,5 +98,7 @@ final class SettingsStore: ObservableObject {
         notifyOnDetection = defaults.object(forKey: Key.notifyOnDetection) as? Bool ?? true
         cooldownSeconds = defaults.object(forKey: Key.cooldownSeconds) as? Double ?? 45
         hasCompletedFirstRun = defaults.object(forKey: Key.hasCompletedFirstRun) as? Bool ?? false
+        pausedUntil = defaults.object(forKey: Key.pausedUntil) as? Date
+        pausedIndefinitely = defaults.object(forKey: Key.pausedIndefinitely) as? Bool ?? false
     }
 }

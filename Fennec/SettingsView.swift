@@ -191,6 +191,25 @@ struct SettingsView: View {
                 Toggle("Never repair Bluetooth outputs", isOn: $settings.skipBluetooth)
             }
 
+            Section("Pause") {
+                if model.isPaused {
+                    LabeledContent("Status", value: model.pauseStatusText ?? "Paused")
+                    Button("Resume Watching") { model.resume() }
+                } else {
+                    LabeledContent("Status", value: "Watching")
+                    Menu("Pause Automatic Repair") {
+                        ForEach(PauseSchedule.Option.allCases) { option in
+                            Button(option.title) { model.pause(option) }
+                        }
+                    }
+                    .fixedSize()
+                }
+                Text("Pausing stops automatic repair only. Repair Audio Now keeps working, and every duration except the last one expires on its own.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Section("Rate Limiting") {
                 Slider(value: $settings.cooldownSeconds, in: 20...180, step: 5) {
                     Text("Cooldown")

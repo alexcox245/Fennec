@@ -69,6 +69,17 @@ struct FennecCommands: Commands {
                 .keyboardShortcut("r", modifiers: .command)
                 .disabled(model.isRepairing)
             Divider()
+            if model.isPaused {
+                Button("Resume Watching") { model.resume() }
+                    .keyboardShortcut("p", modifiers: [.command, .shift])
+            } else {
+                Menu("Pause Automatic Repair") {
+                    ForEach(PauseSchedule.Option.allCases) { option in
+                        Button(option.title) { model.pause(option) }
+                    }
+                }
+            }
+            Divider()
             Button("Restart Monitor") { model.restartMonitoring() }
             Button("Reveal Event Log in Finder") { model.openEventLog() }
         }
