@@ -37,6 +37,9 @@ struct RepairRecord: Identifiable, Codable, Equatable, Sendable {
     let durationSeconds: Double
     let succeeded: Bool
     let message: String
+    /// What became of it once there was time to find out. Older files have no
+    /// such field; they decode as `.held` or `.failed` from `succeeded`.
+    var outcome: RepairOutcome
 
     init(
         id: UUID = UUID(),
@@ -49,7 +52,8 @@ struct RepairRecord: Identifiable, Codable, Equatable, Sendable {
         transport: AudioTransport,
         durationSeconds: Double,
         succeeded: Bool,
-        message: String
+        message: String,
+        outcome: RepairOutcome? = nil
     ) {
         self.id = id
         self.date = date
@@ -62,6 +66,25 @@ struct RepairRecord: Identifiable, Codable, Equatable, Sendable {
         self.durationSeconds = durationSeconds
         self.succeeded = succeeded
         self.message = message
+        self.outcome = outcome ?? (succeeded ? .pending : .failed)
+    }
+
+    /// Tolerant of `repairs.json` files written before outcomes existed.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        date = try container.decode(Date.self, forKey: .date)
+        trigger = try container.decode(Trigger.self, forKey: .trigger)
+        signal = try container.decodeIfPresent(AudioSignalKind.self, forKey: .signal)
+        signalCount = try container.decode(Int.self, forKey: .signalCount)
+        elapsedSeconds = try container.decode(Double.self, forKey: .elapsedSeconds)
+        deviceName = try container.decode(String.self, forKey: .deviceName)
+        transport = try container.decode(AudioTransport.self, forKey: .transport)
+        durationSeconds = try container.decode(Double.self, forKey: .durationSeconds)
+        succeeded = try container.decode(Bool.self, forKey: .succeeded)
+        message = try container.decode(String.self, forKey: .message)
+        outcome = try container.decodeIfPresent(RepairOutcome.self, forKey: .outcome)
+            ?? (succeeded ? .held : .failed)
     }
 }
 
@@ -91,7 +114,10 @@ struct RepairSummary: Equatable, Sendable {
     static func make(from records: [RepairRecord], now: Date = Date()) -> RepairSummary {
         guard !records.isEmpty else { return .empty }
 
-        let successes = records.filter(\.succeeded)
+        // A repair that did not hold is not a repair. Counting it would make
+        // the popover's headline number a measure of how broken the machine
+        // is rather than how much Fennec helped.
+        let successes = records.filter { $0.outcome == .held || $0.outcome == .pending }
         let durations = successes.map(\.durationSeconds).filter { $0 > 0 }.sorted()
 
         var deviceCounts: [String: Int] = [:]
@@ -157,6 +183,20 @@ final class RepairHistoryStore: ObservableObject {
 
     var lastSuccessfulRepair: RepairRecord? {
         records.first { $0.succeeded }
+    }
+
+    /// A repair still inside its verification window, if any.
+    var pendingVerification: RepairRecord? {
+        records.first { $0.outcome == .pending }
+    }
+
+    /// Records the verdict once the window closes, or once the fault returns.
+    func setOutcome(_ outcome: RepairOutcome, for id: UUID) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+        guard records[index].outcome != outcome else { return }
+        records[index].outcome = outcome
+        recomputeSummary()
+        persist()
     }
 
     func load() {

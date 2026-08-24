@@ -10,6 +10,9 @@ struct ActivityRecord: Identifiable, Codable, Equatable, Sendable {
         case repairSucceeded
         case repairFailed
         case repairSkipped
+        case repairHeld
+        case repairReturned
+        case stoodDown
         case deviceChanged
         case serviceRestarted
         case suppressed

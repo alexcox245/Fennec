@@ -193,6 +193,10 @@ struct MenuView: View {
 
             pauseControl
 
+            if let standDown = model.standDown, standDown.isActive(at: Date()) {
+                standDownCard(standDown)
+            }
+
             if !model.remainingSetupSteps.isEmpty {
                 setupCard
             }
@@ -218,6 +222,47 @@ struct MenuView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// Fennec has stopped trying, and says why in the machine's own numbers.
+    ///
+    /// This is the hardest thing the product has to say — that the fault is
+    /// probably not Core Audio's — and it says it without apologising and
+    /// without pretending it can be fixed by trying harder.
+    private func standDownCard(_ standDown: RepairGovernor.StandDown) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 7) {
+                Image(systemName: "hand.raised.fill")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .accessibilityHidden(true)
+                Text("Stopped restarting Core Audio")
+                    .font(.caption.weight(.bold))
+                Spacer()
+            }
+
+            Text(standDown.reason)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 8) {
+                Button("Try Again Anyway") { model.clearStandDown() }
+                    .controlSize(.small)
+                Button("What Fennec Does") { model.showWelcomeWindow() }
+                    .controlSize(.small)
+                Spacer()
+            }
+        }
+        .padding(11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.red.opacity(0.10), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke(Color.red.opacity(0.30), lineWidth: 1)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Fennec stopped restarting Core Audio. \(standDown.reason)")
     }
 
     /// Asked inline, never as an alert.

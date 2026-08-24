@@ -51,6 +51,9 @@ final class AppModel: ObservableObject {
     private var lastRepairAttemptDate: Date?
     private var detectionNotificationBudget = NotificationBudget()
     private var pauseTimer: Timer?
+    private var verificationTimer: Timer?
+    private var verifyingRepairID: UUID?
+    private var announcedStandDownUntil: Date?
 
     init() {
         settings = SettingsStore()
@@ -84,6 +87,8 @@ final class AppModel: ObservableObject {
         // clicks the menu-bar item, which is exactly the thing a user who
         // cannot find the app has not done.
         AppDelegate.model = self
+
+        refreshStandDown()
 
         // Resolve any pause that expired while Fennec was not running.
         pauseState = settings.pauseState.resolved()
@@ -142,6 +147,31 @@ final class AppModel: ObservableObject {
 
     func acknowledgeAttention() {
         needsAttention = false
+    }
+
+    // MARK: Standing down
+
+    /// Set when three automatic repairs in twenty minutes did not hold. The
+    /// restart is not the cure on this machine, and trying a fourth time just
+    /// silences the audio again.
+    @Published private(set) var standDown: RepairGovernor.StandDown?
+
+    var isStandingDown: Bool { standDown?.isActive(at: Date()) ?? false }
+
+    /// Clears the stand-down early. The user has looked at the reason and
+    /// decided anyway, which is their call to make.
+    func clearStandDown() {
+        guard standDown != nil else { return }
+        standDown = nil
+        announcedStandDownUntil = nil
+        record(.init(kind: .resumed, summary: "Stand-down cleared; automatic repair is armed again."))
+    }
+
+    private func refreshStandDown() {
+        let current = RepairGovernor.standDown(records: repairHistory.records)
+        if current != standDown {
+            standDown = current
+        }
     }
 
     // MARK: Pause
@@ -490,6 +520,13 @@ final class AppModel: ObservableObject {
         guard batch.containsFailureSignal, batch.date >= suppressSignalsUntil else { return }
         guard let decision = detectionEngine.ingest(batch, sensitivity: settings.sensitivity) else { return }
 
+        // A fresh detection inside the verification window is the fault
+        // coming back, which is the one thing that decides whether the last
+        // repair actually worked.
+        if let verifyingRepairID {
+            failVerification(verifyingRepairID)
+        }
+
         detectionCount += 1
         lastDetectionDate = batch.date
         lastDetectionReason = decision.reason
@@ -523,6 +560,13 @@ final class AppModel: ObservableObject {
             // user asked for quiet, and a banner explaining why Fennec is quiet
             // would defeat the point.
             recordSkipped(pauseStatusText ?? "Fennec is paused.")
+            return
+        }
+
+        refreshStandDown()
+        if let standDown, standDown.isActive(at: Date()) {
+            recordSkipped(standDown.reason)
+            announceStandDownIfNeeded(standDown)
             return
         }
 
@@ -648,6 +692,7 @@ final class AppModel: ObservableObject {
             if settings.notifyOnRepair {
                 notificationController.postRepairResult(repair)
             }
+            beginVerification(of: repair)
 
             try? await Task.sleep(for: .milliseconds(1200))
             do {
@@ -679,9 +724,67 @@ final class AppModel: ObservableObject {
             // Always surfaced: a failed repair is the one case where the user
             // has to do something.
             notificationController.postRepairResult(repair)
+            refreshStandDown()
+            if let standDown { announceStandDownIfNeeded(standDown) }
         }
 
         isRepairing = false
+    }
+
+    // MARK: Verification
+
+    /// Starts the quiet window. Aviator gold is not spent here — the brand
+    /// reserves it for a repair that *worked*, and at this instant the only
+    /// established fact is that a new `coreaudiod` exists.
+    private func beginVerification(of repair: RepairRecord) {
+        verificationTimer?.invalidate()
+        verifyingRepairID = repair.id
+
+        verificationTimer = Timer.scheduledTimer(
+            withTimeInterval: RepairGovernor.verificationWindow,
+            repeats: false
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let id = self.verifyingRepairID else { return }
+                self.verifyingRepairID = nil
+                self.repairHistory.setOutcome(.held, for: id)
+                self.record(.init(
+                    kind: .repairHeld,
+                    summary: "No further signals for \(Int(RepairGovernor.verificationWindow)) seconds. The repair held."
+                ))
+                self.refreshStandDown()
+            }
+        }
+    }
+
+    private func failVerification(_ id: UUID) {
+        verificationTimer?.invalidate()
+        verificationTimer = nil
+        verifyingRepairID = nil
+        repairHistory.setOutcome(.returned, for: id)
+
+        if let repair = repairHistory.records.first(where: { $0.id == id }) {
+            record(.init(
+                kind: .repairReturned,
+                summary: "The fault came back inside the verification window.",
+                details: repairDetails(repair)
+            ))
+            if settings.notifyOnRepair {
+                // Replaces the earlier banner in place rather than stacking a
+                // contradiction underneath it.
+                notificationController.postFaultReturned(repair)
+            }
+        }
+        refreshStandDown()
+        if let standDown { announceStandDownIfNeeded(standDown) }
+    }
+
+    private func announceStandDownIfNeeded(_ standDown: RepairGovernor.StandDown) {
+        guard announcedStandDownUntil != standDown.until else { return }
+        announcedStandDownUntil = standDown.until
+        needsAttention = true
+        record(.init(kind: .stoodDown, summary: standDown.reason))
+        notificationController.postStandDown(reason: standDown.reason)
     }
 
     private func makeRecord(

@@ -139,6 +139,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         static let detection = "fennec.detection"
         static let repair = "fennec.repair"
         static let pause = "fennec.pause"
+        static let standDown = "fennec.standdown"
     }
 
     /// One quiet line when a pause runs out, so the user is never surprised
@@ -149,6 +150,27 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         content.body = "The pause expired. Watching \(device)."
         content.interruptionLevel = .passive
         post(content, identifier: Identifier.pause)
+    }
+
+    /// Corrects the success banner in place when the fault comes back.
+    func postFaultReturned(_ record: RepairRecord) {
+        let content = UNMutableNotificationContent()
+        content.title = RepairCopy.faultReturnedTitle(for: record)
+        content.body = RepairCopy.faultReturnedBody(for: record)
+        content.categoryIdentifier = Category.detected
+        content.interruptionLevel = .passive
+        post(content, identifier: Identifier.repair)
+    }
+
+    /// Fennec has stopped trying. This one gets a sound: it is the only state
+    /// where the machine stays broken and the user has to decide what next.
+    func postStandDown(reason: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "Fennec has stopped restarting Core Audio"
+        content.body = reason
+        content.categoryIdentifier = Category.failed
+        content.sound = .default
+        post(content, identifier: Identifier.standDown)
     }
 
     private func post(_ content: UNMutableNotificationContent, identifier: String) {

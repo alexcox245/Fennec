@@ -69,7 +69,8 @@ extension Fixture {
         transport: AudioTransport = .builtIn,
         duration: Double = 0.84,
         succeeded: Bool = true,
-        message: String = "Core Audio restarted successfully."
+        message: String = "Core Audio restarted successfully.",
+        outcome: RepairOutcome? = nil
     ) -> RepairRecord {
         RepairRecord(
             date: date,
@@ -81,7 +82,8 @@ extension Fixture {
             transport: transport,
             durationSeconds: duration,
             succeeded: succeeded,
-            message: message
+            message: message,
+            outcome: outcome ?? (succeeded ? .held : .failed)
         )
     }
 }
