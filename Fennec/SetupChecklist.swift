@@ -15,7 +15,12 @@ struct SetupStep: Identifiable, Equatable, Sendable {
 
     let kind: Kind
     let title: String
+    /// The full explanation, for Settings and the first-run window.
     let detail: String
+    /// One line, for the popover. The popover is 384 pt wide and the setup
+    /// card is the first thing a new user sees — three five-line paragraphs
+    /// there is not onboarding, it is a wall.
+    let compactDetail: String
     let actionTitle: String
     let isComplete: Bool
     /// Required steps block unattended repair. Optional ones only make it
@@ -93,6 +98,7 @@ enum SetupChecklist {
                 kind: .helperApproval,
                 title: "Allow Fennec in the background",
                 detail: "macOS staged Fennec's repair helper and is waiting for you to switch it on under Login Items & Extensions.",
+                compactDetail: "macOS is waiting for you to allow it.",
                 actionTitle: "Open Login Items…",
                 isComplete: false,
                 isRequired: true
@@ -104,6 +110,7 @@ enum SetupChecklist {
                 detail: reachable
                     ? "The repair helper is installed and answering."
                     : "The helper is installed but is not answering. Recheck it in Settings.",
+                compactDetail: reachable ? "Installed and answering." : "Installed, but not answering.",
                 actionTitle: reachable ? "Installed" : "Recheck",
                 isComplete: reachable,
                 isRequired: true
@@ -113,6 +120,7 @@ enum SetupChecklist {
                 kind: .helper,
                 title: "Repair without a password prompt",
                 detail: "Fennec installs a small root helper that can do exactly one thing: restart Core Audio. Without it, every repair asks for your password.",
+                compactDetail: "A root helper that can only restart Core Audio.",
                 actionTitle: "Enable Helper",
                 isComplete: false,
                 isRequired: true
@@ -122,6 +130,7 @@ enum SetupChecklist {
                 kind: .helper,
                 title: "Repair without a password prompt",
                 detail: message,
+                compactDetail: message,
                 actionTitle: "Try Again",
                 isComplete: false,
                 isRequired: true
@@ -136,6 +145,7 @@ enum SetupChecklist {
                 kind: .loginItem,
                 title: "Start with your Mac",
                 detail: loginItem.detail,
+                compactDetail: "Fennec starts with your Mac.",
                 actionTitle: "On",
                 isComplete: true,
                 isRequired: true
@@ -145,6 +155,7 @@ enum SetupChecklist {
                 kind: .loginItem,
                 title: "Start with your Mac",
                 detail: loginItem.detail,
+                compactDetail: "macOS is waiting for you to allow it.",
                 actionTitle: "Open Login Items…",
                 isComplete: false,
                 isRequired: true
@@ -154,6 +165,7 @@ enum SetupChecklist {
                 kind: .loginItem,
                 title: "Start with your Mac",
                 detail: "Crackling turns up during long builds and exports — usually while you are not watching. Fennec has to already be running to catch the first signal.",
+                compactDetail: "Fennec has to be running to catch the first signal.",
                 actionTitle: "Turn On",
                 isComplete: false,
                 isRequired: true
@@ -168,6 +180,9 @@ enum SetupChecklist {
             detail: authorized
                 ? "Fennec will post a quiet banner after each repair."
                 : "Without notification permission a repair is completely silent — which is nice, right up until you wonder whether Fennec is doing anything at all.",
+            compactDetail: authorized
+                ? "A quiet banner after each repair."
+                : "Otherwise a repair is completely silent.",
             actionTitle: authorized ? "Allowed" : "Open Notifications…",
             isComplete: authorized,
             isRequired: false

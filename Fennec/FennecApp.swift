@@ -23,6 +23,7 @@ enum FennecBrand {
 
 @main
 struct FennecApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model = AppModel()
 
     var body: some Scene {
@@ -34,10 +35,54 @@ struct FennecApp: App {
                 .accessibilityLabel(model.menuBarIconState.accessibilityLabel)
         }
         .menuBarExtraStyle(.window)
+        .commands { FennecCommands(model: model) }
+    }
+}
 
-        Settings {
-            SettingsView(model: model)
-                .tint(FennecBrand.sky)
+/// The main menu.
+///
+/// An accessory app shows no menu bar, so for most of Fennec's life none of
+/// this is on screen. It appears the moment `WindowPresenter` flips the
+/// activation policy for a real window — which is exactly when a user has
+/// something in front of them to type ⌘W, ⌘Q, ⌘, or ⌘R at.
+struct FennecCommands: Commands {
+    @ObservedObject var model: AppModel
+
+    var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About Fennec") { showAboutPanel() }
         }
+
+        CommandGroup(replacing: .newItem) { }
+
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings…") { WindowPresenter.shared.showSettings(model: model) }
+                .keyboardShortcut(",", modifiers: .command)
+        }
+
+        CommandMenu("Audio") {
+            Button("Repair Audio Now") { model.requestManualRepair() }
+                .keyboardShortcut("r", modifiers: .command)
+                .disabled(model.isRepairing)
+            Divider()
+            Button("Restart Monitor") { model.restartMonitoring() }
+            Button("Reveal Event Log in Finder") { model.openEventLog() }
+        }
+    }
+
+    /// The standard panel, with the two facts a person evaluating a
+    /// root-privileged utility actually wants, stated where they will look.
+    private func showAboutPanel() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        let credits = NSAttributedString(
+            string: "Watches Core Audio for the overload that starts crackling, and restarts it "
+                + "before you have to.\n\nLocal only. No network, no account, no telemetry.",
+            attributes: [
+                .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]
+        )
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
     }
 }

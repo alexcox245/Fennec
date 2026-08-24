@@ -78,6 +78,12 @@ final class AppModel: ObservableObject {
             self?.beQuiet(for: event)
         }
 
+        // The delegate needs the model before any window can be opened, and
+        // the popover's onAppear is too late — it does not run until someone
+        // clicks the menu-bar item, which is exactly the thing a user who
+        // cannot find the app has not done.
+        AppDelegate.model = self
+
         startMonitoring()
         // The graph Fennec just attached to may already have signals queued
         // against it, and a login launch lands in the middle of the same

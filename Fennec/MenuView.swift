@@ -26,23 +26,7 @@ struct MenuView: View {
         }
         .padding(16)
         .frame(width: 384)
-        .background(background)
         .task { model.refreshAll() }
-    }
-
-    private var background: some View {
-        ZStack(alignment: .topTrailing) {
-            Color.clear
-            Circle()
-                .fill(FennecBrand.sky.opacity(0.08))
-                .frame(width: 180, height: 180)
-                .offset(x: 62, y: -96)
-            Circle()
-                .fill(FennecBrand.dune.opacity(0.07))
-                .frame(width: 150, height: 150)
-                .offset(x: 105, y: -44)
-        }
-        .allowsHitTesting(false)
     }
 
     private var header: some View {
@@ -290,25 +274,28 @@ struct MenuView: View {
     /// a checklist that lingers is just clutter.
     private var setupCard: some View {
         VStack(alignment: .leading, spacing: 9) {
-            HStack(spacing: 7) {
-                Image(systemName: "wrench.and.screwdriver.fill")
-                    .font(.caption)
-                    .foregroundStyle(FennecBrand.dune)
-                    .accessibilityHidden(true)
-                Text("Finish setup")
-                    .font(.caption.weight(.bold))
-                    .tracking(0.3)
-                Spacer()
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 7) {
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .font(.caption)
+                        .foregroundStyle(FennecBrand.dune)
+                        .accessibilityHidden(true)
+                    Text("Finish setup")
+                        .font(.caption.weight(.bold))
+                        .tracking(0.3)
+                    Spacer()
+                }
                 Text(model.setupSummary)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .layoutPriority(-1)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             ForEach(model.remainingSetupSteps) { step in
                 Divider().opacity(0.4)
-                setupRow(step)
+                SetupStepRow(step: step, compact: true) {
+                    model.performSetupAction(for: step)
+                }
             }
         }
         .padding(11)
@@ -320,42 +307,15 @@ struct MenuView: View {
         }
     }
 
-    private func setupRow(_ step: SetupStep) -> some View {
-        HStack(alignment: .top, spacing: 9) {
-            Image(systemName: step.isRequired ? "exclamationmark.circle.fill" : "circle.dashed")
-                .font(.caption)
-                .foregroundStyle(step.isRequired ? FennecBrand.dune : Color.secondary)
-                .padding(.top, 1)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(step.title)
-                    .font(.caption.weight(.semibold))
-                Text(step.detail)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 6)
-
-            Button(step.actionTitle) {
-                model.performSetupAction(for: step)
-            }
-            .controlSize(.small)
-            .buttonStyle(.bordered)
-            .layoutPriority(1)
-            .accessibilityLabel("\(step.actionTitle): \(step.title)")
-            .help(step.detail)
-        }
-    }
-
     private var footer: some View {
         HStack {
-            SettingsLink {
+            Button {
+                WindowPresenter.shared.showSettings(model: model)
+            } label: {
                 Label("Settings", systemImage: "gearshape")
             }
             .buttonStyle(.plain)
+            .help("Open Fennec Settings.")
 
             Spacer()
 

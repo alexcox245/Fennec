@@ -73,6 +73,9 @@
 		8C5B7B3FBD03A12136AC514F /* SystemEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5149679352762FC1CDFCE788 /* SystemEvents.swift */; };
 		13658AEC65AFDDB5652DFDBD /* NotificationBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BF3A1DBFA4C1AD8AEA54200 /* NotificationBudgetTests.swift */; };
 		509835A308073938B26119FF /* PrivilegedPromptRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = C16222E31215FAC2BFF7D3E5 /* PrivilegedPromptRepair.swift */; };
+		D52397C63E853B59B144B5B3 /* WindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE1CD6A11F82FE1AD27AF54 /* WindowPresenter.swift */; };
+		7B1AAE847BC7EAB8B6A09487 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F75FAD430D0AD74E6A1A85D6 /* AppDelegate.swift */; };
+		C51A70451F47F7187447B4E3 /* SetupStepRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8256C3F2EE28EA749B10D72B /* SetupStepRow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -164,6 +167,9 @@
 		5149679352762FC1CDFCE788 /* SystemEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemEvents.swift; sourceTree = "<group>"; };
 		913D3D17BD12D409AF0CCA1E /* PendingConfirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingConfirmation.swift; sourceTree = "<group>"; };
 		8BF3A1DBFA4C1AD8AEA54200 /* NotificationBudgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationBudgetTests.swift; sourceTree = "<group>"; };
+		FAE1CD6A11F82FE1AD27AF54 /* WindowPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPresenter.swift; sourceTree = "<group>"; };
+		F75FAD430D0AD74E6A1A85D6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		8256C3F2EE28EA749B10D72B /* SetupStepRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupStepRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -241,6 +247,9 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				8256C3F2EE28EA749B10D72B /* SetupStepRow.swift */,
+				FAE1CD6A11F82FE1AD27AF54 /* WindowPresenter.swift */,
+				F75FAD430D0AD74E6A1A85D6 /* AppDelegate.swift */,
 				913D3D17BD12D409AF0CCA1E /* PendingConfirmation.swift */,
 				6861F3028CCBA2DC05995389 /* NotificationBudget.swift */,
 				5149679352762FC1CDFCE788 /* SystemEvents.swift */,
@@ -454,6 +463,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C51A70451F47F7187447B4E3 /* SetupStepRow.swift in Sources */,
+				D52397C63E853B59B144B5B3 /* WindowPresenter.swift in Sources */,
+				7B1AAE847BC7EAB8B6A09487 /* AppDelegate.swift in Sources */,
 				3AB8DE40F373B62D6A5CC215 /* PendingConfirmation.swift in Sources */,
 				FC9C744B14C3A1BAEF9242AF /* NotificationBudget.swift in Sources */,
 				1B136E8E28DFCDD2C9EFFB48 /* SystemEvents.swift in Sources */,

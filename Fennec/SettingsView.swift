@@ -14,20 +14,15 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            brandHeader
-            Divider()
-            TabView {
-                generalTab
-                    .tabItem { Label("General", systemImage: "gearshape") }
-                safetyTab
-                    .tabItem { Label("Safety", systemImage: "shield") }
-                diagnosticsTab
-                    .tabItem { Label("Diagnostics", systemImage: "waveform.path.ecg") }
-            }
-            .padding(18)
+        TabView {
+            generalTab
+                .tabItem { Label("General", systemImage: "gearshape") }
+            safetyTab
+                .tabItem { Label("Safety", systemImage: "shield") }
+            diagnosticsTab
+                .tabItem { Label("Diagnostics", systemImage: "waveform.path.ecg") }
         }
-        .frame(width: 650, height: 560)
+        .frame(minWidth: 650, minHeight: 560)
         .task { model.refreshAll() }
         .sheet(item: Binding(
             get: { model.pendingConfirmation },
@@ -68,49 +63,17 @@ struct SettingsView: View {
         .frame(width: 420)
     }
 
-    private var brandHeader: some View {
-        HStack(spacing: 13) {
-            Image("FennecMascot")
-                .resizable()
-                .scaledToFill()
-                .frame(width: 52, height: 52)
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Fennec")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                Text("Catches Core Audio crackling and restarts it before you have to.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            HStack(spacing: 7) {
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 8, height: 8)
-                Text(model.monitoringState.title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(FennecBrand.card, in: Capsule())
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 15)
-        .background(
-            LinearGradient(
-                colors: [FennecBrand.sky.opacity(0.10), FennecBrand.dune.opacity(0.06), .clear],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        )
-    }
-
     private var generalTab: some View {
         Form {
             Section("Listening") {
-                LabeledContent("Status", value: model.monitoringState.title)
+                LabeledContent("Status") {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(statusColor)
+                            .frame(width: 7, height: 7)
+                        Text(model.monitoringState.title)
+                    }
+                }
                 LabeledContent("Current output", value: model.currentDevice.name)
                 LabeledContent("Sample rate", value: sampleRateText)
 
@@ -130,6 +93,20 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if !helper.state.isReachable {
+                    // Without this the screen reads "Repair crackling
+                    // automatically: on" directly above "Privileged helper:
+                    // Not configured", which is a promise Fennec cannot keep.
+                    Label {
+                        Text("This switch does nothing until the repair helper is enabled. Fennec will still detect crackling and tell you about it.")
+                            .font(.caption)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(FennecBrand.dune)
+                    }
+                }
 
                 Picker("Step in after", selection: $settings.sensitivity) {
                     ForEach(DetectionSensitivity.allCases) { sensitivity in
@@ -189,6 +166,19 @@ struct SettingsView: View {
                         .foregroundStyle(.red)
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
+                }
+            }
+
+            if !model.remainingSetupSteps.isEmpty {
+                Section("Finish Setup") {
+                    ForEach(model.remainingSetupSteps) { step in
+                        SetupStepRow(step: step, compact: false) {
+                            model.performSetupAction(for: step)
+                        }
+                    }
+                    Text(model.setupSummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
