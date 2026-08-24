@@ -5,12 +5,16 @@ struct MenuView: View {
     @ObservedObject private var settings: SettingsStore
     @ObservedObject private var helper: HelperManager
     @ObservedObject private var history: RepairHistoryStore
+    @ObservedObject private var loginItem: LoginItemManager
+    @ObservedObject private var notifications: NotificationController
 
     init(model: AppModel) {
         self.model = model
         _settings = ObservedObject(wrappedValue: model.settings)
         _helper = ObservedObject(wrappedValue: model.helperManager)
         _history = ObservedObject(wrappedValue: model.repairHistory)
+        _loginItem = ObservedObject(wrappedValue: model.loginItemManager)
+        _notifications = ObservedObject(wrappedValue: model.notificationController)
     }
 
     var body: some View {
@@ -171,8 +175,8 @@ struct MenuView: View {
             .toggleStyle(.switch)
             .disabled(!helper.state.isReachable)
 
-            if !helper.state.isReachable {
-                helperSetupRow
+            if !model.remainingSetupSteps.isEmpty {
+                setupCard
             }
 
             if let repair = history.records.first {
@@ -237,34 +241,69 @@ struct MenuView: View {
         .accessibilityLabel("\(RepairCopy.receiptHeadline(for: repair)). \(RepairCopy.receiptDetail(for: repair))")
     }
 
-    @ViewBuilder
-    private var helperSetupRow: some View {
-        HStack(alignment: .center, spacing: 9) {
-            Image(systemName: "lock.shield.fill")
-                .foregroundStyle(FennecBrand.dune)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Automatic repair helper")
-                    .font(.caption.weight(.semibold))
-                Text(helper.state.title)
+    /// Everything still standing between the user and unattended repair, with
+    /// the button that resolves it. It disappears the moment setup is done —
+    /// a checklist that lingers is just clutter.
+    private var setupCard: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 7) {
+                Image(systemName: "wrench.and.screwdriver.fill")
+                    .font(.caption)
+                    .foregroundStyle(FennecBrand.dune)
+                    .accessibilityHidden(true)
+                Text("Finish setup")
+                    .font(.caption.weight(.bold))
+                    .tracking(0.3)
+                Spacer()
+                Text(model.setupSummary)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .layoutPriority(-1)
             }
-            Spacer()
 
-            switch helper.state {
-            case .awaitingApproval:
-                Button("Approve…") { helper.openApprovalSettings() }
-                    .controlSize(.small)
-                    .help("Open Login Items & Extensions in System Settings and allow Fennec in the background.")
-            default:
-                Button("Enable") { helper.register() }
-                    .controlSize(.small)
-                    .help("Install Fennec's privileged helper so it can restart Core Audio without a password prompt.")
+            ForEach(model.remainingSetupSteps) { step in
+                Divider().opacity(0.4)
+                setupRow(step)
             }
         }
-        .padding(10)
-        .background(FennecBrand.dune.opacity(0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FennecBrand.dune.opacity(0.09), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke(FennecBrand.dune.opacity(0.22), lineWidth: 1)
+        }
+    }
+
+    private func setupRow(_ step: SetupStep) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: step.isRequired ? "exclamationmark.circle.fill" : "circle.dashed")
+                .font(.caption)
+                .foregroundStyle(step.isRequired ? FennecBrand.dune : Color.secondary)
+                .padding(.top, 1)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(step.title)
+                    .font(.caption.weight(.semibold))
+                Text(step.detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 6)
+
+            Button(step.actionTitle) {
+                model.performSetupAction(for: step)
+            }
+            .controlSize(.small)
+            .buttonStyle(.bordered)
+            .layoutPriority(1)
+            .accessibilityLabel("\(step.actionTitle): \(step.title)")
+            .help(step.detail)
+        }
     }
 
     private var footer: some View {
@@ -276,10 +315,11 @@ struct MenuView: View {
 
             Spacer()
 
-            Text(RepairCopy.summaryLine(for: history.summary))
+            Text(footerStatus)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
+                .help(model.setupSummary)
 
             Spacer()
 
@@ -287,6 +327,17 @@ struct MenuView: View {
                 .buttonStyle(.plain)
         }
         .font(.caption)
+    }
+
+    /// Two facts compete for one line. Until Fennec has ever repaired
+    /// anything, the reassuring one wins; after that, the count does.
+    private var footerStatus: String {
+        if history.summary.successes > 0 {
+            return RepairCopy.summaryLine(for: history.summary)
+        }
+        return loginItem.isEnabled
+            ? "Running in the background since login"
+            : "Listening for Core Audio trouble"
     }
 
     private var autoRepairDetail: String {

@@ -57,6 +57,13 @@
 		6ED89F32067889339575A8EA /* RepairCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDE51A7D46E1354D6470AA8 /* RepairCopy.swift */; };
 		DEF2515A0D7C3F1C0F1CC555 /* RepairHistoryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A7550D2019F59A504F3724 /* RepairHistoryStoreTests.swift */; };
 		220E1FB4621775D7E5AB36F6 /* RepairCopyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D89A79752B9E482A338E6C /* RepairCopyTests.swift */; };
+		5B7E4CB3BDE84E939D3B75BB /* SetupChecklist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C47B7E3DA12A4BC92246E6 /* SetupChecklist.swift */; };
+		5BCB3199490F77F47B790474 /* SetupChecklistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38777CC9BF8FA1EA443340EA /* SetupChecklistTests.swift */; };
+		8DE552E815A69687A92D6CBE /* SetupChecklist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C47B7E3DA12A4BC92246E6 /* SetupChecklist.swift */; };
+		3E7E6BAE091033704B6CCE62 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA248C5807CA32CF3F60E04 /* LoginItemManager.swift */; };
+		350E869B1AE1D557EEF1A67A /* HelperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD593676AD5850B211E9864 /* HelperManager.swift */; };
+		3A1548E5DCC5D42F9B9B5B6C /* CodeSigningRequirement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFB8E501F4CB9747BA53320 /* CodeSigningRequirement.swift */; };
+		D7473D8D0EFEE0D317DD5B08 /* HelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7487F769540EC02C845ACFBE /* HelperProtocol.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -141,6 +148,8 @@
 		ABDE51A7D46E1354D6470AA8 /* RepairCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairCopy.swift; sourceTree = "<group>"; };
 		00A7550D2019F59A504F3724 /* RepairHistoryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairHistoryStoreTests.swift; sourceTree = "<group>"; };
 		E9D89A79752B9E482A338E6C /* RepairCopyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairCopyTests.swift; sourceTree = "<group>"; };
+		04C47B7E3DA12A4BC92246E6 /* SetupChecklist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupChecklist.swift; sourceTree = "<group>"; };
+		38777CC9BF8FA1EA443340EA /* SetupChecklistTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupChecklistTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -218,6 +227,7 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				04C47B7E3DA12A4BC92246E6 /* SetupChecklist.swift */,
 				F5D2486DA71C4875EB7026EA /* RepairHistoryStore.swift */,
 				ABDE51A7D46E1354D6470AA8 /* RepairCopy.swift */,
 				1FEDF8CEF7192028FA01B0BB /* AppModel.swift */,
@@ -275,6 +285,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				38777CC9BF8FA1EA443340EA /* SetupChecklistTests.swift */,
 				00A7550D2019F59A504F3724 /* RepairHistoryStoreTests.swift */,
 				E9D89A79752B9E482A338E6C /* RepairCopyTests.swift */,
 				38B5E5914FBB3B7679D24252 /* TestSupport.swift */,
@@ -424,6 +435,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5B7E4CB3BDE84E939D3B75BB /* SetupChecklist.swift in Sources */,
 				9F704195E8192916CB1D7AF8 /* RepairHistoryStore.swift in Sources */,
 				AE3E0AF0808AA43D11EA316D /* RepairCopy.swift in Sources */,
 				E0E8FBA798201B7929ED4789 /* AppModel.swift in Sources */,
@@ -452,6 +464,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8DE552E815A69687A92D6CBE /* SetupChecklist.swift in Sources */,
+				3E7E6BAE091033704B6CCE62 /* LoginItemManager.swift in Sources */,
+				350E869B1AE1D557EEF1A67A /* HelperManager.swift in Sources */,
+				3A1548E5DCC5D42F9B9B5B6C /* CodeSigningRequirement.swift in Sources */,
+				D7473D8D0EFEE0D317DD5B08 /* HelperProtocol.swift in Sources */,
+				5BCB3199490F77F47B790474 /* SetupChecklistTests.swift in Sources */,
 				DEF2515A0D7C3F1C0F1CC555 /* RepairHistoryStoreTests.swift in Sources */,
 				220E1FB4621775D7E5AB36F6 /* RepairCopyTests.swift in Sources */,
 				8E016B3A813F09ABB7F5673A /* RepairHistoryStore.swift in Sources */,

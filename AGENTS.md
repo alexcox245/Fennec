@@ -77,6 +77,7 @@ Fennec/                        app target (15 Swift files, 1 C file)
   NotificationController.swift user notifications
   RepairHistoryStore.swift     persisted repair receipts + RepairSummary
   RepairCopy.swift             every user-facing sentence about a repair  ← see rule 7
+  SetupChecklist.swift         pure readiness model behind every setup CTA
 
 FennecHelper/                  root LaunchDaemon target
   main.swift                   NSXPCListener bootstrap
@@ -286,7 +287,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-014**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-015**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -314,7 +315,8 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-004 | Regenerate `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `aa22cc6` | Rehashed after the T-001/T-002 edits. |
 | T-006 | Add a unit-test target covering `DetectionEngine` and `EventLogger` | 2026-08-25 | `b0af227` | `FennecTests`, a standalone XCTest bundle (no `TEST_HOST`) compiling the pure-logic sources directly. `EventLogger` gained an injectable directory and size cap plus a test-only `flush(completion:)` so rotation is observable without writing 5 MB. Scheme `Fennec` now has a TestAction. |
 | T-011 | Make `audit-source.sh` verify `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `b0af227` | Added `Scripts/update-manifest.sh` (regenerates from `git ls-files`, so new files are never missed) and a `shasum -c` gate at the end of `audit-source.sh`. `FennecTests/*.swift` added to the per-file Swift parse. |
-| T-013 | Catch & Fix: automatic repair the user can see | 2026-08-25 | `PENDING_SHA` | Auto-repair now defaults **on** (still inert until the helper is enabled). `DetectionDecision` carries the real elapsed span between signals, not just the configured window, so the copy can say "2 crackle signals in 5.8 s". Every repair is timed across the privileged call only and persisted as a `RepairRecord` in `repairs.json`; the popover shows the newest as a receipt in aviator gold, plus a running total. Notifications were rebuilt around proportionality: success is `.passive` with no sound and no buttons, failure and unrepaired-detection get a sound and an action. |
+| T-013 | Catch & Fix: automatic repair the user can see | 2026-08-25 | `35d35e8` | Auto-repair now defaults **on** (still inert until the helper is enabled). `DetectionDecision` carries the real elapsed span between signals, not just the configured window, so the copy can say "2 crackle signals in 5.8 s". Every repair is timed across the privileged call only and persisted as a `RepairRecord` in `repairs.json`; the popover shows the newest as a receipt in aviator gold, plus a running total. Notifications were rebuilt around proportionality: success is `.passive` with no sound and no buttons, failure and unrepaired-detection get a sound and an action. |
+| T-014 | Always On: start with the Mac, and say what is left to do | 2026-08-25 | `PENDING_SHA` | `LoginItemState` wraps `SMAppService.Status` with a name and a next step, and `LoginItemManager` re-reads it on every `didBecomeActive` because the user can switch Fennec off in System Settings without telling the app. `SMAppServiceErrorDomain` failures are translated into the cause that is almost always true. New `SetupChecklist` is the single pure model behind every setup CTA — the popover, Settings, and (later) first-run cannot disagree about what a button means. |
 
 ---
 

@@ -127,24 +127,43 @@ struct SettingsView: View {
 
             Section("Startup") {
                 Toggle(
-                    "Launch Fennec at login",
+                    "Start Fennec when I log in",
                     isOn: Binding(
                         get: { loginItem.isEnabled },
                         set: { loginItem.setEnabled($0) }
                     )
                 )
-                if loginItem.requiresApproval {
-                    HStack {
-                        Text("Login item approval is required in System Settings.")
-                            .foregroundStyle(FennecBrand.dune)
-                        Spacer()
-                        Button("Open Login Items") { loginItem.openSettings() }
+
+                LabeledContent("Login item") {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(loginItem.isEnabled ? FennecBrand.sky : Color.secondary.opacity(0.5))
+                            .frame(width: 7, height: 7)
+                        Text(loginItem.state.title)
                     }
                 }
+
+                Text(loginItem.state.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if loginItem.requiresApproval {
+                    HStack {
+                        Text("macOS is holding this until you allow it.")
+                            .font(.caption)
+                            .foregroundStyle(FennecBrand.dune)
+                        Spacer()
+                        Button("Open Login Items…") { loginItem.openSettings() }
+                    }
+                }
+
                 if let error = loginItem.lastError {
                     Text(error)
                         .font(.caption)
                         .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
                 }
             }
         }

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import UserNotifications
 
@@ -83,6 +84,13 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
                 self?.authorizationChecked = true
             }
         }
+    }
+
+    /// Opens System Settings → Notifications. There is no API to re-ask once
+    /// the user has answered the prompt, so this is the only honest CTA.
+    func openSystemSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     /// The headline moment: Fennec already fixed it, here is what it fixed.

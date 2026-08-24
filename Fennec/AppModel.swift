@@ -117,6 +117,56 @@ final class AppModel: ObservableObject {
         settings.autoRepairEnabled && helperManager.state.isReachable
     }
 
+    // MARK: Setup readiness
+
+    var setupSteps: [SetupStep] {
+        SetupChecklist.steps(
+            helper: helperManager.state,
+            loginItem: loginItemManager.state,
+            notificationsAuthorized: notificationController.isAuthorized
+        )
+    }
+
+    var remainingSetupSteps: [SetupStep] {
+        SetupChecklist.remaining(
+            helper: helperManager.state,
+            loginItem: loginItemManager.state,
+            notificationsAuthorized: notificationController.isAuthorized
+        )
+    }
+
+    var isFullySetUp: Bool {
+        SetupChecklist.isReady(helper: helperManager.state, loginItem: loginItemManager.state)
+    }
+
+    var setupSummary: String {
+        SetupChecklist.summary(
+            helper: helperManager.state,
+            loginItem: loginItemManager.state,
+            notificationsAuthorized: notificationController.isAuthorized
+        )
+    }
+
+    /// The single entry point for every setup button in the app, so the
+    /// popover, Settings, and the first-run window cannot disagree about what
+    /// "Turn On" means.
+    func performSetupAction(for step: SetupStep) {
+        switch step.kind {
+        case .helper:
+            helperManager.register()
+        case .helperApproval:
+            helperManager.openApprovalSettings()
+        case .loginItem:
+            if loginItemManager.state.requiresApproval {
+                loginItemManager.openSettings()
+            } else {
+                loginItemManager.enable()
+            }
+        case .notifications:
+            notificationController.openSystemSettings()
+        }
+    }
+
     // MARK: Monitoring lifecycle
 
     func startMonitoring() {
