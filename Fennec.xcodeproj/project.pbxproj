@@ -101,6 +101,9 @@
 		994538879492BD78F8013B00 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A64E84489F0B6AB889C87C9 /* ActivityView.swift */; };
 		7E0CF26E72EE5E2E421ED0CD /* DaysWithoutIncident.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */; };
 		ACE9E60920BDD58FF9F5CDDD /* DaysWithoutIncidentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */; };
+		BD41497897092C7F0B59F685 /* DrainSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */; };
+		93C51749F5343408E13287AF /* DrainSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */; };
+		3C63A347EE064254A020DC46 /* DrainScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -211,6 +214,8 @@
 		70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysWithoutIncident.swift; sourceTree = "<group>"; };
 		7A64E84489F0B6AB889C87C9 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
 		8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysWithoutIncidentTests.swift; sourceTree = "<group>"; };
+		60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainSchedule.swift; sourceTree = "<group>"; };
+		B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainScheduleTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -288,6 +293,7 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */,
 				70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */,
 				7A64E84489F0B6AB889C87C9 /* ActivityView.swift */,
 				0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */,
@@ -364,6 +370,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */,
 				8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */,
 				BDB135AAE4E46F154D69E127 /* UninstallTests.swift */,
 				52BDA5C884966B4725C0A2CF /* RepairGovernorTests.swift */,
@@ -521,6 +528,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BD41497897092C7F0B59F685 /* DrainSchedule.swift in Sources */,
 				9F6332CB2A48D4417A9DFCAC /* DaysWithoutIncident.swift in Sources */,
 				994538879492BD78F8013B00 /* ActivityView.swift in Sources */,
 				DF4BE0122C23ED5B35E04838 /* AboutView.swift in Sources */,
@@ -568,6 +576,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3C63A347EE064254A020DC46 /* DrainScheduleTests.swift in Sources */,
+				93C51749F5343408E13287AF /* DrainSchedule.swift in Sources */,
 				ACE9E60920BDD58FF9F5CDDD /* DaysWithoutIncidentTests.swift in Sources */,
 				7E0CF26E72EE5E2E421ED0CD /* DaysWithoutIncident.swift in Sources */,
 				8DB547A04E8D966F3B118A2A /* UninstallTests.swift in Sources */,

@@ -1,0 +1,66 @@
+name: CI
+
+# Everything on the roadmap adds logic between a signal and a root action.
+# None of it can be exercised end to end without a real Core Audio fault, so
+# the least this repository can do is guarantee that the parts which *are*
+# checkable stay checked — without anyone having to remember.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Show toolchain
+        run: xcodebuild -version && swift --version
+
+      # Plists, helper packaging, per-file Swift parse, the real-time C
+      # callback under -Wall -Wextra -Werror, and the source manifest.
+      - name: Static audit
+        run: zsh Scripts/audit-source.sh
+
+      - name: Unit tests
+        run: |
+          xcodebuild -project Fennec.xcodeproj -scheme Fennec \
+            -configuration Debug -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO test
+
+      # All four combinations, because the helper has its own configuration
+      # settings that only break in one of them.
+      - name: Build matrix
+        run: |
+          set -e
+          for scheme in Fennec FennecHelper; do
+            for config in Debug Release; do
+              echo "::group::$scheme $config"
+              xcodebuild -project Fennec.xcodeproj -scheme "$scheme" \
+                -configuration "$config" -destination 'platform=macOS' \
+                CODE_SIGNING_ALLOWED=NO build
+              echo "::endgroup::"
+            done
+          done
+
+      # The four in AGENTS.md T-007/T-008 are catalogued. A fifth is a
+      # regression, and this is the only thing that will notice.
+      - name: No new warnings
+        run: |
+          xcodebuild -project Fennec.xcodeproj -scheme Fennec \
+            -configuration Release -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO clean build 2>&1 \
+            | grep -E "warning:" | grep -v appintents | sort -u > /tmp/warnings.txt || true
+          echo "--- warnings ---"; cat /tmp/warnings.txt
+          count=$(wc -l < /tmp/warnings.txt | tr -d ' ')
+          if [ "$count" -gt 4 ]; then
+            echo "::error::$count warnings; 4 are catalogued in AGENTS.md (T-007, T-008)."
+            exit 1
+          fi

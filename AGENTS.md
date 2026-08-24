@@ -106,6 +106,7 @@ Fennec/                        app target (15 Swift files, 1 C file)
   HelperIdentity.swift         parses the helper's ping reply (build + path)
   ActivityView.swift           every repair, grouped by day
   DaysWithoutIncident.swift    the sign on the wall  ← see §7
+  DrainSchedule.swift          how often to drain the RT counters
 
 FennecHelper/                  root LaunchDaemon target
   main.swift                   NSXPCListener bootstrap
@@ -117,7 +118,8 @@ Shared/                        compiled into BOTH targets
   CodeSigningRequirement.swift peer requirement construction  ← see rule 2
 
 LaunchDaemons/                 plist copied to Contents/Library/LaunchDaemons
-LICENSE · SECURITY.md · UNINSTALL.md
+LICENSE · SECURITY.md · UNINSTALL.md · CHANGELOG.md
+.github/workflows/ci.yml       audit + tests + build matrix + a warning ceiling
 FennecTests/                   standalone XCTest bundle (no TEST_HOST)
 
 Scripts/                       audit-source.sh, build-release.sh, update-manifest.sh
@@ -317,7 +319,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-022**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-023**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -353,7 +355,8 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-019 | Stop claiming "fixed" until it holds | 2026-08-25 | `af1e9a5` | `RepairRecord` gained an outcome (`pending` → `held`/`returned`/`failed`), decoded tolerantly so `repairs.json` files from earlier builds still read. A detection inside the 60 s verification window marks the last repair `returned` and *replaces* the success banner in place rather than stacking a contradiction under it. Gold, and the headline tally, now require `held`. `RepairGovernor` stands Fennec down for an hour after three automatic repairs in twenty minutes that did not hold — otherwise a machine where the restart is not the cure gets its audio silenced every 45 seconds, forever, by the default configuration doing exactly what it was told. The stand-down states the real numbers and names the possibility the user needs to consider. |
 | T-012 | Add a `LICENSE` | 2026-08-25 | `8b3142e` | MIT. Landed with `SECURITY.md` (disclosure contact, the privilege boundary stated precisely, and the second privileged path named rather than buried) and `UNINSTALL.md`. |
 | T-020 | Take it back: uninstall, and the privilege panel | 2026-08-25 | `8b3142e` | Closes the gap nobody in the review had ranked: the root daemon survives dragging Fennec to the Trash. `Uninstaller` unregisters the daemon, removes the login item, optionally deletes the support folder, forgets preferences, moves the bundle to the Trash, and reports each step's failure separately. `AboutView` replaces the stock About panel with the four things a person evaluating a root-privileged 3 MB app actually asks: what it can do, what is running as root *right now* (read back over XPC — `ping` now returns a parseable reply, no protocol change), how to verify the build against `SOURCE_MANIFEST.sha256`, and how to remove all of it. Also closes T-012: `LICENSE`, plus `SECURITY.md` and `UNINSTALL.md`. |
-| T-021 | Activity, and the sign on the wall | 2026-08-25 | `PENDING_SHA` | `ActivityView` is a receipt book grouped by day, deliberately not a sortable table with filters and CSV export — every version of that is a window someone opens once, on install day, to find empty. The delighter is `DaysWithoutIncident`: an industrial safety sign in sand and ink that counts calendar days and reads **0** on a repair day with no softening. It does not invert with the appearance, because a sign is a physical object; sand is a surface and ink is the number, which is exactly what the palette reserves them for. It changes only at midnight — a sign that ticks is a timer, and nobody should watch this. |
+| T-021 | Activity, and the sign on the wall | 2026-08-25 | `0e7fc1d` | `ActivityView` is a receipt book grouped by day, deliberately not a sortable table with filters and CSV export — every version of that is a window someone opens once, on install day, to find empty. The delighter is `DaysWithoutIncident`: an industrial safety sign in sand and ink that counts calendar days and reads **0** on a repair day with no softening. It does not invert with the appearance, because a sign is a physical object; sand is a surface and ink is the number, which is exactly what the palette reserves them for. It changes only at midnight — a sign that ticks is a timer, and nobody should watch this. |
+| T-022 | Idle cost, and the documents this repo is judged by | 2026-08-25 | `PENDING_SHA` | The drain timer ran at 250 ms forever, whether or not a signal had ever arrived — a product whose proudest claim is stillness should not be the loudest thing in Activity Monitor. `DrainSchedule` steps to 1 s after a quiet minute and 2 s after five, with generous leeway so the kernel can coalesce the wake-ups, and snaps back on the first non-empty drain. Safe because the property listener runs on Core Audio's side regardless and the counters are atomic: backing off delays noticing a signal, it never loses one — pinned by a test that the slowest tier still outpaces the tightest detection window. Plus `CHANGELOG.md`, a rewritten README (Gatekeeper, the `/Applications` requirement, verifying a build, uninstall, and the shell-alias question), and `.github/workflows/ci.yml`. |
 
 ---
 

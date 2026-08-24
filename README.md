@@ -1,185 +1,211 @@
 # Fennec
 
-Fennec is a local-only macOS menu-bar utility for the specific failure mode where Core Audio begins crackling under heavy local workloads and stays corrupted until `coreaudiod` is restarted.
+A macOS menu-bar utility for one specific failure: Core Audio starts crackling
+under heavy local load and stays broken until `coreaudiod` is restarted.
 
-It watches the current output device for Core Audio processor-overload and abnormal-I/O notifications. When the configured threshold is reached, it can safely restart `coreaudiod` through a tightly restricted privileged helper while leaving Claude Code, Claude, Google Drive, Spotify, browsers, and other applications open.
+Fennec watches the current output device for missed real-time deadlines. When
+the fault is confirmed and its safety checks pass, it restarts Core Audio
+through a tightly scoped root helper — leaving every application open — and
+tells you what it did, in numbers.
 
+<img src="Brand/Fennec-AppIcon-Master.png" width="180" alt="Fennec app icon">
 
-## Visual identity
+## Why this is not a shell alias
 
-Fennec uses a compact desert-listening identity built around the app mascot: a cream fennec fox in aviators and open-back headphones against a Deadvlei-inspired blue sky and orange dunes. The UI intentionally keeps the illustration concentrated in the app icon and headers while the controls remain native macOS.
+Restarting Core Audio is one command, and if you are reading this you probably
+already know it:
 
-Core palette:
+```zsh
+sudo killall coreaudiod
+```
 
-- Sky blue: `#2E82CC`
-- Dune orange: `#F47A1F`
-- Fennec cream: `#FFE3AB`
-- Warm sand: `#EFB76E`
-- Headphone ink: `#1F1F1C`
+Fennec's job is the parts around it. Noticing at 2am that the fault started.
+Refusing while your microphone is live, while a call app is using audio, or
+when you are not the session at the keyboard. Refusing *again* when the last
+restart did not help, instead of silencing your audio every 45 seconds
+forever. And writing down what it saw, so you can tell whether the problem is
+Core Audio or your hardware.
 
-The branded asset is included as `FennecMascot` in the asset catalog, and the generated icon is supplied at every standard macOS app-icon size.
+If none of that is worth a menu-bar item to you, the command above is genuinely
+the right answer.
 
-## What this build does
+## What it actually does
 
-- Monitors the current default output device using native Core Audio property listeners.
-- Detects:
-  - `kAudioDeviceProcessorOverload`
-  - `kAudioDevicePropertyIOStoppedAbnormally`
-  - output-device, sample-rate, and Core Audio service changes
-- Rebuilds the complete listener graph after a Core Audio service restart and suppresses normal transient signals during device/format renegotiation.
-- Performs no allocation, logging, shell execution, UI work, or locking in the real-time Core Audio callback. The callback only increments C11 atomic counters.
-- Supports Conservative, Balanced, and Immediate detection thresholds.
-- Offers one-click manual repair at all times.
-- Supports automatic repair through a root LaunchDaemon installed with `SMAppService`.
-- Refuses automatic repair during active microphone input or protected call/recording apps by default.
-- Skips Bluetooth outputs by default because the reported problem is mainly on built-in and wired output paths.
-- Rate-limits repairs and keeps a rotating local JSONL audit log.
-- Runs as a menu-bar app and can launch at login.
+- Attaches Core Audio property listeners to the current default output device
+  and watches for `kAudioDeviceProcessorOverload` and
+  `kAudioDevicePropertyIOStoppedAbnormally`.
+- Does **no** work in the real-time audio callback — only relaxed atomic
+  increments on preallocated storage. Everything else happens after a timer
+  drains those counters onto a normal queue.
+- Waits for the fault to confirm itself. One overload is usually a harmless
+  blip; two in a row is the failure that stays broken. You hear about a second
+  of crackle, then it is gone.
+- Restarts Core Audio through a root helper that can do exactly one thing.
+- Verifies the repair. A restart is *provisional* until the fault has failed to
+  return for a minute — Fennec does not call it fixed before then.
+- Gives up when it should. Three restarts that did not hold means restarting is
+  not the cure, so Fennec stands down for an hour and says so.
+- Stays quiet after wake, screen unlock, and fast-user-switch, because Core
+  Audio renegotiates the whole output path at those moments and would otherwise
+  look exactly like the fault.
+- Rebuilds its entire listener graph after a Core Audio service restart.
+- Keeps a rotating event log and a receipt for every repair, both plain text,
+  both on your Mac only.
 
-## Important limitation
+## What it does not do
 
-Fennec detects the Core Audio failure signal, not the acoustic sound coming from the speaker. This is the best low-overhead system-level signal, but it is still a proxy:
+**Fennec detects the failure *signal*, not the sound.** That is the best
+low-overhead system-level signal for this fault, but it is a proxy:
 
-- It can catch the overload that begins the crackling and repair immediately.
-- It cannot prove that every overload was audible.
-- It may not recognize a pre-existing corrupted state if Fennec was not running when the initiating event occurred. Use **Repair Audio Now** in that case.
-- Restarting `coreaudiod` briefly disconnects playback and recording. The goal is an automatic sub-second recovery, not a mathematically gapless reset.
+- It cannot prove every overload was audible.
+- It cannot recognise a Mac that was already broken before Fennec started —
+  use **Repair Audio Now** for that.
+- Restarting Core Audio briefly disconnects playback and recording for every
+  app and every logged-in user. The goal is a sub-second recovery, not a
+  gapless one.
+
+No network code of any kind. No account, no telemetry, no update check, no
+crash reporting. No kernel extension, no audio driver, no virtual device.
 
 ## Requirements
 
-- macOS 14.2 or later
-- Xcode 15.1 or later; Xcode 26 is recommended for macOS Tahoe
-- An Apple Development or Developer ID signing team selected for both targets
+- macOS 14.2 or later, Apple silicon
+- Xcode 26 to build (verified on 26.6)
+- An Apple Development or Developer ID signing team for both targets
 
-The app is intentionally not sandboxed because a non-sandboxed `SMAppService` daemon is used for the fixed privileged repair action.
+Fennec is intentionally **not** sandboxed: `SMAppService` daemon registration
+requires it.
 
-## Build
+## Install
 
-1. Open `Fennec.xcodeproj` in Xcode.
-2. Select the **Fennec** project in the navigator.
-3. Under **Signing & Capabilities**, select the same development team for both:
-   - `Fennec`
-   - `FennecHelper`
-4. Build the shared `Fennec` scheme.
-5. For reliable Service Management registration, copy the resulting `Fennec.app` to `/Applications` before enabling the helper.
-
-You can also run:
+Fennec has no notarised release build yet, so you build it yourself.
 
 ```zsh
-./Scripts/build-release.sh
+git clone https://github.com/alexcox245/Fennec.git
+cd Fennec
+open Fennec.xcodeproj      # set your signing team on both targets
+zsh Scripts/build-release.sh
 ```
 
-The script assumes signing has already been configured in the Xcode project.
+Then **copy the built app to `/Applications` before enabling the helper**.
+This is not a style preference: `SMAppService` binds the helper's registration
+to the app's bundle path, so enabling it from `~/Downloads` and moving the app
+later produces a helper that is registered, not running, and gives no
+explanation. Fennec checks its own location on first run and refuses to offer
+the Enable button when it is somewhere that will break.
 
-## First-run setup
+If you ever run an unsigned or un-notarised copy from a download, macOS will
+refuse it with *"Fennec is damaged and can't be opened"* or *"Apple could not
+verify Fennec is free of malware."* Right-click → **Open**, or
+**System Settings → Privacy & Security → Open Anyway**.
 
-1. Launch Fennec.
-2. Open the menu-bar icon or **Settings → General**.
-3. Click **Enable Helper**.
-4. Approve Fennec under **System Settings → General → Login Items & Extensions → Allow in the Background** if macOS asks.
-5. Return to Fennec and click **Recheck Helper**.
-6. Enable **Repair automatically after a likely crackle event**.
-7. Enable **Launch Fennec at login**.
+## First run
 
-Recommended settings for the reported MacBook/Claude Code issue:
+Launching Fennec opens a window that states, before asking for anything:
 
-- Detection sensitivity: **Balanced** initially
-- After one confirmed test: **Immediate** for the fastest recovery
-- Protect active microphone: **On**
-- Protect call/recording apps: **On**
-- Skip Bluetooth outputs: **On**
-- Cooldown: **45 seconds**
+- the complete privileged surface — both XPC methods **and** the administrator
+  prompt path;
+- what a repair costs, in seconds;
+- that there is no network code;
+- the two files it writes and where.
 
-## Controlled test
+Then it offers a **test repair** you run on purpose, while nothing is at
+stake, so you know exactly what an automatic one will cost on your machine.
+It does not play a test tone: Fennec does not know your monitor gain, and a
+sine wave through open-back headphones at whatever level the last session left
+them is a hearing risk.
 
-1. Start Spotify, VLC, or a long YouTube video on the MacBook speakers.
-2. Confirm **Repair Audio Now** performs a successful reset.
-3. Start the same Claude Code job in the Google Drive-backed project that normally triggers crackling.
-4. Open **Settings → Diagnostics** and watch:
-   - overload signals
-   - abnormal stops
-   - detections
-   - repairs
-5. If an audible crackle occurs with no counter increase, keep Fennec running and use the event log to document that miss. That means this Mac's failure is not publishing the native overload notification and a second detector will be needed.
+Recommended settings for the MacBook + heavy-local-workload case: **Balanced**,
+protections on, skip Bluetooth on, cooldown 45 s. Move to **Immediate** only
+after you have confirmed that a single overload correlates with what you
+actually hear.
 
-## Security design
+## Security
 
-The privileged helper is deliberately narrow:
+The helper exposes exactly two XPC methods and runs one command, fixed at
+compile time. Both ends verify the other's Team ID and bundle identifier.
+There is a second privileged path — a standard administrator prompt, used only
+when the helper is not installed and only after Fennec has shown you the
+command. See [`SECURITY.md`](SECURITY.md) for the full boundary and for how to
+report a vulnerability.
 
-- It accepts only code-signed XPC clients matching the Fennec bundle identifier and signing Team ID.
-- The app likewise verifies the helper's bundle identifier and Team ID.
-- It exposes only two XPC calls: `ping` and `restartCoreAudio`.
-- The repair method can run only the fixed command:
+## Verify this build
 
-```text
-/usr/bin/killall -TERM coreaudiod
-```
-
-- It cannot accept a path, command, arguments, script, or arbitrary shell input from the app.
-- The helper enforces its own 20-second restart limit in addition to the app-level cooldown.
-
-Manual repair falls back to a fixed `osascript` administrator prompt when the helper is not enabled.
-
-## Local data
-
-Fennec does not use the network and does not upload anything. Its event logs are stored at:
-
-```text
-~/Library/Application Support/Fennec/events.jsonl
-```
-
-The active log rotates at 5 MB to `events.previous.jsonl`.
-
-## Troubleshooting helper setup
-
-The built app must contain both files:
-
-```text
-Fennec.app/Contents/MacOS/FennecHelper
-Fennec.app/Contents/Library/LaunchDaemons/com.ludicrousdesigns.Fennec.helper.plist
-```
-
-Inspect them with:
+`Docs/SOURCE_MANIFEST.sha256` is a SHA-256 of every tracked source file, and
+`Scripts/audit-source.sh` fails if the tree does not match it. So you can check
+that the code you are reading is the code that built the binary:
 
 ```zsh
-find /Applications/Fennec.app/Contents -maxdepth 4 -type f -print
-codesign -dv --verbose=4 /Applications/Fennec.app 2>&1
-codesign -dv --verbose=4 /Applications/Fennec.app/Contents/MacOS/FennecHelper 2>&1
+shasum -a 256 -c Docs/SOURCE_MANIFEST.sha256
+codesign -dv --verbose=4 /Applications/Fennec.app
+codesign -dv --verbose=4 /Applications/Fennec.app/Contents/MacOS/FennecHelper
 ```
 
-If macOS has retained broken Background Task Management state from repeated development builds, Apple's documented development reset is:
+The same three commands are in **About Fennec**, with a Copy button.
+
+## Uninstall
+
+Dragging Fennec to the Trash leaves the root LaunchDaemon registered with
+macOS. **About Fennec → Uninstall Fennec…** removes all of it. If the app is
+already gone, see [`UNINSTALL.md`](UNINSTALL.md) for the command-line
+fallback.
+
+## Build, test, verify
 
 ```zsh
-sudo sfltool resetbtm
+# Build
+xcodebuild -project Fennec.xcodeproj -scheme Fennec \
+  -configuration Release -destination 'platform=macOS' build
+
+# Test — 187 unit tests, standalone bundle, no app launch
+xcodebuild -project Fennec.xcodeproj -scheme Fennec \
+  -configuration Debug -destination 'platform=macOS' test
+
+# Static audit: plists, packaging, per-file Swift parse, C warnings, manifest
+zsh Scripts/audit-source.sh
+
+# Everything, plus a clean build and codesign --verify
+zsh Scripts/build-release.sh
 ```
-
-Reboot afterward. Do not use that command as normal maintenance; it resets Background Items state system-wide.
-
-## Project layout
-
-```text
-Fennec/               SwiftUI app and Core Audio monitor
-FennecHelper/         restricted privileged XPC daemon
-Shared/                     XPC protocol, identifiers, signing checks
-LaunchDaemons/              SMAppService launchd property list
-Scripts/                    build and source-audit scripts
-Docs/                       implementation and security notes
-AGENTS.md                   agent operating guide, brand direction, task ledger
-```
-
-`AGENTS.md` is the entry point for AI agents working on this repository: repo location, build and
-verification commands, load-bearing ground rules, known traps, the brand direction, and a shared
-task ledger. Read it before making changes.
-
 
 ## Validation status
 
-The project has passed property-list/project linting, Swift syntax parsing, pure detection/logging behavior tests, real-time C callback checks, and static helper-packaging checks. It has **not** been compiled or run with the macOS SDK in the source-generation environment. The first Xcode build on a Mac is therefore the final SDK, linker, signing, and runtime verification step. See `Docs/VALIDATION.md` for the exact checks and test protocol.
+The full Debug and Release matrix builds for both targets, 187 unit tests
+pass, `audit-source.sh` passes including the source-manifest check, and
+`build-release.sh` verifies the bundle layout and code signature.
+
+**Not yet verified on a device:** helper registration and the System Settings
+approval flow, an actual privileged repair, notification delivery, and
+detection against a reproduction of the audible fault. Those need a signed
+build in `/Applications` and a human. They are tracked as **T-005** in
+`AGENTS.md` §8, and nobody should switch detection to **Immediate** before
+that is done.
+
+## Layout
+
+```text
+Fennec/               the app
+FennecHelper/         the root LaunchDaemon
+FennecTests/          standalone XCTest bundle (no TEST_HOST)
+Shared/               XPC protocol, identifiers, signing checks
+LaunchDaemons/        SMAppService property list
+Scripts/              build, audit, and manifest tooling
+Docs/                 ARCHITECTURE.md, ROADMAP.md, VALIDATION.md, SOURCE_MANIFEST.sha256
+Brand/                the master icon art and what it means
+AGENTS.md             ground rules, known traps, brand direction, task ledger
+```
+
+`AGENTS.md` is the entry point for anyone — human or otherwise — working on
+this repository. Read it first.
 
 ## Apple references
 
-- Core Audio processor overload notification: https://developer.apple.com/documentation/coreaudio/kaudiodeviceprocessoroverload
-- Abnormal I/O stop notification: https://developer.apple.com/documentation/coreaudio/kaudiodevicepropertyiostoppedabnormally
-- Core Audio property listeners: https://developer.apple.com/documentation/coreaudio/audioobjectaddpropertylistenerblock(_:_:_:_:)
-- Service Management: https://developer.apple.com/documentation/servicemanagement/smappservice
-- XPC peer code-signing requirements: https://developer.apple.com/documentation/foundation/nsxpcconnection/setcodesigningrequirement(_:)
+- [`kAudioDeviceProcessorOverload`](https://developer.apple.com/documentation/coreaudio/kaudiodeviceprocessoroverload)
+- [`kAudioDevicePropertyIOStoppedAbnormally`](https://developer.apple.com/documentation/coreaudio/kaudiodevicepropertyiostoppedabnormally)
+- [`AudioObjectAddPropertyListenerBlock`](https://developer.apple.com/documentation/coreaudio/audioobjectaddpropertylistenerblock(_:_:_:_:))
+- [`SMAppService`](https://developer.apple.com/documentation/servicemanagement/smappservice)
+- [`NSXPCConnection.setCodeSigningRequirement`](https://developer.apple.com/documentation/foundation/nsxpcconnection/setcodesigningrequirement(_:))
+
+## Licence
+
+MIT. See [`LICENSE`](LICENSE).

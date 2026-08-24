@@ -46,6 +46,10 @@ final class CoreAudioMonitor: @unchecked Sendable {
     private var outputRegistrations: [ListenerRegistration] = []
     private var currentDeviceID: AudioObjectID = kAudioObjectUnknown
     private var isRunning = false
+    /// When something last arrived. Drives the drain interval — see
+    /// `DrainSchedule` for why backing off cannot lose a signal.
+    private var lastSignalDate = Date()
+    private var currentDrainInterval: TimeInterval = DrainSchedule.active
 
     var onBatch: BatchHandler?
     var onError: ErrorHandler?
@@ -162,13 +166,36 @@ final class CoreAudioMonitor: @unchecked Sendable {
     }
 
     private func startTimerLocked() {
+        lastSignalDate = Date()
+        currentDrainInterval = DrainSchedule.active
         let timer = DispatchSource.makeTimerSource(queue: controlQueue)
-        timer.schedule(deadline: .now() + .milliseconds(250), repeating: .milliseconds(250), leeway: .milliseconds(50))
+        scheduleLocked(timer, interval: DrainSchedule.active)
         timer.setEventHandler { [weak self] in
             self?.drainLocked()
         }
         self.timer = timer
         timer.resume()
+    }
+
+    private func scheduleLocked(_ timer: DispatchSourceTimer, interval: TimeInterval) {
+        timer.schedule(
+            deadline: .now() + interval,
+            repeating: interval,
+            leeway: .milliseconds(Int(DrainSchedule.leeway(for: interval) * 1_000))
+        )
+    }
+
+    /// Steps the drain interval up or down. Only reschedules when the tier
+    /// actually changes, so a quiet machine reschedules twice an hour rather
+    /// than four times a second.
+    private func adjustDrainIntervalLocked(sawSignal: Bool) {
+        let now = Date()
+        if sawSignal { lastSignalDate = now }
+
+        let desired = DrainSchedule.interval(quietFor: now.timeIntervalSince(lastSignalDate))
+        guard desired != currentDrainInterval, let timer else { return }
+        currentDrainInterval = desired
+        scheduleLocked(timer, interval: desired)
     }
 
     private func drainLocked() {
@@ -190,9 +217,10 @@ final class CoreAudioMonitor: @unchecked Sendable {
             &serviceRestarts
         )
 
-        guard overloads > 0 || abnormalStops > 0 || defaultOutputChanges > 0 || sampleRateChanges > 0 || deviceStateChanges > 0 || serviceRestarts > 0 else {
-            return
-        }
+        let sawSignal = overloads > 0 || abnormalStops > 0 || defaultOutputChanges > 0
+            || sampleRateChanges > 0 || deviceStateChanges > 0 || serviceRestarts > 0
+        adjustDrainIntervalLocked(sawSignal: sawSignal)
+        guard sawSignal else { return }
 
         if serviceRestarts > 0 {
             // A Core Audio service reset invalidates every cached object and
