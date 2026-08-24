@@ -164,7 +164,12 @@ Shared/                     XPC protocol, identifiers, signing checks
 LaunchDaemons/              SMAppService launchd property list
 Scripts/                    build and source-audit scripts
 Docs/                       implementation and security notes
+AGENTS.md                   agent operating guide, brand direction, task ledger
 ```
+
+`AGENTS.md` is the entry point for AI agents working on this repository: repo location, build and
+verification commands, load-bearing ground rules, known traps, the brand direction, and a shared
+task ledger. Read it before making changes.
 
 
 ## Validation status

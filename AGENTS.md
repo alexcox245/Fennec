@@ -1,0 +1,317 @@
+# AGENTS.md — Fennec
+
+Operating guide for AI agents working on this repository. Read this file **before** touching code. If you change how the project is built, validated, or branded, update this file in the same commit.
+
+---
+
+## 1. Where this lives
+
+| | |
+|---|---|
+| **Local working copy** | `/Users/helpit/Documents/Fennec` |
+| **Remote** | `https://github.com/alexcox245/Fennec` (**private**) |
+| **Default branch** | `main` |
+| **Git owner** | `alexcox245` (auth via `gh`, HTTPS) |
+| **Xcode project** | `Fennec.xcodeproj` (no standalone `.xcworkspace`, no SPM packages, no CocoaPods) |
+| **Targets** | `Fennec` (app), `FennecHelper` (privileged helper) |
+| **Schemes** | `Fennec`, `FennecHelper` — both shared |
+| **Bundle IDs** | `com.ludicrousdesigns.Fennec`, `com.ludicrousdesigns.Fennec.helper` |
+| **Team ID** | `249X253HS3` |
+| **Deployment target** | macOS 14.2 · Swift 5 language mode · arm64 |
+| **Verified toolchain** | Xcode 26.6 (17F113) |
+
+There are **no external dependencies**. Everything builds from the checked-in sources against the macOS SDK.
+
+---
+
+## 2. What Fennec is
+
+A local-only macOS menu-bar utility for one specific failure mode: Core Audio starts crackling under heavy local workloads and stays corrupted until `coreaudiod` is restarted.
+
+Fennec watches the default output device for `kAudioDeviceProcessorOverload` and `kAudioDevicePropertyIOStoppedAbnormally`, and — when a threshold is met and safety checks pass — restarts `coreaudiod` through a tightly scoped root helper, leaving every application open.
+
+It is **not** sandboxed, by design: `SMAppService` daemon registration requires it.
+
+---
+
+## 3. Ground rules
+
+These are load-bearing. Violating one produces a build that looks fine and fails in the field.
+
+1. **Never do work in the real-time audio callback.** `Fennec/RTSignalCounters.c` and the Core Audio property listener may be invoked from a real-time I/O thread. Allowed: relaxed atomic increments on fixed preallocated storage. **Not** allowed: allocation, logging, `os_log`, locks, Swift closures, XPC, `dispatch_async`, string formatting, `print`. All higher-level work happens after a 250 ms timer drains the counters onto a normal serial queue.
+
+2. **Do not weaken the privilege boundary.** `Shared/CodeSigningRequirement.swift` intentionally restricts identifier-only peer matching to `#if DEBUG`. Release builds require Team ID **and** bundle identifier on both sides of the XPC connection. Do not "simplify" that `#if` away.
+
+3. **Do not add a general execution API to the helper.** `Shared/HelperProtocol.swift` exposes exactly two methods (`ping`, `restartCoreAudio`). The helper invokes fixed absolute executables with fixed arguments and verifies a new `coreaudiod` PID appeared. Never add a method that takes a command, path, or argument list from the app.
+
+4. **Do not run the repair path or install the helper without explicit user approval.** `restartCoreAudio` kills audio system-wide for a moment; installing the LaunchDaemon needs root and a user approval in System Settings. Never `sudo ditto` into `/Applications`, never invoke `SMAppService` registration, and never trigger a repair as part of "just testing." Ask first, every time.
+
+5. **Regenerate the source manifest after editing any tracked file.** See §5. Nothing enforces this automatically yet ([T-011](#open)).
+
+6. **Keep it a system utility.** Native macOS materials, typography, and controls stay intact. The brand lives in the icon, accents, and voice — not in a re-skinned UI. See §7.
+
+---
+
+## 4. Source map
+
+```
+Fennec/                        app target (15 Swift files, 1 C file)
+  FennecApp.swift              @main, MenuBarExtra scene, FennecBrand color tokens
+  AppModel.swift               orchestrator: state, cooldown, safety gating, repair decisions
+  MenuView.swift               menu-bar popover UI
+  SettingsView.swift           Settings scene
+  SettingsStore.swift          UserDefaults-backed preferences
+  CoreAudioMonitor.swift       attaches/rebuilds the listener graph
+  CoreAudioProperty.swift      typed AudioObject property reads
+  CoreAudioTypes.swift         AudioTransport, snapshots, AudioSignalKind
+  RTSignalCounters.{c,h}       real-time-safe atomic counters  ← see rule 1
+  Fennec-Bridging-Header.h     exposes RTSignalCounters to Swift
+  DetectionEngine.swift        time-window threshold → DetectionDecision
+  RecoverySafetyChecker.swift  blocks repair during mic input / protected apps
+  HelperManager.swift          NSXPCConnection lifecycle to the root helper
+  PrivilegedPromptRepair.swift fallback manual repair via admin prompt
+  LoginItemManager.swift       launch-at-login via SMAppService
+  EventLogger.swift            rotating JSONL audit log
+  NotificationController.swift user notifications
+
+FennecHelper/                  root LaunchDaemon target
+  main.swift                   NSXPCListener bootstrap
+  HelperService.swift          the only privileged action
+
+Shared/                        compiled into BOTH targets
+  AppConstants.swift           bundle IDs, Mach service name, file names
+  HelperProtocol.swift         the XPC contract
+  CodeSigningRequirement.swift peer requirement construction  ← see rule 2
+
+LaunchDaemons/                 plist copied to Contents/Library/LaunchDaemons
+Scripts/                       audit-source.sh, build-release.sh
+Docs/                          ARCHITECTURE.md, VALIDATION.md, SOURCE_MANIFEST.sha256
+Brand/                         Fennec-AppIcon-Master.png (1254×1254), README.md
+```
+
+Read `Docs/ARCHITECTURE.md` for the detection path, suppression windows, and failure behavior. It is accurate and current.
+
+---
+
+## 5. Build, verify, commit
+
+All commands run from the repo root.
+
+**Build (this is the exact invocation that is known green — no signing overrides needed):**
+
+```bash
+xcodebuild -project Fennec.xcodeproj -scheme Fennec \
+  -configuration Release -destination 'platform=macOS' build
+```
+
+Swap `-scheme FennecHelper` and `-configuration Debug` to cover the matrix. All four combinations build clean as of the current `main`.
+
+**Read the result without drowning in log noise:**
+
+```bash
+xcodebuild ... build 2>&1 | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" | sort -u
+```
+
+**Static audit (plists, required files, helper packaging, per-file Swift parse, C warnings):**
+
+```bash
+zsh Scripts/audit-source.sh
+```
+
+**Full release verification (audit + clean build + bundle layout + `codesign --verify`):**
+
+```bash
+zsh Scripts/build-release.sh
+```
+
+Writes to `build/DerivedData/`, which is gitignored. It ends by *printing* the `/Applications` install commands — it does not run them. Do not run them yourself (rule 4).
+
+**Regenerate `Docs/SOURCE_MANIFEST.sha256` after editing tracked files:**
+
+```bash
+python3 - <<'PY'
+import hashlib
+p = "Docs/SOURCE_MANIFEST.sha256"
+out = []
+for line in open(p):
+    h, _, rel = line.rstrip("\n").partition("  ")
+    out.append(f"{hashlib.sha256(open(rel,'rb').read()).hexdigest()}  {rel}\n")
+open(p, "w").writelines(out)
+PY
+```
+
+**There is no test target.** `xcodebuild test` fails with `Scheme Fennec is not currently configured for the test action`. The `DetectionEngine` and `EventLogger` behavior checks described in `Docs/VALIDATION.md` were run outside this repo and cannot currently be re-run here — that is [T-006](#open).
+
+### Definition of done
+
+A change is not done until:
+
+- [ ] `Fennec` and `FennecHelper` build in **both** Debug and Release
+- [ ] `zsh Scripts/audit-source.sh` passes
+- [ ] No **new** compiler warnings (4 pre-existing ones are catalogued in [T-007](#open) / [T-008](#open))
+- [ ] `Docs/SOURCE_MANIFEST.sha256` regenerated
+- [ ] The task ledger in §8 updated — entry moved to Done, or a new entry appended
+- [ ] Anything requiring a physical device or root is explicitly listed in your report as *not verified*
+
+### Git conventions
+
+Work on a branch; `main` is the release line. Commit messages: a short subject, then *why* in the body. End with:
+
+```
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+```
+
+Do not commit `build/`, `DerivedData/`, `xcuserdata/`, or `.DS_Store` — `.gitignore` already covers all four. Do not push or open a PR unless asked.
+
+---
+
+## 6. Known traps
+
+Each of these has already cost real time. Do not rediscover them.
+
+**`SecCode` vs `SecStaticCode`.** `SecCodeCopySigningInformation` is typed to take a `SecStaticCode`. `SecCodeRef` and `SecStaticCodeRef` wrap the same opaque C struct and the C API accepts either, but Swift imports them as unrelated types. `Shared/CodeSigningRequirement.swift` bridges with `unsafeBitCast`. That is correct — do not "fix" it into a `SecCodeCopyStaticCode` round-trip, which reads the on-disk image and can fail if the bundle moved.
+
+**`path` is a reserved variable in zsh.** zsh ties `$path` (array) to `$PATH` (string). Using `path` as a loop variable in any script under `Scripts/` silently destroys `PATH`, and every subsequent command dies with `command not found`. This bit `audit-source.sh`, where it surfaced as the *misleading* error "The helper copy phase is not targeting the app Executables directory." Both scripts are `#!/bin/zsh` with `set -euo pipefail`. Other zsh-tied names to avoid: `cdpath`, `fpath`, `manpath`, `argv`, `status`.
+
+**The helper is embedded in `Contents/MacOS/`, not `Contents/Library/LaunchServices/`.** This is the modern `SMAppService` daemon layout, not the legacy `SMJobBless` one. `audit-source.sh` asserts `dstSubfolderSpec = 6`, `CodeSignOnCopy`, `ENABLE_DEBUG_DYLIB_SUPPORT = NO` in both helper configurations, and that the LaunchDaemon's `BundleProgram` is `Contents/MacOS/FennecHelper`. If you touch the project file, re-run the audit.
+
+**`ENABLE_DEBUG_DYLIB_SUPPORT = NO` is deliberate** on the helper. Xcode's debug-dylib splitting breaks a daemon that must be a single signed Mach-O.
+
+**SourceKit/IDE diagnostics can disagree with the compiler.** Trust `xcodebuild` output over in-editor squiggles.
+
+**`Docs/VALIDATION.md` is a point-in-time report, not a live status.** It is dated 2026-08-20 and describes an environment without Xcode. It is now partly stale ([T-010](#open)). Treat §5 of *this* file as the authority on how to build.
+
+---
+
+## 7. Brand direction
+
+Everything below is derived from `Brand/Fennec-AppIcon-Master.png`. When a decision is ambiguous, go back to that image.
+
+### The image, read literally
+
+A cream fennec fox, dead-centre, cropped tight and facing you head-on. Enormous ears run off the top of the frame. Gold-rimmed aviators. Full-size **open-back** headphones with visible driver mesh, cables trailing down out of frame. Behind: a flat cobalt sky and two orange dune ridges — one bright, one in shadow — meeting at a lazy diagonal. No texture, no gradient, no noise. Hard-edged vector shapes and a mouth that is not smiling.
+
+### What it means
+
+Three ideas in tension, and the tension *is* the brand:
+
+**Audiophile precision.** The headphones are the tell. Open-back cans leak sound in every direction — nobody wears them on a train. They mean a person who sits still in one room and cares what the soundstage does. That is Fennec's actual claim: it is not a general "sound fixer," it detects one specific Core Audio failure that only people who notice would notice.
+
+**Punk stance.** Not punk *ornament* — there is no distressed texture, no ransom-note type, no chaos in this art, and there should be none in the UI. The punk is in the posture: a small, unsigned, local-only tool that fixes the thing itself instead of filing a radar and waiting. No telemetry, no account, no cloud. It restarts a system daemon on your behalf and doesn't make a ceremony of it. DIY, self-hosted, unbothered.
+
+**Desert stillness.** Deadvlei at noon. Flat light, no weather, nothing moving. A fennec is a listening animal — the ears are oversized precisely because the desert is silent and it is built to detect the one signal that matters. That is the product, drawn.
+
+Composite: **a calm, oversized listener in a silent place, wearing gear that means business, that will quietly fix your audio and never mention it again.**
+
+### Voice
+
+Deadpan, specific, technically literal. Confident without selling. The fox is not grinning and neither is the copy.
+
+| Do | Don't |
+|---|---|
+| "Core Audio overloaded twice in 8 seconds." | "Uh oh! Something went wrong 😬" |
+| "Repair Audio Now" | "Fix My Sound!" |
+| "Skipped — microphone is active." | "We couldn't do that right now." |
+| "Detects the failure signal, not the sound." | "AI-powered audio healing." |
+
+State the mechanism. Name the threshold. Admit the limitation — the README already does this well ("Fennec detects the Core Audio failure signal, not the acoustic sound"). Keep that register. No exclamation marks, no emoji in product UI, no anthropomorphising the fox in copy.
+
+### Palette
+
+Two columns, because they currently disagree. **Left** is what ships today (`Brand/README.md`, mirrored as floats in `FennecBrand` in `Fennec/FennecApp.swift`). **Right** is sampled directly from the master art.
+
+| Role | Shipped token | Sampled from art | Δ |
+|---|---|---|---|
+| Sky | `#2E82CC` | `#2373C3` | shipped runs lighter/brighter |
+| Dune | `#F47A1F` | `#EF792D` | shipped runs more saturated |
+| Cream | `#FFE3AB` | `#FDDCAF` | shipped runs warmer |
+| Sand | `#EFB76E` | `#ECB478` | near-identical |
+| Ink | `#1F1F1C` | `#2C2927` | shipped runs materially darker |
+
+The drift is small but consistent and nothing reconciles it. Resolving it is [T-009](#open) — **do not silently restyle the app to close the gap**, it is a design call for the owner.
+
+Three colours exist in the art with **no token at all**. They are the most characterful part of the image and the palette is poorer without them:
+
+| Role | Hex | Where it comes from |
+|---|---|---|
+| **Aviator gold** | `#DA963E` | the sunglass frames — the single warm-metal accent |
+| **Lens void** | `#23190E` | inside the lenses; a brown-black, not a neutral black |
+| **Dune shadow** | `#BD5D26` | the darker ridge, for orange depth without going brown |
+| **Twilight blue** | `#294D70` | shadowed blue, for depth against the sky |
+
+Aviator gold is the highest-value addition: it is the only precious-metal note in an otherwise flat, matte palette, and it is exactly the audiophile-hardware cue (brass, VU needles, XLR pins).
+
+### Colour semantics
+
+Keep the existing mapping — it is already coherent:
+
+- **Sky** — healthy, listening, nominal. The primary action tint (`.tint(FennecBrand.sky)` in `FennecApp.swift`). Blue means *Fennec is awake and hearing nothing wrong*.
+- **Dune** — audio, output, and warning. Signals detected, thresholds approached, transient suppression.
+- **Sand / Cream** — surfaces and mascot framing only. Never a state colour.
+- **Ink** — text and hardware-adjacent chrome.
+- **Aviator gold** — reserved. Suggested use: repair *succeeded*. A rare, warm, earned accent, not a third warning colour.
+
+Blue and orange are complementary and near-maximum contrast at full strength. Do not put dune orange on sky blue in body text — use ink or cream on either.
+
+### Form
+
+- **Flat vector, hard edges.** No gradients, no drop shadows, no glass, no glow. The icon has zero soft edges and the UI should match.
+- **Geometry over ornament.** The dune ridge is one lazy diagonal. Prefer one confident shape to three fussy ones.
+- **Generous negative space.** The top third of the icon is empty sky. Let panels breathe.
+- **Centred, symmetrical, frontal** for anything mascot-adjacent. The fox looks straight at you.
+- **Crop confidently.** The ears run off the frame. Do not shrink art to fit a box.
+- **System typography.** SF, native weights. The audiophile signal comes from precision and alignment, not a display face. If a monospace register is ever needed, reserve it for actual data — device names, PIDs, timestamps, counters — never prose.
+- **Motion:** short, linear, unfussy. Nothing bounces. Nothing pulses for attention. The desert does not animate.
+
+### Anti-patterns
+
+Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed grunge or torn-paper "punk" textures · glassmorphism · cartoon-cute fox (this fox is cool, not adorable) · dark-mode-only design (it is a system utility; respect both appearances) · celebratory confetti or success animation · any typeface with attitude.
+
+---
+
+## 8. Task ledger
+
+**This is the shared to-do list. Append to it; do not rewrite it.**
+
+### Protocol
+
+1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-013**.
+3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
+4. On completion, move the row to **Done** with the completion date and the commit SHA.
+5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
+6. Never delete a Done row. This is the project's memory.
+7. Priorities: **P0** blocks trusting the product · **P1** should happen next · **P2** nice to have.
+
+### Open
+
+| ID | P | Task | Status | Owner | Notes |
+|---|---|---|---|---|---|
+| T-005 | P0 | Run the 9-step on-device runtime validation in `Docs/VALIDATION.md` §"Still required on macOS" | Open | — | **Requires a human.** Needs signing, `/Applications` install, helper approval in System Settings, and reproducing the audible fault. Until this is done, nobody should trust automatic repair or switch detection to Immediate. Agents must not attempt this unsupervised (rule 4). |
+| T-006 | P1 | Add a unit-test target covering `DetectionEngine` and `EventLogger` | Open | — | `VALIDATION.md` claims both passed behavior checks, but those ran outside the repo and nothing here re-runs them. `DetectionEngine` (83 loc, pure logic) is the highest-value target: balanced 2-in-8s, immediate, and abnormal-I/O paths. Also cover the suppression windows. |
+| T-007 | P2 | Fix 2 unsafe-pointer warnings in `CoreAudioProperty.swift:192` and `:223` | Open | — | "forming `UnsafeMutableRawPointer` to a variable of type `T` / `Optional<CFString>`; may contain an object reference." Real hazard for the `CFString` case. Touches Core Audio property reads — verify carefully. |
+| T-008 | P2 | Fix 2 non-`Sendable` capture warnings in `HelperManager.swift:90` and `:135` | Open | — | `NSXPCConnection` captured in `@Sendable` closures. Will become an error under Swift 6 language mode; project is currently `SWIFT_VERSION = 5.0`. |
+| T-009 | P2 | Reconcile brand tokens against the master art | Open | — | See the drift table in §7. Decide per-role whether the art or the shipped token wins, then align `Brand/README.md` and `FennecBrand` in `FennecApp.swift`. Consider adding aviator gold `#DA963E` and lens void `#23190E` as tokens. **Owner's design call — propose, don't unilaterally apply.** |
+| T-010 | P2 | Refresh `Docs/VALIDATION.md` | Open | — | It states the source "has not been SDK type-checked, linked, [or] code-signed," which is no longer true — the full Debug+Release matrix builds and `build-release.sh` runs `codesign --verify`. Rewrite the completed section; keep the on-device list intact and cross-reference T-005. `README.md` §"Validation status" carries the same stale claim and should be updated in the same pass. |
+| T-011 | P2 | Make `audit-source.sh` verify `Docs/SOURCE_MANIFEST.sha256` | Open | — | The manifest goes stale on any edit and nothing catches it. Add a `shasum -c` step. Note the manifest does not list itself, `.DS_Store`, or `xcuserdata/`. |
+| T-012 | P2 | Add a `LICENSE` | Open | — | Repo has none. Owner's choice; the repo is private today, so this only becomes load-bearing if it goes public. |
+
+### Done
+
+| ID | Task | Completed | Commit | Notes |
+|---|---|---|---|---|
+| T-001 | Get the project building in Xcode | 2026-08-25 | `aa22cc6` | One compile error: `SecCodeCopySigningInformation` was passed a `SecCode` where Swift demands `SecStaticCode`. Bridged with `unsafeBitCast` — see §6. Verified green across `Fennec`/`FennecHelper` × Debug/Release, plus a clean Release build; helper confirmed embedded at `Fennec.app/Contents/MacOS/FennecHelper`. |
+| T-002 | Fix `Scripts/audit-source.sh` | 2026-08-25 | `aa22cc6` | Loop variable `path` clobbered `$PATH` under zsh, failing every command from line 31 onward and reporting a false packaging error. Renamed to `required_path`. Audit now passes end to end. See §6. |
+| T-003 | Publish to GitHub | 2026-08-25 | `aa22cc6` | `git init` (repo had no `.git` despite appearances), initial commit of 56 files, pushed to `alexcox245/Fennec` — private, default branch `main`. |
+| T-004 | Regenerate `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `aa22cc6` | Rehashed after the T-001/T-002 edits. |
+
+---
+
+## 9. Before you hand off
+
+Report honestly and specifically:
+
+- What you changed, and **why** — not just what.
+- Which checks you actually ran, with their real output. If something failed, say so and paste it.
+- What you could **not** verify — anything needing a physical audio device, root, user approval, or a reproduction of the audible fault. This project has a large untestable surface; pretending otherwise is the main way to do damage here.
+- Which ledger rows you moved, and any rows you appended.

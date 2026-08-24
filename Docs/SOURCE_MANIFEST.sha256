@@ -1,4 +1,5 @@
 889843dea70d4f39222c327485bbd9a131fc0dd9983778bbd1b86cf89638bc92  ./.gitignore
+c32d8ddbc5b64087e12c247a457e5a22e7950f90d30739d8630bf7cecb900e0b  ./AGENTS.md
 298d797f35a20453f4ca8a74856f43ab1d4472be0803577e41852844fc500dd7  ./Brand/Fennec-AppIcon-Master.png
 7ed806746d509b68dc2ff4b9131860904760fe4d99ffa95c6dbdb900bbbac29d  ./Brand/README.md
 e92ac17c04d7c678b0f06e4719009acdb914ee55f590dc4d5a0a89115ad9e1f0  ./Docs/ARCHITECTURE.md
@@ -47,7 +48,7 @@ d3ab95d06e77551f782a83aa87284af94d492db1b089216b62f84bb6b8fc8e89  ./Fennec/Setti
 87c638ba1cc7adbba0bdc6a03eff6e359ff6eadd36f532832dfd8f346c39f65d  ./FennecHelper/Info.plist
 bbde5742421655a70facf98163e6450b1c859d0361072c5b9e3eef2cc153263b  ./FennecHelper/main.swift
 4ea3d82084f716e2b800b133b0b0f128852ce1cdc2abe209b4e5c72663ecdd77  ./LaunchDaemons/com.ludicrousdesigns.Fennec.helper.plist
-3a15525ac225531bdaff4659e321bd2520b6269dbb4040dfd29641b1c0a8cfdb  ./README.md
+9b2c20e7006b862c5ed19af55e951b518a61d293dec6974f2aa5141cccc4eca7  ./README.md
 174f9f6f9f9b423abd63820502f3ff768efbe16d8aa2fef14f45e31bc5103de3  ./Scripts/audit-source.sh
 93e2b0055c85f3af5636338738bf521df899fbb5b266f44cf1a988b1a51f88d8  ./Scripts/build-release.sh
 0aa39802f2544eccc12ae0290741a5877486143cef28a71cabc92c5c26979f99  ./Shared/AppConstants.swift
