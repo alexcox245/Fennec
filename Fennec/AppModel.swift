@@ -15,7 +15,7 @@ enum MonitoringState: Equatable {
     var title: String {
         switch self {
         case .starting: return "Starting"
-        case .monitoring: return "Monitoring"
+        case .monitoring: return "Listening"
         case .stopped: return "Stopped"
         case .failed: return "Monitor failed"
         }
@@ -29,11 +29,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var overloadSignalCount: UInt64 = 0
     @Published private(set) var abnormalStopCount: UInt64 = 0
     @Published private(set) var detectionCount = 0
-    @Published private(set) var repairCount = 0
     @Published private(set) var lastDetectionDate: Date?
     @Published private(set) var lastDetectionReason: String?
-    @Published private(set) var lastRepairDate: Date?
-    @Published private(set) var lastRepairMessage: String?
     @Published private(set) var lastError: String?
     @Published private(set) var isRepairing = false
     @Published private(set) var recentActivity: [ActivityRecord] = []
@@ -42,12 +39,13 @@ final class AppModel: ObservableObject {
     let settings: SettingsStore
     let helperManager: HelperManager
     let loginItemManager: LoginItemManager
+    let repairHistory: RepairHistoryStore
+    let notificationController: NotificationController
 
     private let monitor = CoreAudioMonitor()
     private let detectionEngine = DetectionEngine()
     private let safetyChecker = RecoverySafetyChecker()
     private let eventLogger = EventLogger()
-    private let notificationController = NotificationController()
     private var suppressSignalsUntil = Date.distantPast
     private var detectionTaskActive = false
 
@@ -55,6 +53,8 @@ final class AppModel: ObservableObject {
         settings = SettingsStore()
         helperManager = HelperManager()
         loginItemManager = LoginItemManager()
+        repairHistory = RepairHistoryStore()
+        notificationController = NotificationController()
 
         notificationController.onRepairRequested = { [weak self] in
             self?.requestManualRepair()
@@ -79,6 +79,16 @@ final class AppModel: ObservableObject {
         monitor.stop()
     }
 
+    // MARK: Derived state
+
+    var repairCount: Int { repairHistory.summary.successes }
+
+    var lastRepair: RepairRecord? { repairHistory.records.first }
+
+    var lastSuccessfulRepair: RepairRecord? { repairHistory.lastSuccessfulRepair }
+
+    var lastRepairDate: Date? { lastSuccessfulRepair?.date }
+
     var menuBarSymbol: String {
         if isRepairing { return "arrow.triangle.2.circlepath" }
         switch monitoringState {
@@ -101,6 +111,13 @@ final class AppModel: ObservableObject {
             return message
         }
     }
+
+    /// True when Fennec can repair on its own without asking for anything.
+    var isArmed: Bool {
+        settings.autoRepairEnabled && helperManager.state.isReachable
+    }
+
+    // MARK: Monitoring lifecycle
 
     func startMonitoring() {
         monitoringState = .starting
@@ -131,7 +148,11 @@ final class AppModel: ObservableObject {
         refreshCurrentDevice()
         helperManager.refreshStatus(testReachability: true)
         loginItemManager.refresh()
+        notificationController.refreshAuthorization()
+        repairHistory.refreshSummary()
     }
+
+    // MARK: User-initiated repair
 
     func requestManualRepair() {
         guard !isRepairing else { return }
@@ -146,7 +167,7 @@ final class AppModel: ObservableObject {
             }.value
 
             if report.canAutoRepair {
-                await performRepair(automatic: false)
+                await performRepair(trigger: .manual, decision: nil)
             } else {
                 manualRepairWarning = ManualRepairWarning(
                     message: report.blockers.joined(separator: "\n\n")
@@ -158,7 +179,7 @@ final class AppModel: ObservableObject {
 
     func confirmManualRepair() {
         manualRepairWarning = nil
-        Task { await performRepair(automatic: false) }
+        Task { await performRepair(trigger: .manual, decision: nil) }
     }
 
     func cancelManualRepair() {
@@ -172,6 +193,8 @@ final class AppModel: ObservableObject {
     func quit() {
         NSApplication.shared.terminate(nil)
     }
+
+    // MARK: Signal handling
 
     private func handle(_ batch: AudioSignalBatch) {
         currentDevice = batch.device
@@ -241,6 +264,7 @@ final class AppModel: ObservableObject {
             details: [
                 "signal": decision.signal.rawValue,
                 "signalCount": String(decision.signalCount),
+                "elapsedSeconds": String(format: "%.2f", decision.elapsedSeconds),
                 "device": batch.device.name,
                 "transport": batch.device.transport.rawValue
             ],
@@ -255,10 +279,13 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Everything between "Fennec is sure the audio is broken" and "Fennec
+    /// restarts Core Audio". Every early return is a refusal the user is
+    /// entitled to see, so each one records a reason.
     private func respondToDetection(_ decision: DetectionDecision, device: AudioDeviceSnapshot) async {
         guard settings.autoRepairEnabled else {
-            recordSkipped("Automatic repair is disabled.")
-            notifyDetection(reason: decision.reason, skipped: true)
+            recordSkipped("Automatic repair is turned off.")
+            notifyUnrepaired(decision, blocker: "Automatic repair is turned off.")
             return
         }
 
@@ -268,8 +295,9 @@ final class AppModel: ObservableObject {
         }
 
         if settings.skipBluetooth && device.transport.isBluetooth {
-            recordSkipped("Automatic repair was skipped for a Bluetooth output device.")
-            notifyDetection(reason: decision.reason, skipped: true)
+            let blocker = "Automatic repair is set to skip Bluetooth outputs."
+            recordSkipped(blocker)
+            notifyUnrepaired(decision, blocker: blocker)
             return
         }
 
@@ -277,14 +305,17 @@ final class AppModel: ObservableObject {
             let elapsed = Date().timeIntervalSince(lastRepairDate)
             if elapsed < settings.cooldownSeconds {
                 let remaining = Int(ceil(settings.cooldownSeconds - elapsed))
+                // Deliberately silent: the user was told about the repair that
+                // started this cooldown seconds ago.
                 recordSkipped("Repair cooldown is active for another \(remaining) seconds.")
                 return
             }
         }
 
         guard helperManager.state.isReachable else {
-            recordSkipped("The privileged repair helper is not ready.")
-            notifyDetection(reason: decision.reason, skipped: true)
+            let blocker = "The automatic repair helper is not enabled."
+            recordSkipped(blocker)
+            notifyUnrepaired(decision, blocker: blocker)
             return
         }
 
@@ -298,25 +329,33 @@ final class AppModel: ObservableObject {
         }.value
 
         guard report.canAutoRepair else {
-            let reason = report.blockers.joined(separator: " ")
-            recordSkipped(reason)
-            notifyDetection(reason: "\(decision.reason) \(reason)", skipped: true)
+            let blocker = report.blockers.joined(separator: " ")
+            recordSkipped(blocker)
+            notifyUnrepaired(decision, blocker: blocker)
             return
         }
 
-        await performRepair(automatic: true)
+        await performRepair(trigger: .automatic, decision: decision)
     }
 
-    private func performRepair(automatic: Bool) async {
+    // MARK: The repair itself
+
+    private func performRepair(trigger: RepairRecord.Trigger, decision: DetectionDecision?) async {
         guard !isRepairing else { return }
         isRepairing = true
         detectionEngine.reset()
         suppressSignalsUntil = Date().addingTimeInterval(12)
 
+        let device = currentDevice
+        let automatic = trigger == .automatic
         record(.init(
             kind: .repairRequested,
             summary: automatic ? "Automatic Core Audio repair requested." : "Manual Core Audio repair requested."
         ))
+
+        // Measured across the privileged call only, so it reflects the audio
+        // gap the user heard rather than Fennec's own bookkeeping.
+        let started = Date()
 
         do {
             let message: String
@@ -332,12 +371,24 @@ final class AppModel: ObservableObject {
                 message = try await PrivilegedPromptRepair.restartCoreAudio()
             }
 
-            lastRepairDate = Date()
-            lastRepairMessage = message
+            let repair = makeRecord(
+                trigger: trigger,
+                decision: decision,
+                device: device,
+                duration: Date().timeIntervalSince(started),
+                succeeded: true,
+                message: message
+            )
+            repairHistory.record(repair)
             lastError = nil
-            repairCount += 1
-            record(.init(kind: .repairSucceeded, summary: message))
-            notificationController.postRepairResult(success: true, message: message)
+            record(.init(
+                kind: .repairSucceeded,
+                summary: message,
+                details: repairDetails(repair)
+            ))
+            if settings.notifyOnRepair {
+                notificationController.postRepairResult(repair)
+            }
 
             try? await Task.sleep(for: .milliseconds(1200))
             do {
@@ -350,14 +401,61 @@ final class AppModel: ObservableObject {
                 record(.init(kind: .monitorError, summary: error.localizedDescription))
             }
         } catch {
+            let repair = makeRecord(
+                trigger: trigger,
+                decision: decision,
+                device: device,
+                duration: Date().timeIntervalSince(started),
+                succeeded: false,
+                message: error.localizedDescription
+            )
+            repairHistory.record(repair)
             lastError = error.localizedDescription
-            lastRepairMessage = nil
-            record(.init(kind: .repairFailed, summary: error.localizedDescription))
-            notificationController.postRepairResult(success: false, message: error.localizedDescription)
+            record(.init(
+                kind: .repairFailed,
+                summary: error.localizedDescription,
+                details: repairDetails(repair)
+            ))
+            // Always surfaced: a failed repair is the one case where the user
+            // has to do something.
+            notificationController.postRepairResult(repair)
         }
 
         isRepairing = false
     }
+
+    private func makeRecord(
+        trigger: RepairRecord.Trigger,
+        decision: DetectionDecision?,
+        device: AudioDeviceSnapshot,
+        duration: TimeInterval,
+        succeeded: Bool,
+        message: String
+    ) -> RepairRecord {
+        RepairRecord(
+            trigger: trigger,
+            signal: decision?.signal,
+            signalCount: decision?.signalCount ?? 0,
+            elapsedSeconds: decision?.elapsedSeconds ?? 0,
+            deviceName: device.name,
+            transport: device.transport,
+            durationSeconds: duration,
+            succeeded: succeeded,
+            message: message
+        )
+    }
+
+    private func repairDetails(_ repair: RepairRecord) -> [String: String] {
+        [
+            "trigger": repair.trigger.rawValue,
+            "device": repair.deviceName,
+            "transport": repair.transport.rawValue,
+            "durationSeconds": String(format: "%.2f", repair.durationSeconds),
+            "signalCount": String(repair.signalCount)
+        ]
+    }
+
+    // MARK: Plumbing
 
     private func refreshCurrentDevice() {
         do {
@@ -373,9 +471,9 @@ final class AppModel: ObservableObject {
         record(.init(kind: .monitorError, summary: error.localizedDescription))
     }
 
-    private func notifyDetection(reason: String, skipped: Bool) {
+    private func notifyUnrepaired(_ decision: DetectionDecision, blocker: String?) {
         guard settings.notifyOnDetection else { return }
-        notificationController.postDetection(reason: reason, automaticRepairWasSkipped: skipped)
+        notificationController.postUnrepairedDetection(reason: decision.reason, blocker: blocker)
     }
 
     private func recordSkipped(_ summary: String) {

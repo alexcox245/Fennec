@@ -4,11 +4,13 @@ struct MenuView: View {
     @ObservedObject var model: AppModel
     @ObservedObject private var settings: SettingsStore
     @ObservedObject private var helper: HelperManager
+    @ObservedObject private var history: RepairHistoryStore
 
     init(model: AppModel) {
         self.model = model
         _settings = ObservedObject(wrappedValue: model.settings)
         _helper = ObservedObject(wrappedValue: model.helperManager)
+        _history = ObservedObject(wrappedValue: model.repairHistory)
     }
 
     var body: some View {
@@ -62,6 +64,7 @@ struct MenuView: View {
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
                         .stroke(FennecBrand.cream.opacity(0.8), lineWidth: 1)
                 }
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Fennec")
@@ -75,19 +78,30 @@ struct MenuView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Fennec, \(model.monitoringState.title)")
 
             Spacer()
 
-            if model.isRepairing {
-                ProgressView()
-                    .controlSize(.small)
-            } else {
-                Image(systemName: "waveform")
-                    .font(.system(size: 19, weight: .medium))
-                    .foregroundStyle(FennecBrand.sky)
-                    .accessibilityHidden(true)
-            }
+            repairTally
         }
+    }
+
+    /// The running total. Small, monospaced, and unglamorous — but it is the
+    /// only proof a background utility ever offers that it earned its place.
+    private var repairTally: some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            Text(RepairCopy.headlineNumber(for: history.summary))
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(history.summary.successes > 0 ? FennecBrand.gold : Color.secondary)
+            Text(history.summary.successes == 1 ? "repair" : "repairs")
+                .font(.system(size: 9, weight: .bold))
+                .tracking(0.6)
+                .foregroundStyle(.tertiary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(RepairCopy.summaryLine(for: history.summary))
     }
 
     private var deviceCard: some View {
@@ -95,6 +109,7 @@ struct MenuView: View {
             HStack(spacing: 8) {
                 Image(systemName: "speaker.wave.2.fill")
                     .foregroundStyle(FennecBrand.dune)
+                    .accessibilityHidden(true)
                 Text(model.currentDevice.name)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
@@ -131,7 +146,7 @@ struct MenuView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.triangle.2.circlepath")
-                    Text(model.isRepairing ? "Resetting Core Audio…" : "Fix Audio Now")
+                    Text(model.isRepairing ? "Restarting Core Audio…" : "Repair Audio Now")
                         .fontWeight(.semibold)
                     Spacer()
                 }
@@ -141,14 +156,16 @@ struct MenuView: View {
             .controlSize(.large)
             .tint(FennecBrand.sky)
             .disabled(model.isRepairing)
+            .help("Restart Core Audio now. Playback and recording stop for about a second.")
 
             Toggle(isOn: $settings.autoRepairEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Auto-fix crackling")
+                    Text("Repair crackling automatically")
                         .font(.subheadline.weight(.medium))
-                    Text(helper.state.isReachable ? "Fennec will reset Core Audio when a failure is detected." : "Enable the helper to repair automatically.")
+                    Text(autoRepairDetail)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .toggleStyle(.switch)
@@ -158,13 +175,16 @@ struct MenuView: View {
                 helperSetupRow
             }
 
-            if let lastDetectionDate = model.lastDetectionDate {
+            if let repair = history.records.first {
+                receiptCard(repair)
+            } else if let lastDetectionDate = model.lastDetectionDate {
                 HStack(alignment: .firstTextBaseline) {
                     Label("Last suspected crackle", systemImage: "ear.badge.waveform")
                         .foregroundStyle(.secondary)
                     Spacer()
                     Text(lastDetectionDate, style: .relative)
                         .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
                 .font(.caption)
             }
@@ -178,11 +198,51 @@ struct MenuView: View {
         }
     }
 
+    /// The receipt. Aviator gold is reserved in the brand for exactly this —
+    /// a repair that worked — so it appears nowhere else in the app.
+    private func receiptCard(_ repair: RepairRecord) -> some View {
+        let accent = repair.succeeded ? FennecBrand.gold : Color.red
+
+        return HStack(alignment: .top, spacing: 10) {
+            Image(systemName: repair.succeeded ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(accent)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(RepairCopy.receiptHeadline(for: repair))
+                        .font(.caption.weight(.semibold))
+                    Spacer(minLength: 4)
+                    Text(repair.date, style: .relative)
+                        .font(.caption2)
+                        .monospacedDigit()
+                        .foregroundStyle(.tertiary)
+                        .layoutPriority(-1)
+                }
+                Text(RepairCopy.receiptDetail(for: repair))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(accent.opacity(0.28), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(RepairCopy.receiptHeadline(for: repair)). \(RepairCopy.receiptDetail(for: repair))")
+    }
+
     @ViewBuilder
     private var helperSetupRow: some View {
         HStack(alignment: .center, spacing: 9) {
             Image(systemName: "lock.shield.fill")
                 .foregroundStyle(FennecBrand.dune)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Automatic repair helper")
                     .font(.caption.weight(.semibold))
@@ -194,11 +254,13 @@ struct MenuView: View {
 
             switch helper.state {
             case .awaitingApproval:
-                Button("Approve") { helper.openApprovalSettings() }
+                Button("Approve…") { helper.openApprovalSettings() }
                     .controlSize(.small)
+                    .help("Open Login Items & Extensions in System Settings and allow Fennec in the background.")
             default:
                 Button("Enable") { helper.register() }
                     .controlSize(.small)
+                    .help("Install Fennec's privileged helper so it can restart Core Audio without a password prompt.")
             }
         }
         .padding(10)
@@ -214,9 +276,10 @@ struct MenuView: View {
 
             Spacer()
 
-            Text("Listening for Core Audio trouble")
+            Text(RepairCopy.summaryLine(for: history.summary))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+                .lineLimit(1)
 
             Spacer()
 
@@ -224,6 +287,16 @@ struct MenuView: View {
                 .buttonStyle(.plain)
         }
         .font(.caption)
+    }
+
+    private var autoRepairDetail: String {
+        guard helper.state.isReachable else {
+            return "Enable the helper below to let Fennec repair without a password prompt."
+        }
+        guard settings.autoRepairEnabled else {
+            return "Fennec will detect crackling but wait for you to press Repair Audio Now."
+        }
+        return settings.sensitivity.detail
     }
 
     private var statusColor: Color {
@@ -250,5 +323,6 @@ struct MenuView: View {
                 .font(.caption.monospacedDigit().weight(.medium))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }

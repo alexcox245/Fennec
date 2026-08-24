@@ -55,3 +55,33 @@ enum Fixture {
         return url
     }
 }
+
+extension Fixture {
+    /// A repair receipt with sensible defaults, so each test only states the
+    /// one field it is actually about.
+    static func repair(
+        at date: Date,
+        trigger: RepairRecord.Trigger = .automatic,
+        signal: AudioSignalKind? = .processorOverload,
+        signalCount: Int = 2,
+        elapsed: Double = 5.8,
+        device: String = "MacBook Pro Speakers",
+        transport: AudioTransport = .builtIn,
+        duration: Double = 0.84,
+        succeeded: Bool = true,
+        message: String = "Core Audio restarted successfully."
+    ) -> RepairRecord {
+        RepairRecord(
+            date: date,
+            trigger: trigger,
+            signal: signal,
+            signalCount: signalCount,
+            elapsedSeconds: elapsed,
+            deviceName: device,
+            transport: transport,
+            durationSeconds: duration,
+            succeeded: succeeded,
+            message: message
+        )
+    }
+}

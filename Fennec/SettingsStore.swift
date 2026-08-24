@@ -9,12 +9,17 @@ final class SettingsStore: ObservableObject {
         static let protectMicrophone = "protectMicrophone"
         static let protectCommunicationApps = "protectCommunicationApps"
         static let skipBluetooth = "skipBluetooth"
+        static let notifyOnRepair = "notifyOnRepair"
         static let notifyOnDetection = "notifyOnDetection"
         static let cooldownSeconds = "cooldownSeconds"
     }
 
     private let defaults: UserDefaults
 
+    /// Default **on**. Fennec cannot act on it until the privileged helper is
+    /// enabled, so this is not a surprise-root-access switch — it means that
+    /// the moment setup finishes, the product does the thing it promises
+    /// without a second decision from the user.
     @Published var autoRepairEnabled: Bool {
         didSet { defaults.set(autoRepairEnabled, forKey: Key.autoRepairEnabled) }
     }
@@ -35,6 +40,13 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(skipBluetooth, forKey: Key.skipBluetooth) }
     }
 
+    /// The "we already fixed it" banner. On by default — a silent fix is
+    /// indistinguishable from a product that does nothing.
+    @Published var notifyOnRepair: Bool {
+        didSet { defaults.set(notifyOnRepair, forKey: Key.notifyOnRepair) }
+    }
+
+    /// The "we saw it but were not allowed to fix it" banner.
     @Published var notifyOnDetection: Bool {
         didSet { defaults.set(notifyOnDetection, forKey: Key.notifyOnDetection) }
     }
@@ -46,13 +58,14 @@ final class SettingsStore: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
 
-        autoRepairEnabled = defaults.object(forKey: Key.autoRepairEnabled) as? Bool ?? false
+        autoRepairEnabled = defaults.object(forKey: Key.autoRepairEnabled) as? Bool ?? true
         sensitivity = DetectionSensitivity(
             rawValue: defaults.string(forKey: Key.sensitivity) ?? "balanced"
         ) ?? .balanced
         protectMicrophone = defaults.object(forKey: Key.protectMicrophone) as? Bool ?? true
         protectCommunicationApps = defaults.object(forKey: Key.protectCommunicationApps) as? Bool ?? true
         skipBluetooth = defaults.object(forKey: Key.skipBluetooth) as? Bool ?? true
+        notifyOnRepair = defaults.object(forKey: Key.notifyOnRepair) as? Bool ?? true
         notifyOnDetection = defaults.object(forKey: Key.notifyOnDetection) as? Bool ?? true
         cooldownSeconds = defaults.object(forKey: Key.cooldownSeconds) as? Double ?? 45
     }

@@ -54,7 +54,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Fennec")
                     .font(.system(size: 20, weight: .bold, design: .rounded))
-                Text("Keeps Core Audio clean while your Mac works hard.")
+                Text("Catches Core Audio crackling and restarts it before you have to.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -91,7 +91,7 @@ struct SettingsView: View {
 
                 HStack {
                     Button("Restart Monitor") { model.restartMonitoring() }
-                    Button("Fix Audio Now") { model.requestManualRepair() }
+                    Button("Repair Audio Now") { model.requestManualRepair() }
                         .buttonStyle(.borderedProminent)
                         .tint(FennecBrand.sky)
                         .disabled(model.isRepairing)
@@ -99,17 +99,28 @@ struct SettingsView: View {
             }
 
             Section("Automatic Repair") {
-                Toggle("Auto-fix after a likely crackle event", isOn: $settings.autoRepairEnabled)
+                Toggle("Repair crackling automatically", isOn: $settings.autoRepairEnabled)
                     .disabled(!helper.state.isReachable)
+                Text("One overload is usually a harmless blip. Two in a row is the failure that stays broken until Core Audio restarts — so Fennec waits for the second one, then fixes it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                Picker("Detection sensitivity", selection: $settings.sensitivity) {
+                Picker("Step in after", selection: $settings.sensitivity) {
                     ForEach(DetectionSensitivity.allCases) { sensitivity in
                         Text(sensitivity.title).tag(sensitivity)
                     }
                 }
-                Text(settings.sensitivity.detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .pickerStyle(.segmented)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(settings.sensitivity.detail)
+                    Text(settings.sensitivity.experience)
+                        .foregroundStyle(FennecBrand.dune)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
                 helperControls
             }
@@ -177,9 +188,9 @@ struct SettingsView: View {
     private var safetyTab: some View {
         Form {
             Section("Do Not Interrupt") {
-                Toggle("Skip auto-fix while any microphone input is active", isOn: $settings.protectMicrophone)
-                Toggle("Skip auto-fix while a call or recording app is using audio", isOn: $settings.protectCommunicationApps)
-                Toggle("Skip auto-fix for Bluetooth outputs", isOn: $settings.skipBluetooth)
+                Toggle("Never repair while a microphone is live", isOn: $settings.protectMicrophone)
+                Toggle("Never repair while a call or recording app is using audio", isOn: $settings.protectCommunicationApps)
+                Toggle("Never repair Bluetooth outputs", isOn: $settings.skipBluetooth)
             }
 
             Section("Rate Limiting") {
@@ -191,7 +202,12 @@ struct SettingsView: View {
             }
 
             Section("Notifications") {
-                Toggle("Notify me when crackling is suspected", isOn: $settings.notifyOnDetection)
+                Toggle("Tell me after Fennec repairs the audio", isOn: $settings.notifyOnRepair)
+                Toggle("Tell me when crackling is detected but not repaired", isOn: $settings.notifyOnDetection)
+                Text("A repair that failed always notifies you — that is the one case where something is left for you to do.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section {

@@ -15,11 +15,22 @@ enum DetectionSensitivity: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// One line under the picker. Says what Fennec waits for, in the same
+    /// numbers the engine actually uses.
     var detail: String {
         switch self {
-        case .conservative: return "Repair after 3 overload signals within 12 seconds."
-        case .balanced: return "Repair after 2 overload signals within 8 seconds."
-        case .immediate: return "Repair after the first overload signal."
+        case .conservative: return "Waits for 3 signals within 12 seconds. Fewest interruptions, longest crackle."
+        case .balanced: return "Waits for 2 signals within 8 seconds. You hear the fault start, then it is gone."
+        case .immediate: return "Acts on the 1st signal. Fastest, but a harmless blip can cost you a short audio gap."
+        }
+    }
+
+    /// What the user actually hears under this setting — the honest version.
+    var experience: String {
+        switch self {
+        case .conservative: return "You hear a few seconds of crackle."
+        case .balanced: return "You hear about a second of crackle."
+        case .immediate: return "You may hear nothing at all."
         }
     }
 
@@ -44,6 +55,11 @@ struct DetectionDecision: Equatable, Sendable {
     let signal: AudioSignalKind
     let reason: String
     let signalCount: Int
+    /// Wall-clock span between the first and last signal in the window.
+    /// Zero when they all landed inside one 250 ms drain.
+    let elapsedSeconds: TimeInterval
+    /// The configured window this decision was made under.
+    let windowSeconds: TimeInterval
 }
 
 final class DetectionEngine {
@@ -55,7 +71,9 @@ final class DetectionEngine {
             return DetectionDecision(
                 signal: .ioStoppedAbnormally,
                 reason: "Core Audio reported that device I/O stopped abnormally.",
-                signalCount: Int(batch.abnormalStops)
+                signalCount: Int(batch.abnormalStops),
+                elapsedSeconds: 0,
+                windowSeconds: sensitivity.window
             )
         }
 
@@ -69,11 +87,18 @@ final class DetectionEngine {
 
         guard overloadDates.count >= sensitivity.threshold else { return nil }
         let count = overloadDates.count
+        // The span the user actually experienced, not the configured window.
+        // "2 signals in 5.8 s" is a true statement; "within 8 seconds" is only
+        // a description of the setting.
+        let elapsed = (overloadDates.max() ?? batch.date)
+            .timeIntervalSince(overloadDates.min() ?? batch.date)
         overloadDates.removeAll()
         return DetectionDecision(
             signal: .processorOverload,
             reason: "Core Audio missed its real-time output deadline \(count) time\(count == 1 ? "" : "s") within \(Int(sensitivity.window)) seconds.",
-            signalCount: count
+            signalCount: count,
+            elapsedSeconds: elapsed,
+            windowSeconds: sensitivity.window
         )
     }
 

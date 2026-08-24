@@ -8,5 +8,6 @@ enum AppConstants {
     static let helperPlistName = "\(helperBundleIdentifier).plist"
     static let helperExecutableName = "FennecHelper"
     static let eventLogFileName = "events.jsonl"
+    static let repairHistoryFileName = "repairs.json"
     static let supportDirectoryName = appName
 }

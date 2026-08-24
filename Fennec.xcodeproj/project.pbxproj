@@ -51,6 +51,12 @@
 		21E7525049991ABF8ACE2349 /* CoreAudioTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 973809A098DA43BC5681C812 /* CoreAudioTypes.swift */; };
 		4527A2E61DA525CBA60A160E /* EventLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B233DA6AF57F421BFCB0823E /* EventLogger.swift */; };
 		F5205BF8CA7AA0A30F3AC2BC /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B353FB5A77EE2D133F4C123 /* AppConstants.swift */; };
+		9F704195E8192916CB1D7AF8 /* RepairHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D2486DA71C4875EB7026EA /* RepairHistoryStore.swift */; };
+		AE3E0AF0808AA43D11EA316D /* RepairCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDE51A7D46E1354D6470AA8 /* RepairCopy.swift */; };
+		8E016B3A813F09ABB7F5673A /* RepairHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D2486DA71C4875EB7026EA /* RepairHistoryStore.swift */; };
+		6ED89F32067889339575A8EA /* RepairCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDE51A7D46E1354D6470AA8 /* RepairCopy.swift */; };
+		DEF2515A0D7C3F1C0F1CC555 /* RepairHistoryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A7550D2019F59A504F3724 /* RepairHistoryStoreTests.swift */; };
+		220E1FB4621775D7E5AB36F6 /* RepairCopyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D89A79752B9E482A338E6C /* RepairCopyTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -131,6 +137,10 @@
 		38B5E5914FBB3B7679D24252 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
 		D9C97886BB6A22BC83EC3AE1 /* DetectionEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionEngineTests.swift; sourceTree = "<group>"; };
 		43AC4A84991B5E05D9750AB3 /* EventLoggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLoggerTests.swift; sourceTree = "<group>"; };
+		F5D2486DA71C4875EB7026EA /* RepairHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairHistoryStore.swift; sourceTree = "<group>"; };
+		ABDE51A7D46E1354D6470AA8 /* RepairCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairCopy.swift; sourceTree = "<group>"; };
+		00A7550D2019F59A504F3724 /* RepairHistoryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairHistoryStoreTests.swift; sourceTree = "<group>"; };
+		E9D89A79752B9E482A338E6C /* RepairCopyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairCopyTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -208,6 +218,8 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				F5D2486DA71C4875EB7026EA /* RepairHistoryStore.swift */,
+				ABDE51A7D46E1354D6470AA8 /* RepairCopy.swift */,
 				1FEDF8CEF7192028FA01B0BB /* AppModel.swift */,
 				3913E3A4C84114EFA828C0BA /* CoreAudioMonitor.swift */,
 				D28391C38692AFD0EEB9408B /* CoreAudioProperty.swift */,
@@ -263,6 +275,8 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				00A7550D2019F59A504F3724 /* RepairHistoryStoreTests.swift */,
+				E9D89A79752B9E482A338E6C /* RepairCopyTests.swift */,
 				38B5E5914FBB3B7679D24252 /* TestSupport.swift */,
 				D9C97886BB6A22BC83EC3AE1 /* DetectionEngineTests.swift */,
 				43AC4A84991B5E05D9750AB3 /* EventLoggerTests.swift */,
@@ -410,6 +424,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9F704195E8192916CB1D7AF8 /* RepairHistoryStore.swift in Sources */,
+				AE3E0AF0808AA43D11EA316D /* RepairCopy.swift in Sources */,
 				E0E8FBA798201B7929ED4789 /* AppModel.swift in Sources */,
 				8F13B399321BB51CCECAE615 /* CoreAudioMonitor.swift in Sources */,
 				96B21F651B3C5BA1933BAD09 /* CoreAudioProperty.swift in Sources */,
@@ -436,6 +452,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DEF2515A0D7C3F1C0F1CC555 /* RepairHistoryStoreTests.swift in Sources */,
+				220E1FB4621775D7E5AB36F6 /* RepairCopyTests.swift in Sources */,
+				8E016B3A813F09ABB7F5673A /* RepairHistoryStore.swift in Sources */,
+				6ED89F32067889339575A8EA /* RepairCopy.swift in Sources */,
 				E34121CDBAC45F680C671147 /* DetectionEngine.swift in Sources */,
 				21E7525049991ABF8ACE2349 /* CoreAudioTypes.swift in Sources */,
 				4527A2E61DA525CBA60A160E /* EventLogger.swift in Sources */,

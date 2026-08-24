@@ -65,6 +65,30 @@ final class DetectionEngineTests: XCTestCase {
         XCTAssertNil(next, "After a decision the counter restarts; one leftover signal must not re-fire.")
     }
 
+    func testDecisionReportsTheRealElapsedSpanNotTheConfiguredWindow() {
+        _ = engine.ingest(Fixture.batch(at: Fixture.epoch, overloads: 1), sensitivity: .balanced)
+        let decision = engine.ingest(
+            Fixture.batch(at: Fixture.epoch.addingTimeInterval(5.8), overloads: 1),
+            sensitivity: .balanced
+        )
+
+        // "2 signals in 5.8 s" is a fact about the user's machine.
+        // "within 8 seconds" is only a fact about their settings.
+        XCTAssertEqual(decision?.elapsedSeconds ?? 0, 5.8, accuracy: 0.001)
+        XCTAssertEqual(decision?.windowSeconds, 8)
+    }
+
+    func testSignalsFromOneDrainReportZeroElapsed() {
+        let decision = engine.ingest(Fixture.batch(at: Fixture.epoch, overloads: 2), sensitivity: .balanced)
+        XCTAssertEqual(decision?.elapsedSeconds, 0)
+    }
+
+    func testAbnormalStopReportsNoSpan() {
+        let decision = engine.ingest(Fixture.batch(at: Fixture.epoch, abnormalStops: 1), sensitivity: .balanced)
+        XCTAssertEqual(decision?.elapsedSeconds, 0)
+        XCTAssertEqual(decision?.windowSeconds, 8)
+    }
+
     // MARK: Conservative and Immediate
 
     func testConservativeNeedsThreeOverloads() {

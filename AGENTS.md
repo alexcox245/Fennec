@@ -50,6 +50,8 @@ These are load-bearing. Violating one produces a build that looks fine and fails
 
 6. **Keep it a system utility.** Native macOS materials, typography, and controls stay intact. The brand lives in the icon, accents, and voice — not in a re-skinned UI. See §7.
 
+7. **User-facing repair copy lives in `RepairCopy.swift`, and it is under test.** The notification, the menu receipt, and the activity list must say the same thing in the same voice. `FennecTests/RepairCopyTests.swift` pins the exact strings, including a check that nothing shouts or uses emoji. If you need new copy, add it there rather than inlining a string in a view.
+
 ---
 
 ## 4. Source map
@@ -73,6 +75,8 @@ Fennec/                        app target (15 Swift files, 1 C file)
   LoginItemManager.swift       launch-at-login via SMAppService
   EventLogger.swift            rotating JSONL audit log
   NotificationController.swift user notifications
+  RepairHistoryStore.swift     persisted repair receipts + RepairSummary
+  RepairCopy.swift             every user-facing sentence about a repair  ← see rule 7
 
 FennecHelper/                  root LaunchDaemon target
   main.swift                   NSXPCListener bootstrap
@@ -282,7 +286,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-013**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-014**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -308,8 +312,9 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-002 | Fix `Scripts/audit-source.sh` | 2026-08-25 | `aa22cc6` | Loop variable `path` clobbered `$PATH` under zsh, failing every command from line 31 onward and reporting a false packaging error. Renamed to `required_path`. Audit now passes end to end. See §6. |
 | T-003 | Publish to GitHub | 2026-08-25 | `aa22cc6` | `git init` (repo had no `.git` despite appearances), initial commit of 56 files, pushed to `alexcox245/Fennec` — private, default branch `main`. |
 | T-004 | Regenerate `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `aa22cc6` | Rehashed after the T-001/T-002 edits. |
-| T-006 | Add a unit-test target covering `DetectionEngine` and `EventLogger` | 2026-08-25 | `684f08a` | `FennecTests`, a standalone XCTest bundle (no `TEST_HOST`) compiling the pure-logic sources directly. `EventLogger` gained an injectable directory and size cap plus a test-only `flush(completion:)` so rotation is observable without writing 5 MB. Scheme `Fennec` now has a TestAction. |
-| T-011 | Make `audit-source.sh` verify `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `684f08a` | Added `Scripts/update-manifest.sh` (regenerates from `git ls-files`, so new files are never missed) and a `shasum -c` gate at the end of `audit-source.sh`. `FennecTests/*.swift` added to the per-file Swift parse. |
+| T-006 | Add a unit-test target covering `DetectionEngine` and `EventLogger` | 2026-08-25 | `b0af227` | `FennecTests`, a standalone XCTest bundle (no `TEST_HOST`) compiling the pure-logic sources directly. `EventLogger` gained an injectable directory and size cap plus a test-only `flush(completion:)` so rotation is observable without writing 5 MB. Scheme `Fennec` now has a TestAction. |
+| T-011 | Make `audit-source.sh` verify `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `b0af227` | Added `Scripts/update-manifest.sh` (regenerates from `git ls-files`, so new files are never missed) and a `shasum -c` gate at the end of `audit-source.sh`. `FennecTests/*.swift` added to the per-file Swift parse. |
+| T-013 | Catch & Fix: automatic repair the user can see | 2026-08-25 | `PENDING_SHA` | Auto-repair now defaults **on** (still inert until the helper is enabled). `DetectionDecision` carries the real elapsed span between signals, not just the configured window, so the copy can say "2 crackle signals in 5.8 s". Every repair is timed across the privileged call only and persisted as a `RepairRecord` in `repairs.json`; the popover shows the newest as a receipt in aviator gold, plus a running total. Notifications were rebuilt around proportionality: success is `.passive` with no sound and no buttons, failure and unrepaired-detection get a sound and an action. |
 
 ---
 
