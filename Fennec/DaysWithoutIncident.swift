@@ -48,6 +48,12 @@ struct DaysWithoutIncident: Equatable, Sendable {
     ) -> DaysWithoutIncident {
         let today = calendar.startOfDay(for: now)
 
+        // The rehearsal first run asks for is not an incident: nothing was
+        // wrong, and this type's own justification for counting manual repairs
+        // — "the user only pressed the button because something was wrong" —
+        // is precisely untrue of it.
+        let records = records.filter { $0.trigger != .rehearsal }
+
         guard let lastIncident = records.map(\.date).max() else {
             let start = calendar.startOfDay(for: min(listeningSince, now))
             return DaysWithoutIncident(

@@ -12,11 +12,15 @@ struct RepairRecord: Identifiable, Codable, Equatable, Sendable {
         case automatic
         /// The user pressed Repair Audio Now.
         case manual
+        /// The test repair the first-run window asks the user to run. Listed
+        /// in Activity, but never counted as an incident — nothing was wrong.
+        case rehearsal
 
         var title: String {
             switch self {
             case .automatic: return "Automatic"
             case .manual: return "Manual"
+            case .rehearsal: return "Test"
             }
         }
     }
@@ -92,7 +96,10 @@ struct RepairRecord: Identifiable, Codable, Equatable, Sendable {
 /// pass so no view has to reduce the array itself.
 struct RepairSummary: Equatable, Sendable {
     let total: Int
+    /// Restarts that completed. Say "restarts performed" when showing this.
     let successes: Int
+    /// Restarts the fault did not survive. The only number that earns gold.
+    let held: Int
     let failures: Int
     let automatic: Int
     let last24Hours: Int
@@ -105,7 +112,7 @@ struct RepairSummary: Equatable, Sendable {
     let busiestDeviceName: String?
 
     static let empty = RepairSummary(
-        total: 0, successes: 0, failures: 0, automatic: 0,
+        total: 0, successes: 0, held: 0, failures: 0, automatic: 0,
         last24Hours: 0, last7Days: 0, last30Days: 0,
         firstDate: nil, lastDate: nil,
         fastestSeconds: nil, typicalSeconds: nil, busiestDeviceName: nil
@@ -116,8 +123,15 @@ struct RepairSummary: Equatable, Sendable {
 
         // A repair that did not hold is not a repair. Counting it would make
         // the popover's headline number a measure of how broken the machine
-        // is rather than how much Fennec helped.
-        let successes = records.filter { $0.outcome == .held || $0.outcome == .pending }
+        // is rather than how much Fennec helped. `held` is stricter still: it
+        // excludes repairs that are only *provisionally* fine, so gold is
+        // never spent on an unverified one.
+        //
+        // Rehearsals — the test repair first run asks for — are excluded from
+        // both. Nothing was wrong.
+        let real = records.filter { $0.trigger != .rehearsal }
+        let successes = real.filter { $0.outcome == .held || $0.outcome == .pending }
+        let held = real.filter { $0.outcome == .held }
         let durations = successes.map(\.durationSeconds).filter { $0 > 0 }.sorted()
 
         var deviceCounts: [String: Int] = [:]
@@ -129,14 +143,17 @@ struct RepairSummary: Equatable, Sendable {
             .sorted { ($0.value, $1.key) > ($1.value, $0.key) }
             .first?.key
 
+        // Attempts, not held repairs — the labels say "attempts" so the two
+        // numbers in the Activity header cannot be read as one population.
         func count(within interval: TimeInterval) -> Int {
             let cutoff = now.addingTimeInterval(-interval)
-            return records.filter { $0.date >= cutoff }.count
+            return real.filter { $0.date >= cutoff }.count
         }
 
         return RepairSummary(
             total: records.count,
             successes: successes.count,
+            held: held.count,
             failures: records.count - successes.count,
             automatic: records.filter { $0.trigger == .automatic }.count,
             last24Hours: count(within: 24 * 3_600),
@@ -209,6 +226,7 @@ final class RepairHistoryStore: ObservableObject {
             let data = try Data(contentsOf: fileURL)
             records = try decoder.decode([RepairRecord].self, from: data)
                 .sorted { $0.date > $1.date }
+            resolveStalePendingRecords()
             lastError = nil
         } catch {
             // A corrupt history is not worth losing the app over, but the user
@@ -217,6 +235,22 @@ final class RepairHistoryStore: ObservableObject {
             lastError = "Fennec could not read its repair history: \(error.localizedDescription)"
         }
         recomputeSummary()
+    }
+
+    /// A repair left `.pending` by a quit is settled in the machine's favour.
+    ///
+    /// Fennec was not running to see whether the fault came back, so it cannot
+    /// know — but leaving it `.pending` forever would mean a repair performed
+    /// seconds before the user quit never counted at all. The benefit of the
+    /// doubt is the honest reading, and it is stated here rather than hidden.
+    private func resolveStalePendingRecords() {
+        let cutoff = Date().addingTimeInterval(-RepairGovernor.verificationWindow)
+        var changed = false
+        for index in records.indices where records[index].outcome == .pending && records[index].date < cutoff {
+            records[index].outcome = .held
+            changed = true
+        }
+        if changed { persist() }
     }
 
     @discardableResult

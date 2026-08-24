@@ -104,6 +104,12 @@
 		BD41497897092C7F0B59F685 /* DrainSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */; };
 		93C51749F5343408E13287AF /* DrainSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */; };
 		3C63A347EE064254A020DC46 /* DrainScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */; };
+		37F12AD758BF162F2F0E866A /* HelperThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */; };
+		A4A4DAB805E3DF2C0BCB706A /* HelperThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */; };
+		FAE57F84B5E7241F17F937CC /* HelperThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */; };
+		F8BCDB47852765D3F18F8EBE /* ReviewRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */; };
+		F68A3F6E9FF3639D44AFDF2B /* FennecBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0070FC9E50061BEA041F870 /* FennecBrand.swift */; };
+		DA6931C86D5F83496EB9AF62 /* FennecBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0070FC9E50061BEA041F870 /* FennecBrand.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -216,6 +222,9 @@
 		8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysWithoutIncidentTests.swift; sourceTree = "<group>"; };
 		60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainSchedule.swift; sourceTree = "<group>"; };
 		B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainScheduleTests.swift; sourceTree = "<group>"; };
+		DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperThrottle.swift; sourceTree = "<group>"; };
+		C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewRegressionTests.swift; sourceTree = "<group>"; };
+		C0070FC9E50061BEA041F870 /* FennecBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FennecBrand.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -256,6 +265,7 @@
 		239D4B6E1360302B8ED4C8C0 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */,
 				4B353FB5A77EE2D133F4C123 /* AppConstants.swift */,
 				7487F769540EC02C845ACFBE /* HelperProtocol.swift */,
 				3CFB8E501F4CB9747BA53320 /* CodeSigningRequirement.swift */,
@@ -293,6 +303,7 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				C0070FC9E50061BEA041F870 /* FennecBrand.swift */,
 				60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */,
 				70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */,
 				7A64E84489F0B6AB889C87C9 /* ActivityView.swift */,
@@ -370,6 +381,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */,
 				B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */,
 				8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */,
 				BDB135AAE4E46F154D69E127 /* UninstallTests.swift */,
@@ -515,6 +527,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A4A4DAB805E3DF2C0BCB706A /* HelperThrottle.swift in Sources */,
 				F49EF2285D28DB237948483C /* HelperIdentity.swift in Sources */,
 				554AD40B194C6FA89FE36C86 /* HelperService.swift in Sources */,
 				F65BF058088393B8CFE952EF /* main.swift in Sources */,
@@ -528,6 +541,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F68A3F6E9FF3639D44AFDF2B /* FennecBrand.swift in Sources */,
+				37F12AD758BF162F2F0E866A /* HelperThrottle.swift in Sources */,
 				BD41497897092C7F0B59F685 /* DrainSchedule.swift in Sources */,
 				9F6332CB2A48D4417A9DFCAC /* DaysWithoutIncident.swift in Sources */,
 				994538879492BD78F8013B00 /* ActivityView.swift in Sources */,
@@ -576,6 +591,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DA6931C86D5F83496EB9AF62 /* FennecBrand.swift in Sources */,
+				F8BCDB47852765D3F18F8EBE /* ReviewRegressionTests.swift in Sources */,
+				FAE57F84B5E7241F17F937CC /* HelperThrottle.swift in Sources */,
 				3C63A347EE064254A020DC46 /* DrainScheduleTests.swift in Sources */,
 				93C51749F5343408E13287AF /* DrainSchedule.swift in Sources */,
 				ACE9E60920BDD58FF9F5CDDD /* DaysWithoutIncidentTests.swift in Sources */,

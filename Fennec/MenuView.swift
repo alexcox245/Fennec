@@ -26,7 +26,11 @@ struct MenuView: View {
         }
         .padding(16)
         .frame(width: 384)
-        .task { model.refreshAll() }
+        .task {
+            model.refreshAll()
+            // Only here: this is the moment the user has actually looked.
+            model.acknowledgeAttention()
+        }
     }
 
     private var header: some View {
@@ -141,9 +145,14 @@ struct MenuView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 8) {
+                // 25: these are session counters and the header tally is a
+                // lifetime one. Side by side with no scope they read as one
+                // population, so after any relaunch the row said
+                // "SIGNALS 0 · REPAIRS 7". The lifetime number lives in the
+                // header; this row says what it is.
                 metric(title: "FORMAT", value: sampleRateText)
-                metric(title: "SIGNALS", value: "\(model.overloadSignalCount + model.abnormalStopCount)")
-                metric(title: "REPAIRS", value: "\(model.repairCount)")
+                metric(title: "SIGNALS TODAY", value: "\(model.overloadSignalCount + model.abnormalStopCount)")
+                metric(title: "DETECTIONS", value: "\(model.detectionCount)")
             }
         }
         .padding(13)
@@ -164,7 +173,7 @@ struct MenuView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.triangle.2.circlepath")
-                        Text(model.isRepairing ? "Restarting Core Audio…" : "Repair Audio Now")
+                        Text(primaryButtonTitle)
                             .fontWeight(.semibold)
                         Spacer()
                     }
@@ -173,7 +182,7 @@ struct MenuView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .tint(FennecBrand.sky)
-                .disabled(model.isRepairing)
+                .disabled(model.isRepairing || model.isPreparingRepair)
                 .keyboardShortcut(.defaultAction)
                 .help("Restart Core Audio now. Playback and recording stop for about a second.")
             }
@@ -191,6 +200,25 @@ struct MenuView: View {
             .toggleStyle(.switch)
             .disabled(!helper.state.isReachable)
 
+            if let lastError = model.lastError {
+                VStack(alignment: .leading, spacing: 7) {
+                    Label(lastError, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+
+                    // The surface that announces the failure has to offer the
+                    // remedy. Restart Monitor used to live only on the
+                    // Settings General tab, which is not where anyone looks
+                    // when the popover says something is wrong.
+                    if case .failed = model.monitoringState {
+                        Button("Restart Monitor") { model.restartMonitoring() }
+                            .controlSize(.small)
+                            .help("Tear down and rebuild Fennec's Core Audio listeners.")
+                    }
+                }
+            }
             pauseControl
 
             if let standDown = model.standDown, standDown.isActive(at: Date()) {
@@ -207,12 +235,13 @@ struct MenuView: View {
 
             daysWithoutIncidentSign
 
-            if let lastError = model.lastError {
-                Label(lastError, systemImage: "exclamationmark.triangle.fill")
+            if let throttle = model.throttleNotice {
+                Label(HelperThrottle.userFacing(throttle), systemImage: "clock")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
         }
     }
 
@@ -288,7 +317,7 @@ struct MenuView: View {
             HStack(spacing: 8) {
                 Button("Try Again Anyway") { model.clearStandDown() }
                     .controlSize(.small)
-                Button("What Fennec Does") { model.showWelcomeWindow() }
+                Button("See What Happened") { model.showActivityWindow() }
                     .controlSize(.small)
                 Spacer()
             }
@@ -358,10 +387,13 @@ struct MenuView: View {
     /// The receipt. Aviator gold is reserved in the brand for exactly this —
     /// a repair that worked — so it appears nowhere else in the app.
     private func receiptCard(_ repair: RepairRecord) -> some View {
-        let accent = repair.succeeded ? FennecBrand.gold : Color.red
+        // Outcome, never `succeeded`. `succeeded` is fixed at repair time; a
+        // gold seal above "Restarted, but the fault came back" is one card
+        // asserting two opposite things.
+        let accent = FennecBrand.accent(for: repair.outcome)
 
         return HStack(alignment: .top, spacing: 10) {
-            Image(systemName: repair.succeeded ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+            Image(systemName: repair.outcome.symbolName)
                 .font(.system(size: 15))
                 .foregroundStyle(accent)
                 .accessibilityHidden(true)
@@ -486,9 +518,24 @@ struct MenuView: View {
             : "Listening for Core Audio trouble"
     }
 
+    private var primaryButtonTitle: String {
+        if model.isRepairing { return "Restarting Core Audio…" }
+        // Under heavy load — Fennec's own premise — the safety scan is slow
+        // enough that the button used to look untouched after a click.
+        if model.isPreparingRepair { return "Checking what is using audio…" }
+        return "Repair Audio Now"
+    }
+
     private var autoRepairDetail: String {
         if let pauseStatus = model.pauseStatusText {
             return "\(pauseStatus). Repair Audio Now still works."
+        }
+        // AirPods and Bluetooth headphones are the majority output on a modern
+        // Mac, and `skipBluetooth` defaults on. Without this the popover said
+        // "You hear the fault start, then it is gone" two rows under a
+        // BLUETOOTH badge, over a device it will never touch.
+        if settings.skipBluetooth && model.currentDevice.transport.isBluetooth {
+            return "Off for Bluetooth outputs, which is this one. Repair Audio Now still works."
         }
         guard helper.state.isReachable else {
             return "Enable the helper below to let Fennec repair without a password prompt."

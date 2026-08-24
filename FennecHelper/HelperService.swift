@@ -51,7 +51,10 @@ final class HelperService: NSObject, FennecHelperProtocol, NSXPCListenerDelegate
         if elapsed < minimumRestartInterval {
             let remaining = Int(ceil(minimumRestartInterval - elapsed))
             restartLock.unlock()
-            reply(false, "Core Audio was restarted too recently. Try again in \(remaining) seconds.")
+            // Marked so the app can tell its own rate limiter from a fault.
+            // Unmarked, "did that help? let me press it again" produced a red
+            // failure receipt and an alarm.
+            reply(false, HelperThrottle.message(remainingSeconds: remaining))
             return
         }
         lastRestart = Date()

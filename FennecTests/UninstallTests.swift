@@ -140,9 +140,16 @@ final class HelperIdentityTests: XCTestCase {
     }
 
     func testMalformedTokensAreIgnoredRatherThanCrashing() {
-        let identity = HelperIdentity.parse("ready = =0 build= path=/x euid=notanumber")
+        // `path=` is deliberately the remainder, so a path containing spaces
+        // survives. That means `path=` must be last — which `format` enforces.
+        let identity = HelperIdentity.parse("ready = =0 build= euid=notanumber path=/x")
         XCTAssertNil(identity.euid)
         XCTAssertNil(identity.build.flatMap { $0.isEmpty ? nil : $0 })
         XCTAssertEqual(identity.executablePath, "/x")
+    }
+
+    func testFormatKeepsThePathLastBecauseTheParserTreatsItAsTheRemainder() {
+        let formatted = HelperIdentity.format(build: "7", path: "/a b/c", euid: 0)
+        XCTAssertTrue(formatted.hasSuffix("path=/a b/c"))
     }
 }

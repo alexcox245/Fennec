@@ -124,10 +124,10 @@ enum RepairCopy {
 
     /// The line under the counter. Deadpan, and true even at zero.
     static func summaryLine(for summary: RepairSummary, now: Date = Date()) -> String {
-        guard summary.successes > 0 else {
+        guard summary.held > 0 else {
             return "No repairs yet. Fennec is listening."
         }
-        let repairs = count(summary.successes, "repair", "repairs")
+        let repairs = count(summary.held, "repair", "repairs")
         guard let first = summary.firstDate else { return repairs }
 
         let formatter = DateFormatter()
@@ -140,6 +140,6 @@ enum RepairCopy {
 
     /// The one number that makes the value obvious at a glance.
     static func headlineNumber(for summary: RepairSummary) -> String {
-        "\(summary.successes)"
+        "\(summary.held)"
     }
 }

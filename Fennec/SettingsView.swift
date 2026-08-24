@@ -5,13 +5,17 @@ struct SettingsView: View {
     @ObservedObject private var settings: SettingsStore
     @ObservedObject private var helper: HelperManager
     @ObservedObject private var loginItem: LoginItemManager
+    @ObservedObject private var notifications: NotificationController
 
     init(model: AppModel) {
         self.model = model
         _settings = ObservedObject(wrappedValue: model.settings)
         _helper = ObservedObject(wrappedValue: model.helperManager)
         _loginItem = ObservedObject(wrappedValue: model.loginItemManager)
+        _notifications = ObservedObject(wrappedValue: model.notificationController)
     }
+
+    @State private var confirmingHelperRemoval = false
 
     var body: some View {
         TabView {
@@ -25,6 +29,16 @@ struct SettingsView: View {
         .frame(minWidth: 650, minHeight: 560)
         .task { model.refreshAll() }
         .fennecConfirmation(model)
+        .confirmationDialog(
+            "Remove Fennec's root helper?",
+            isPresented: $confirmingHelperRemoval,
+            titleVisibility: .visible
+        ) {
+            Button("Remove Helper", role: .destructive) { helper.unregister() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Automatic repair stops immediately. Turning it back on needs your approval in System Settings again.")
+        }
     }
 
     private var generalTab: some View {
@@ -43,10 +57,12 @@ struct SettingsView: View {
 
                 HStack {
                     Button("Restart Monitor") { model.restartMonitoring() }
+                        .help("Tear down and rebuild Fennec's Core Audio listeners. Does not touch your audio.")
                     Button("Repair Audio Now") { model.requestManualRepair() }
                         .buttonStyle(.borderedProminent)
                         .tint(FennecBrand.sky)
-                        .disabled(model.isRepairing)
+                        .disabled(model.isRepairing || model.isPreparingRepair)
+                        .help("Restart Core Audio now. Playback and recording stop for about a second.")
                 }
             }
 
@@ -89,6 +105,32 @@ struct SettingsView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
                 helperControls
+            }
+
+            Section("Notifications") {
+                Toggle("Tell me after Fennec repairs the audio", isOn: $settings.notifyOnRepair)
+                Toggle("Tell me when crackling is detected but not repaired", isOn: $settings.notifyOnDetection)
+
+                if notifications.authorizationChecked && !notifications.isAuthorized {
+                    // Without this the screen shows two switches that are on
+                    // and produce nothing — the same "promise Fennec cannot
+                    // keep" the auto-repair notice forty lines up exists to
+                    // prevent.
+                    Label {
+                        Text("macOS is not allowing Fennec to notify you, so these do nothing.")
+                            .font(.caption)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(FennecBrand.dune)
+                    }
+                    Button("Open Notification Settings…") { notifications.openSystemSettings() }
+                }
+
+                Text("A repair that failed always notifies you — that is the one case where something is left for you to do.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section("Startup") {
@@ -168,13 +210,19 @@ struct SettingsView: View {
                 Button("Open Approval Settings") { helper.openApprovalSettings() }
             case .enabled:
                 Button("Recheck Helper") { helper.refreshStatus(testReachability: true) }
-                Button("Disable Helper") { helper.unregister() }
+                Button("Disable Helper…") { confirmingHelperRemoval = true }
+                    .tint(.red)
             }
         }
 
-        Text("The helper can only restart Core Audio. It cannot run arbitrary commands, and automatic repair never displays a password prompt.")
+        Text("The helper can only restart Core Audio — it cannot be given a command, a path, or an argument. With it enabled, repairs never show a password prompt. Without it, Fennec can still repair by asking for your administrator password, but only after showing you the command.")
             .font(.caption)
             .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+        Button("What Fennec can do to this Mac…") { model.showAboutWindow() }
+            .buttonStyle(.link)
+            .font(.caption)
 
         if let error = helper.lastError {
             Text(error)
@@ -193,10 +241,13 @@ struct SettingsView: View {
 
             Section("Pause") {
                 if model.isPaused {
-                    LabeledContent("Status", value: model.pauseStatusText ?? "Paused")
-                    Button("Resume Watching") { model.resume() }
+                    LabeledContent("Automatic repair", value: model.pauseStatusText ?? "Paused")
+                    Button("Resume Listening") { model.resume() }
                 } else {
-                    LabeledContent("Status", value: "Watching")
+                    // Not "Status": General has a Status row driven by the
+                    // monitor, and two rows with the same label in one window
+                    // — one of them false — is worse than no row.
+                    LabeledContent("Automatic repair", value: model.isArmed ? "Armed" : "Not armed")
                     Menu("Pause Automatic Repair") {
                         ForEach(PauseSchedule.Option.allCases) { option in
                             Button(option.title) { model.pause(option) }
@@ -211,21 +262,25 @@ struct SettingsView: View {
             }
 
             Section("Rate Limiting") {
-                Slider(value: $settings.cooldownSeconds, in: 20...180, step: 5) {
-                    Text("Cooldown")
+                LabeledContent("Wait between repairs") {
+                    HStack(spacing: 12) {
+                        Slider(value: $settings.cooldownSeconds, in: 20...180, step: 5)
+                            .tint(FennecBrand.dune)
+                            .frame(minWidth: 180)
+                            .accessibilityLabel("Wait between repairs")
+                            .accessibilityValue("\(Int(settings.cooldownSeconds)) seconds")
+                        Text("\(Int(settings.cooldownSeconds)) s")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .frame(width: 42, alignment: .trailing)
+                    }
                 }
-                .tint(FennecBrand.dune)
-                LabeledContent("Cooldown between repairs", value: "\(Int(settings.cooldownSeconds)) seconds")
-            }
-
-            Section("Notifications") {
-                Toggle("Tell me after Fennec repairs the audio", isOn: $settings.notifyOnRepair)
-                Toggle("Tell me when crackling is detected but not repaired", isOn: $settings.notifyOnDetection)
-                Text("A repair that failed always notifies you — that is the one case where something is left for you to do.")
+                Text("After any repair attempt — successful or not — Fennec will not try again until this has passed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
 
             Section {
                 Label {
@@ -242,7 +297,11 @@ struct SettingsView: View {
     }
 
     private var diagnosticsTab: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        // Form supplies its own insets and its own scrolling; a bare VStack
+        // does neither, so an unbounded error string used to push the content
+        // out of a window that could not be resized.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
             GroupBox("Current Audio Path") {
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 7) {
                     diagnosticRow("Device", model.currentDevice.name)
@@ -264,6 +323,7 @@ struct SettingsView: View {
 
             HStack {
                 Button("Refresh") { model.refreshAll() }
+                Button("Repair History…") { model.showActivityWindow() }
                 Button("Reveal Event Log") { model.openEventLog() }
                 Button("About & Uninstall…") { model.showAboutWindow() }
                 Spacer()
@@ -274,7 +334,7 @@ struct SettingsView: View {
                 }
             }
 
-            GroupBox("Recent Activity") {
+            GroupBox("Recent Events") {
                 if model.recentActivity.isEmpty {
                     ContentUnavailableView("No activity yet", systemImage: "ear")
                         .frame(maxWidth: .infinity, minHeight: 150)
@@ -305,7 +365,10 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            }
+            .padding(20)
         }
     }
 

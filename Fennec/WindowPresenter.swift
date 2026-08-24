@@ -42,7 +42,9 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
             id: ID.welcome,
             title: "Welcome to Fennec",
             size: CGSize(width: 620, height: 720),
-            minSize: CGSize(width: 560, height: 520)
+            // Must not be below WelcomeView's own minHeight, or the host
+            // clips the footer — and the footer holds Done.
+            minSize: CGSize(width: 560, height: 640)
         ) {
             WelcomeView(model: model).tint(FennecBrand.sky)
         }
@@ -56,7 +58,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
             id: ID.about,
             title: "About Fennec",
             size: CGSize(width: 580, height: 660),
-            minSize: CGSize(width: 540, height: 480)
+            minSize: CGSize(width: 540, height: 560)
         ) {
             AboutView(model: model).tint(FennecBrand.sky)
         }
@@ -68,14 +70,19 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
             id: ID.activity,
             title: "Fennec Activity",
             size: CGSize(width: 620, height: 560),
-            minSize: CGSize(width: 520, height: 400)
+            minSize: CGSize(width: 520, height: 460)
         ) {
             ActivityView(model: model).tint(FennecBrand.sky)
         }
     }
 
     func showSettings(model: AppModel) {
-        show(id: ID.settings, title: "Fennec Settings", size: CGSize(width: 650, height: 580), resizable: false) {
+        show(
+            id: ID.settings,
+            title: "Fennec Settings",
+            size: CGSize(width: 650, height: 580),
+            minSize: CGSize(width: 650, height: 560)
+        ) {
             SettingsView(model: model).tint(FennecBrand.sky)
         }
     }
@@ -187,7 +194,15 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
 
     // MARK: Activation policy
 
+    /// Called for **every** way a window closes: the red button, ⌘W, ⌘Q, and
+    /// the app's own `close(_:)`.
+    var onWindowClosed: ((String) -> Void)?
+
     func windowWillClose(_ notification: Notification) {
+        if let window = notification.object as? NSWindow,
+           let id = window.identifier?.rawValue {
+            onWindowClosed?(id)
+        }
         scheduleActivationPolicySync()
     }
 
@@ -204,7 +219,10 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     /// never counts — which is what keeps the Dock icon from appearing every
     /// time someone opens the menu.
     private func isRealWindow(_ window: NSWindow) -> Bool {
-        window.isVisible
+        // `isVisible` is false for a miniaturised window, so without the
+        // second clause minimising Activity and then opening the popover drops
+        // the app to .accessory while one of its windows sits in the Dock.
+        (window.isVisible || window.isMiniaturized)
             && window.canBecomeMain
             && window.styleMask.contains(.titled)
             && !(window is NSPanel)

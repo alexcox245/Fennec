@@ -31,6 +31,16 @@ final class AppModel: ObservableObject {
     @Published private(set) var recentActivity: [ActivityRecord] = []
     @Published var manualRepairWarning: ManualRepairWarning?
     @Published var administratorRepairRequest: AdministratorRepairRequest?
+    /// The id of the most recent repair this launch produced, so a window can
+    /// show *the repair the user just ran* rather than the newest record of
+    /// any kind from any day.
+    @Published private(set) var lastRepairID: UUID?
+    /// The helper's rate limiter, phrased for the user. Transient.
+    @Published private(set) var throttleNotice: String?
+    /// True between pressing Repair Audio Now and the safety scan returning.
+    /// Under heavy load — which is Fennec's own premise — that gap is long
+    /// enough that the button looked untouched.
+    @Published private(set) var isPreparingRepair = false
 
     let settings: SettingsStore
     let helperManager: HelperManager
@@ -51,6 +61,8 @@ final class AppModel: ObservableObject {
     private var lastRepairAttemptDate: Date?
     private var detectionNotificationBudget = NotificationBudget()
     private var pauseTimer: Timer?
+    private var monitorRecoveryInFlight = false
+    private var rehearsalRequested = false
     private var verificationTimer: Timer?
     private var verifyingRepairID: UUID?
     private var announcedStandDownUntil: Date?
@@ -65,7 +77,11 @@ final class AppModel: ObservableObject {
         notificationController.onRepairRequested = { [weak self] in
             self?.requestManualRepair()
         }
-        notificationController.requestAuthorization()
+        notificationController.onShowActivityRequested = { [weak self] in
+            guard let self else { return }
+            WindowPresenter.shared.showActivity(model: self)
+        }
+        notificationController.refreshAuthorization()
 
         monitor.onBatch = { [weak self] batch in
             Task { @MainActor in
@@ -94,6 +110,16 @@ final class AppModel: ObservableObject {
         pauseState = settings.pauseState.resolved()
         settings.pauseState = pauseState
         schedulePauseExpiry()
+
+        // Dismissing the first-run window counts, however it is dismissed.
+        // Before this, `completeFirstRun()` had exactly one caller — the Done
+        // button — so closing it with the red button or ⌘W (the gestures macOS
+        // makes most available) meant a 620×720 window and a Dock icon shoved
+        // in front of the user at every login, forever.
+        WindowPresenter.shared.onWindowClosed = { [weak self] id in
+            guard id == WindowPresenter.ID.welcome else { return }
+            self?.completeFirstRun()
+        }
 
         if !settings.hasCompletedFirstRun {
             // Next run loop turn: the scene has not finished building yet, and
@@ -145,7 +171,9 @@ final class AppModel: ObservableObject {
     /// mark here until they look.
     var menuBarIconState: MenuBarIconState {
         if isRepairing { return .repairing }
-        if needsAttention { return .attention }
+        // An unanswered question is a reason to look at Fennec, and the
+        // popover it was asked in may already have dismissed itself.
+        if needsAttention || pendingConfirmation != nil { return .attention }
         if isPaused { return .paused }
         switch monitoringState {
         case .monitoring, .starting: return .listening
@@ -338,6 +366,18 @@ final class AppModel: ObservableObject {
         )
     }
 
+    /// Somewhere for `pendingConfirmation` to be rendered.
+    ///
+    /// The popover is a panel that dismisses the moment it loses key, and the
+    /// "microphone is live" card is raised at exactly the moment the user is
+    /// about to click over to the call app. The Repair Now notification action
+    /// has no window at all. Without a host the user's click produced nothing.
+    private func ensureConfirmationHasAHost() {
+        guard pendingConfirmation != nil else { return }
+        guard !WindowPresenter.shared.hasVisibleWindow else { return }
+        WindowPresenter.shared.showSettings(model: self)
+    }
+
     /// The single entry point for every setup button in the app, so the
     /// popover, Settings, and the first-run window cannot disagree about what
     /// "Turn On" means.
@@ -354,7 +394,15 @@ final class AppModel: ObservableObject {
                 loginItemManager.enable()
             }
         case .notifications:
-            notificationController.openSystemSettings()
+            // macOS gives an app exactly one authorization prompt, ever. It
+            // used to be spent by `init`, one run-loop turn ahead of the
+            // welcome window — so a user who declined in the first seconds
+            // could never be asked again. Now the button spends it.
+            if notificationController.authorizationChecked && !notificationController.isAuthorized {
+                notificationController.openSystemSettings()
+            } else {
+                notificationController.requestAuthorization()
+            }
         }
     }
 
@@ -364,7 +412,11 @@ final class AppModel: ObservableObject {
         monitoringState = .starting
         do {
             try monitor.start()
+            guard monitor.isAttached else {
+                throw CoreAudioMonitorError.allocationFailed
+            }
             monitoringState = .monitoring
+            needsAttention = false
             refreshCurrentDevice()
             record(.init(kind: .monitorStarted, summary: "Core Audio monitoring started."))
         } catch {
@@ -386,7 +438,6 @@ final class AppModel: ObservableObject {
     }
 
     func refreshAll() {
-        acknowledgeAttention()
         refreshCurrentDevice()
         helperManager.refreshStatus(testReachability: true)
         loginItemManager.refresh()
@@ -413,8 +464,11 @@ final class AppModel: ObservableObject {
     // MARK: User-initiated repair
 
     func requestManualRepair() {
-        guard !isRepairing else { return }
+        guard !isRepairing, !isPreparingRepair else { return }
+        isPreparingRepair = true
+        throttleNotice = nil
         Task {
+            defer { isPreparingRepair = false }
             let protectMicrophone = settings.protectMicrophone
             let protectApps = settings.protectCommunicationApps
             let report = await Task.detached(priority: .utility) { [safetyChecker] in
@@ -431,6 +485,7 @@ final class AppModel: ObservableObject {
                     message: report.blockers.joined(separator: "\n\n")
                         + "\n\nRestarting Core Audio briefly disconnects playback and recording."
                 )
+                ensureConfirmationHasAHost()
             }
         }
     }
@@ -447,6 +502,19 @@ final class AppModel: ObservableObject {
     /// The one place that decides *which* privileged path a manual repair
     /// takes. If the helper can do it, it does — silently and without a
     /// password. If it cannot, Fennec asks before summoning an admin prompt.
+    /// The first-run window's own test repair.
+    ///
+    /// It is deliberately not counted as an incident: the days-without-
+    /// incident sign justifies counting manual repairs because "the user only
+    /// pressed the button because something was wrong", which is precisely
+    /// untrue of the one repair the product asks them to run.
+    func requestRehearsalRepair() {
+        rehearsalRequested = true
+        requestManualRepair()
+    }
+
+    private var isRehearsal: Bool { rehearsalRequested }
+
     private func beginManualRepair() async {
         if helperManager.state.isReachable {
             await performRepair(trigger: .manual, decision: nil, viaAdministratorPrompt: false)
@@ -458,6 +526,7 @@ final class AppModel: ObservableObject {
                 : "Fennec's repair helper is not enabled, so it cannot restart Core Audio on its own.",
             command: PrivilegedPromptRepair.command
         )
+        ensureConfirmationHasAHost()
     }
 
     func confirmAdministratorRepair() {
@@ -701,6 +770,7 @@ final class AppModel: ObservableObject {
                 message: message
             )
             repairHistory.record(repair)
+            lastRepairID = repair.id
             lastError = nil
             detectionNotificationBudget.reset()
             record(.init(
@@ -714,15 +784,47 @@ final class AppModel: ObservableObject {
             beginVerification(of: repair)
 
             try? await Task.sleep(for: .milliseconds(1200))
-            do {
-                try monitor.restart()
+            // Off the main actor on purpose. Rebuilding the listener graph is
+            // ~25 synchronous HAL round-trips, scheduled 1.2 s after
+            // coreaudiod was killed — inside the window where the replacement
+            // is still publishing its object graph and HAL calls block. On the
+            // main thread that is a beachball at the exact moment the user is
+            // watching to see whether the repair worked.
+            let restartError = await Task.detached(priority: .userInitiated) { [monitor] in
+                do {
+                    try monitor.restart()
+                    return nil as String?
+                } catch {
+                    return error.localizedDescription
+                }
+            }.value
+
+            if let restartError {
+                monitoringState = .failed(restartError)
+                lastError = restartError
+                needsAttention = true
+                record(.init(kind: .monitorError, summary: restartError))
+            } else {
                 monitoringState = .monitoring
                 refreshCurrentDevice()
-            } catch {
-                monitoringState = .failed(error.localizedDescription)
-                lastError = error.localizedDescription
-                record(.init(kind: .monitorError, summary: error.localizedDescription))
             }
+        } catch is RepairCancelled {
+            // The user pressed Cancel on the password prompt. That is a
+            // decision, not a fault: no red receipt, no alarm, no attention
+            // mark, and no reset of the days-without-incident sign.
+            record(.init(kind: .repairSkipped, summary: "Administrator authorization was cancelled."))
+            isRepairing = false
+            return
+        } catch let error as HelperCallError where error.isThrottled {
+            // The helper enforces its own 20-second floor. "Did that help? Let
+            // me press it again" is the most predictable thing a person does
+            // after a manual repair, and reporting the rate limiter as a
+            // failed repair told them their Mac was broken when it was not.
+            lastError = nil
+            record(.init(kind: .repairSkipped, summary: error.message))
+            throttleNotice = error.message
+            isRepairing = false
+            return
         } catch {
             let repair = makeRecord(
                 trigger: trigger,
@@ -747,6 +849,7 @@ final class AppModel: ObservableObject {
             if let standDown { announceStandDownIfNeeded(standDown) }
         }
 
+        rehearsalRequested = false
         isRepairing = false
     }
 
@@ -815,7 +918,7 @@ final class AppModel: ObservableObject {
         message: String
     ) -> RepairRecord {
         RepairRecord(
-            trigger: trigger,
+            trigger: trigger == .manual && isRehearsal ? .rehearsal : trigger,
             signal: decision?.signal,
             signalCount: decision?.signalCount ?? 0,
             elapsedSeconds: decision?.elapsedSeconds ?? 0,
@@ -848,9 +951,36 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Errors from the monitor's own queue.
+    ///
+    /// The dangerous case is a failed listener rebuild after a Core Audio
+    /// service restart — which is exactly what happens right after Fennec
+    /// restarts `coreaudiod`. `rebuildListenersLocked()` removes every
+    /// registration on the way out, so the monitor keeps its timer and loses
+    /// its ears. This used to leave the popover showing a blue dot and the
+    /// word "Listening" over an app that could no longer hear anything.
     private func handleMonitorError(_ error: Error) {
         lastError = error.localizedDescription
         record(.init(kind: .monitorError, summary: error.localizedDescription))
+
+        guard !monitor.isAttached else { return }
+
+        monitoringState = .failed("Fennec lost its Core Audio listeners: \(error.localizedDescription)")
+        needsAttention = true
+
+        guard !monitorRecoveryInFlight else { return }
+        monitorRecoveryInFlight = true
+        Task { [weak self] in
+            // One automatic retry, after the graph has had a moment. If the
+            // machine is mid-restart this usually succeeds; if it does not,
+            // the user gets a Restart Monitor button rather than silence.
+            try? await Task.sleep(for: .seconds(3))
+            guard let self else { return }
+            self.monitorRecoveryInFlight = false
+            guard !self.monitor.isAttached else { return }
+            self.record(.init(kind: .monitorStarted, summary: "Retrying the Core Audio listener graph."))
+            self.restartMonitoring()
+        }
     }
 
     private func notifyUnrepaired(_ decision: DetectionDecision, blocker: String?) {

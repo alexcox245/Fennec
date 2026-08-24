@@ -4,6 +4,12 @@ import ServiceManagement
 struct HelperCallError: LocalizedError {
     let message: String
     var errorDescription: String? { message }
+
+    /// The helper enforces its own 20-second floor between restarts and
+    /// reports it as `success == false`, which is indistinguishable from a
+    /// real failure at this layer. The marker lets the app tell a rate limiter
+    /// from a fault instead of telling the user their Mac is broken.
+    var isThrottled: Bool { message.hasPrefix(HelperThrottle.marker) }
 }
 
 enum RepairHelperState: Equatable {
@@ -157,6 +163,9 @@ struct HelperClient: Sendable {
 final class HelperManager: ObservableObject {
     @Published private(set) var state: RepairHelperState = .notConfigured
     @Published private(set) var lastError: String?
+    /// True while a `ping` is in flight. Purely cosmetic — no repair gate
+    /// reads it, because a probe in progress is not a reason to refuse.
+    @Published private(set) var isChecking = false
     /// Who answered the last `ping`. Shown in About so the disclosure
     /// describes the helper that is actually running, not the one in this
     /// bundle.
@@ -166,6 +175,14 @@ final class HelperManager: ObservableObject {
     var appBuild: String? { Bundle.main.infoDictionary?["CFBundleVersion"] as? String }
 
     var versionMismatch: String? { identity?.mismatch(againstAppBuild: appBuild) }
+
+    /// Whether macOS holds a registration for the daemon at all — which is a
+    /// different question from whether it is answering, and the one that
+    /// matters when deciding whether removal has anything to remove.
+    /// `.requiresApproval` is registered.
+    var isRegistered: Bool {
+        service.status != .notRegistered && service.status != .notFound
+    }
 
     private let service = SMAppService.daemon(plistName: AppConstants.helperPlistName)
     private let client = HelperClient()
@@ -177,8 +194,16 @@ final class HelperManager: ObservableObject {
     func refreshStatus(testReachability: Bool = true) {
         switch service.status {
         case .enabled:
-            state = .enabled(reachable: false)
+            // Do NOT publish `reachable: false` here. This method is the
+            // `.task` of the popover and every window, so a fully configured
+            // Fennec rendered as unconfigured — auto-repair toggle disabled,
+            // an orange "Finish setup" card inserted mid-panel — for the
+            // duration of every ping. Worse, a detection landing in that gap
+            // hit `guard helperManager.state.isReachable` and was skipped as
+            // "the helper is not enabled" while it was answering perfectly.
+            if !state.isEnabled { state = .enabled(reachable: false) }
             guard testReachability else { return }
+            isChecking = true
             Task {
                 do {
                     let reply = try await client.ping()
@@ -190,6 +215,7 @@ final class HelperManager: ObservableObject {
                     state = .enabled(reachable: false)
                     lastError = error.localizedDescription
                 }
+                isChecking = false
             }
         case .requiresApproval:
             state = .awaitingApproval

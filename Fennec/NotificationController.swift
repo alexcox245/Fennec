@@ -24,6 +24,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
     }
 
     var onRepairRequested: (() -> Void)?
+    var onShowActivityRequested: (() -> Void)?
 
     /// `false` until the user has answered the system prompt, or when they
     /// said no. The UI uses this to explain why nothing appears.
@@ -197,6 +198,12 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
             switch identifier {
             case Action.repair:
                 self.onRepairRequested?()
+            case UNNotificationDefaultActionIdentifier:
+                // Clicking the banner is what people actually do, and in an
+                // LSUIElement app it used to do literally nothing — which for
+                // the success and resume banners, neither of which has any
+                // buttons, meant they were inert end to end.
+                self.onShowActivityRequested?()
             default:
                 break
             }

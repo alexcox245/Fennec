@@ -21,7 +21,18 @@ struct HelperIdentity: Equatable, Sendable {
     /// `ready euid=0 build=7 path=/Applications/Fennec.app/Contents/MacOS/FennecHelper`
     static func parse(_ reply: String) -> HelperIdentity {
         var fields: [String: String] = [:]
-        for token in reply.split(separator: " ") {
+        // `path=` is last and is taken as the remainder: the reply is not
+        // quoted, so a helper under "/Volumes/Work Drive/…" used to report
+        // `path=/Volumes/Work` — a nonexistent path printed as fact in the one
+        // panel whose whole purpose is telling the truth about what runs as
+        // root. `euid` and `build` still parsed, so the raw fallback never
+        // fired either.
+        var head = reply
+        if let range = reply.range(of: " path=") {
+            fields["path"] = String(reply[range.upperBound...])
+            head = String(reply[..<range.lowerBound])
+        }
+        for token in head.split(separator: " ") {
             let parts = token.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
             guard parts.count == 2, !parts[0].isEmpty else { continue }
             fields[String(parts[0])] = String(parts[1])

@@ -196,31 +196,47 @@ struct WelcomeView: View {
 
             HStack(spacing: 12) {
                 Button {
-                    model.requestManualRepair()
+                    // A rehearsal, not a repair: nothing was wrong, so it must
+                    // not reset the days-without-incident sign or be counted
+                    // as damage in the lifetime tally.
+                    model.requestRehearsalRepair()
                 } label: {
-                    Label(model.isRepairing ? "Restarting Core Audio…" : "Run a Test Repair",
-                          systemImage: "arrow.triangle.2.circlepath")
+                    Label(testButtonTitle, systemImage: "arrow.triangle.2.circlepath")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(FennecBrand.sky)
-                .disabled(model.isRepairing)
+                .disabled(model.isRepairing || model.isPreparingRepair)
 
-                if model.isRepairing {
+                if model.isRepairing || model.isPreparingRepair {
                     ProgressView().controlSize(.small)
                 }
                 Spacer()
             }
 
-            if let repair = history.records.first {
+            if let repair = testRepair {
                 testResult(repair)
             }
         }
     }
 
+    private var testButtonTitle: String {
+        if model.isRepairing { return "Restarting Core Audio…" }
+        if model.isPreparingRepair { return "Checking what is using audio…" }
+        return "Run a Test Repair"
+    }
+
+    /// Only the repair this window asked for. Reopening the window from the
+    /// Help menu or the stand-down card used to show the newest record of any
+    /// kind — captioned "That is what an automatic repair will cost you."
+    private var testRepair: RepairRecord? {
+        guard let id = model.lastRepairID else { return nil }
+        return history.records.first { $0.id == id }
+    }
+
     private func testResult(_ repair: RepairRecord) -> some View {
-        let accent = repair.succeeded ? FennecBrand.gold : Color.red
+        let accent = FennecBrand.accent(for: repair.outcome)
         return HStack(alignment: .top, spacing: 11) {
-            Image(systemName: repair.succeeded ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+            Image(systemName: repair.outcome.symbolName)
                 .foregroundStyle(accent)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {

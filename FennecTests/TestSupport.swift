@@ -1,5 +1,6 @@
 import CoreAudio
 import Foundation
+import SwiftUI
 
 /// Shared fixtures. Kept deliberately small: these tests exercise pure logic
 /// only, so nothing here touches Core Audio, the helper, or the user's disk

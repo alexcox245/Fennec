@@ -22,6 +22,7 @@ struct AboutView: View {
     @StateObject private var uninstaller = Uninstaller()
 
     @State private var showingUninstall = false
+    @State private var confirmingHelperRemoval = false
     @State private var keepLogs = true
 
     init(model: AppModel) {
@@ -42,6 +43,16 @@ struct AboutView: View {
         .frame(minWidth: 540, minHeight: 560)
         .task { model.refreshAll() }
         .sheet(isPresented: $showingUninstall) { uninstallSheet }
+        .confirmationDialog(
+            "Remove Fennec's root helper?",
+            isPresented: $confirmingHelperRemoval,
+            titleVisibility: .visible
+        ) {
+            Button("Remove Helper", role: .destructive) { helper.unregister() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Automatic repair stops immediately. Turning it back on needs your approval in System Settings again. Repair Audio Now will still work, using your administrator password.")
+        }
     }
 
     // MARK: Sections
@@ -170,8 +181,10 @@ struct AboutView: View {
                 Button("Uninstall Fennec…") { showingUninstall = true }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
-                if helper.state.isEnabled {
-                    Button("Remove Helper Only") { helper.unregister() }
+                if helper.isRegistered {
+                    Button("Remove Helper Only…") { confirmingHelperRemoval = true }
+                        .tint(.red)
+                        .help("Unregisters the root helper. Automatic repair stops, and turning it back on needs approval in System Settings again.")
                 }
                 Spacer()
             }
@@ -182,7 +195,10 @@ struct AboutView: View {
 
     private var uninstallSteps: [UninstallPlan.Step] {
         UninstallPlan.steps(
-            helperInstalled: helper.state.isEnabled,
+            // Registration, not reachability: a daemon awaiting approval is
+            // registered, and dropping it from the plan produced "Fennec is
+            // removed" over a root helper that was still there.
+            helperInstalled: helper.isRegistered,
             loginItemEnabled: model.loginItemManager.isEnabled,
             keepLogs: keepLogs,
             canRemoveBundle: true
@@ -197,7 +213,7 @@ struct AboutView: View {
 
             if uninstaller.finished {
                 Text(uninstaller.allSucceeded
-                     ? "Fennec is removed. Quitting now."
+                     ? "Fennec is removed. Quit to finish."
                      : (uninstaller.failureSummary ?? "Some steps did not complete."))
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
@@ -240,16 +256,30 @@ struct AboutView: View {
                     .font(.callout)
             }
 
-            HStack {
-                if uninstaller.isRunning { ProgressView().controlSize(.small) }
+            HStack(spacing: 10) {
+                if uninstaller.isRunning {
+                    ProgressView().controlSize(.small)
+                    Text("Removing…").font(.callout).foregroundStyle(.secondary)
+                }
                 Spacer()
+
                 if uninstaller.finished {
+                    // Always an exit. A sheet whose only control is "Quit" is
+                    // a dead end for anyone reading a partial-failure report.
+                    Button("Close") { showingUninstall = false }
+                        .keyboardShortcut(.cancelAction)
+                    if !uninstaller.allSucceeded && uninstaller.canRetry {
+                        Button("Try Again") {
+                            uninstaller.reset()
+                        }
+                    }
                     Button("Quit Fennec") { model.quit() }
                         .keyboardShortcut(.defaultAction)
                         .buttonStyle(.borderedProminent)
                 } else {
                     Button("Cancel") { showingUninstall = false }
                         .keyboardShortcut(.cancelAction)
+                        .disabled(uninstaller.isRunning)
                     Button("Uninstall") {
                         let steps = uninstallSteps
                         Task { await uninstaller.run(keepLogs: keepLogs, steps: steps) }

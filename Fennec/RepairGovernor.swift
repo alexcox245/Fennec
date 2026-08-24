@@ -16,6 +16,22 @@ enum RepairOutcome: String, Codable, Sendable {
     case failed
 
     var isVerified: Bool { self == .held }
+
+    /// The one place that decides how an outcome looks.
+    ///
+    /// `succeeded` is fixed at repair time; `outcome` is the axis that later
+    /// becomes `.held` or `.returned`. Keying the receipt's accent off
+    /// `succeeded` produced a gold seal directly above the headline
+    /// "Restarted, but the fault came back" — one card asserting two opposite
+    /// things, on the machine where the truth matters most.
+    var symbolName: String {
+        switch self {
+        case .held: return "checkmark.seal.fill"
+        case .pending: return "clock"
+        case .returned: return "arrow.uturn.backward.circle.fill"
+        case .failed: return "exclamationmark.triangle.fill"
+        }
+    }
 }
 
 /// When to stop trying.

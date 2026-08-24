@@ -57,7 +57,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Poll rather than observe: this runs once, on quit, and a Combine
             // subscription that has to be torn down correctly during
             // termination is more ways to hang than a timer.
-            Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { timer in
+            //
+            // `.common` is load-bearing. AppKit runs the loop in
+            // `NSModalPanelRunLoopMode` while a termination is deferred, so a
+            // `Timer.scheduledTimer` — which registers in `.default` only —
+            // never fires, `reply(toApplicationShouldTerminate:)` is never
+            // called, and ⌘Q hangs until Force Quit.
+            let timer = Timer(timeInterval: 0.25, repeats: true) { timer in
                 MainActor.assumeIsolated {
                     guard let model = Self.model else {
                         timer.invalidate()
@@ -66,10 +72,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     }
                     if !model.isRepairing || Date() >= deadline {
                         timer.invalidate()
+                        // If the grace ran out we are almost certainly waiting
+                        // on a human at an administrator password dialog.
+                        // Leaving that dialog on screen owned by a process
+                        // that is about to exit is the credential-phishing
+                        // signature T-015 was written to remove.
+                        if Date() >= deadline { PrivilegedPromptRepair.cancelInFlight() }
                         NSApp.reply(toApplicationShouldTerminate: true)
                     }
                 }
             }
+            RunLoop.main.add(timer, forMode: .common)
             return .terminateLater
         }
     }

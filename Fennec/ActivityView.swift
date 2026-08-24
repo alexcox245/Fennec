@@ -37,7 +37,7 @@ struct ActivityView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 20) {
                 statistic(RepairCopy.headlineNumber(for: history.summary), "repairs that held", accent: FennecBrand.gold)
-                statistic("\(history.summary.last7Days)", "in the last 7 days")
+                statistic("\(history.summary.last7Days)", "attempts in 7 days")
                 if let typical = history.summary.typicalSeconds {
                     statistic(RepairCopy.duration(typical), "typical gap")
                 }
@@ -131,8 +131,8 @@ struct ActivityView: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 78, alignment: .leading)
 
-            Image(systemName: symbol(for: record))
-                .foregroundStyle(tint(for: record))
+            Image(systemName: record.outcome.symbolName)
+                .foregroundStyle(FennecBrand.accent(for: record.outcome))
                 .frame(width: 16)
                 .accessibilityHidden(true)
 
@@ -159,24 +159,6 @@ struct ActivityView: View {
             "\(record.date.formatted(date: .omitted, time: .shortened)). "
             + "\(RepairCopy.receiptHeadline(for: record)). \(RepairCopy.receiptDetail(for: record))"
         )
-    }
-
-    private func symbol(for record: RepairRecord) -> String {
-        switch record.outcome {
-        case .held: return "checkmark.seal.fill"
-        case .pending: return "clock"
-        case .returned: return "arrow.uturn.backward.circle.fill"
-        case .failed: return "exclamationmark.triangle.fill"
-        }
-    }
-
-    private func tint(for record: RepairRecord) -> Color {
-        switch record.outcome {
-        case .held: return FennecBrand.gold
-        case .pending: return .secondary
-        case .returned: return FennecBrand.dune
-        case .failed: return .red
-        }
     }
 
     // MARK: Grouping

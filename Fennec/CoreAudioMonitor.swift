@@ -96,6 +96,20 @@ final class CoreAudioMonitor: @unchecked Sendable {
         }
     }
 
+    /// Whether any property listener is currently installed.
+    ///
+    /// `rebuildListenersLocked()` deliberately removes every registration when
+    /// a rebuild fails part-way, so this can be `false` while `isRunning` is
+    /// still `true` — Fennec has a timer and no ears. The app has to be able
+    /// to tell the difference, because that state used to render as
+    /// "Listening" forever.
+    var isAttached: Bool {
+        if DispatchQueue.getSpecific(key: queueKey) != nil {
+            return !registrations.isEmpty
+        }
+        return controlQueue.sync { !registrations.isEmpty }
+    }
+
     func refreshDeviceSnapshot() {
         controlQueue.async { [weak self] in
             guard let self else { return }

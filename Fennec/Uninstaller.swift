@@ -33,6 +33,9 @@ enum UninstallPlan {
     /// would be no-ops are omitted rather than reported as "done", because a
     /// checklist of things that did not happen teaches the user nothing.
     static func steps(
+        /// **Registered**, not reachable. `.requiresApproval` is registered:
+        /// keying this off `RepairHelperState.isEnabled` silently dropped the
+        /// daemon from the plan and then reported "Fennec is removed".
         helperInstalled: Bool,
         loginItemEnabled: Bool,
         keepLogs: Bool,
@@ -145,7 +148,18 @@ final class Uninstaller: ObservableObject {
                 UserDefaults.standard.removePersistentDomain(forName: AppConstants.appBundleIdentifier)
                 results[.preferences] = .done
             case .bundle:
-                results[.bundle] = await recycleBundle()
+                // Never trash the app while the daemon is still registered.
+                // That is precisely the state ground rule 12 exists to
+                // prevent — a root LaunchDaemon pointing at a binary in the
+                // Trash, and no app left to retry the removal from.
+                if results[.helper]?.succeeded == false {
+                    results[.bundle] = .failed(
+                        "Left in place on purpose: the root helper is still registered, "
+                        + "so Fennec is still here to retry."
+                    )
+                } else {
+                    results[.bundle] = await recycleBundle()
+                }
             }
         }
 
@@ -157,14 +171,37 @@ final class Uninstaller: ObservableObject {
         !results.isEmpty && results.values.allSatisfy(\.succeeded)
     }
 
-    /// Only the failures, phrased so the user knows what is left on their Mac.
+    /// True when the app is still on disk, so the user can try again.
+    var canRetry: Bool {
+        results[.bundle]?.succeeded != true
+    }
+
+    /// Only the failures, phrased so the user knows what is left on their Mac
+    /// and named by the step they will recognise rather than by an enum case.
     var failureSummary: String? {
         let failures = results.compactMap { kind, result -> String? in
             guard case .failed(let message) = result else { return nil }
-            return "\(kind.rawValue): \(message)"
+            return "· \(Self.label(for: kind)): \(message)"
         }.sorted()
         guard !failures.isEmpty else { return nil }
         return "macOS refused part of the removal:\n" + failures.joined(separator: "\n")
+    }
+
+    private static func label(for kind: UninstallPlan.Step.Kind) -> String {
+        switch kind {
+        case .helper: return "Root helper"
+        case .loginItem: return "Login item"
+        case .supportFiles: return "Log and repair history"
+        case .preferences: return "Settings"
+        case .bundle: return "Move to Trash"
+        }
+    }
+
+    /// Lets the user try again after a partial failure without relaunching.
+    func reset() {
+        guard !isRunning else { return }
+        results = [:]
+        finished = false
     }
 
     private func perform(_ work: () throws -> Void) -> UninstallStepResult {
