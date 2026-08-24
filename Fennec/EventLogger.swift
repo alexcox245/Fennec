@@ -12,6 +12,7 @@ struct ActivityRecord: Identifiable, Codable, Equatable, Sendable {
         case repairSkipped
         case deviceChanged
         case serviceRestarted
+        case suppressed
         case helper
     }
 

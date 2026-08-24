@@ -30,8 +30,8 @@ struct FennecApp: App {
             MenuView(model: model)
                 .tint(FennecBrand.sky)
         } label: {
-            Image(systemName: model.menuBarSymbol)
-                .accessibilityLabel("Fennec")
+            Image(nsImage: MenuBarIcon.image(for: model.menuBarIconState))
+                .accessibilityLabel(model.menuBarIconState.accessibilityLabel)
         }
         .menuBarExtraStyle(.window)
 

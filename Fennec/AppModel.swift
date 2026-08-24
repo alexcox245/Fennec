@@ -1,11 +1,6 @@
 import AppKit
 import Foundation
 
-struct ManualRepairWarning: Identifiable, Equatable {
-    let id = UUID()
-    let message: String
-}
-
 enum MonitoringState: Equatable {
     case starting
     case monitoring
@@ -35,6 +30,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var isRepairing = false
     @Published private(set) var recentActivity: [ActivityRecord] = []
     @Published var manualRepairWarning: ManualRepairWarning?
+    @Published var administratorRepairRequest: AdministratorRepairRequest?
 
     let settings: SettingsStore
     let helperManager: HelperManager
@@ -46,8 +42,14 @@ final class AppModel: ObservableObject {
     private let detectionEngine = DetectionEngine()
     private let safetyChecker = RecoverySafetyChecker()
     private let eventLogger = EventLogger()
+    private let systemEvents = SystemEventObserver()
     private var suppressSignalsUntil = Date.distantPast
     private var detectionTaskActive = false
+    /// Keyed on the last *attempt*, not the last success. A machine whose
+    /// repairs keep failing needs the cooldown more than one whose repairs
+    /// work, not less.
+    private var lastRepairAttemptDate: Date?
+    private var detectionNotificationBudget = NotificationBudget()
 
     init() {
         settings = SettingsStore()
@@ -72,7 +74,15 @@ final class AppModel: ObservableObject {
             }
         }
 
+        systemEvents.onEvent = { [weak self] event in
+            self?.beQuiet(for: event)
+        }
+
         startMonitoring()
+        // The graph Fennec just attached to may already have signals queued
+        // against it, and a login launch lands in the middle of the same
+        // renegotiation a wake does.
+        beQuiet(for: .launch, log: false)
     }
 
     deinit {
@@ -89,14 +99,26 @@ final class AppModel: ObservableObject {
 
     var lastRepairDate: Date? { lastSuccessfulRepair?.date }
 
-    var menuBarSymbol: String {
-        if isRepairing { return "arrow.triangle.2.circlepath" }
+    /// The menu bar is Fennec's only persistent channel. A banner auto-
+    /// dismisses and a sound played through a broken audio system was never an
+    /// escalation at all — so anything that needs the user leaves a visible
+    /// mark here until they look.
+    var menuBarIconState: MenuBarIconState {
+        if isRepairing { return .repairing }
+        if needsAttention { return .attention }
         switch monitoringState {
-        case .monitoring: return "waveform"
-        case .starting: return "ellipsis.circle"
-        case .stopped: return "waveform.slash"
-        case .failed: return "exclamationmark.triangle"
+        case .monitoring, .starting: return .listening
+        case .stopped: return .paused
+        case .failed: return .attention
         }
+    }
+
+    /// Cleared when the user opens the popover, which is the moment they have
+    /// actually seen it.
+    @Published private(set) var needsAttention = false
+
+    func acknowledgeAttention() {
+        needsAttention = false
     }
 
     var statusDetail: String {
@@ -109,6 +131,28 @@ final class AppModel: ObservableObject {
             return "Crackle detection is stopped."
         case .failed(let message):
             return message
+        }
+    }
+
+    /// The single question the UI is currently asking, if any. One property
+    /// so the popover and Settings render the same card.
+    var pendingConfirmation: PendingConfirmation? {
+        if let administratorRepairRequest { return .administrator(administratorRepairRequest) }
+        if let manualRepairWarning { return .audioInUse(manualRepairWarning) }
+        return nil
+    }
+
+    func confirm(_ confirmation: PendingConfirmation) {
+        switch confirmation {
+        case .audioInUse: confirmManualRepair()
+        case .administrator: confirmAdministratorRepair()
+        }
+    }
+
+    func cancel(_ confirmation: PendingConfirmation) {
+        switch confirmation {
+        case .audioInUse: cancelManualRepair()
+        case .administrator: cancelAdministratorRepair()
         }
     }
 
@@ -195,11 +239,28 @@ final class AppModel: ObservableObject {
     }
 
     func refreshAll() {
+        acknowledgeAttention()
         refreshCurrentDevice()
         helperManager.refreshStatus(testReachability: true)
         loginItemManager.refresh()
         notificationController.refreshAuthorization()
         repairHistory.refreshSummary()
+    }
+
+    /// Extends the suppression window. Never shortens it: two events that
+    /// overlap should leave the longer of the two in force.
+    private func beQuiet(for event: SystemEvent, log: Bool = true) {
+        let until = Date().addingTimeInterval(event.quietSeconds)
+        guard until > suppressSignalsUntil else { return }
+        suppressSignalsUntil = until
+        detectionEngine.reset()
+        if log {
+            record(.init(
+                kind: .suppressed,
+                summary: event.reason,
+                details: ["event": event.rawValue, "seconds": String(Int(event.quietSeconds))]
+            ))
+        }
     }
 
     // MARK: User-initiated repair
@@ -217,7 +278,7 @@ final class AppModel: ObservableObject {
             }.value
 
             if report.canAutoRepair {
-                await performRepair(trigger: .manual, decision: nil)
+                await beginManualRepair()
             } else {
                 manualRepairWarning = ManualRepairWarning(
                     message: report.blockers.joined(separator: "\n\n")
@@ -229,11 +290,37 @@ final class AppModel: ObservableObject {
 
     func confirmManualRepair() {
         manualRepairWarning = nil
-        Task { await performRepair(trigger: .manual, decision: nil) }
+        Task { await beginManualRepair() }
     }
 
     func cancelManualRepair() {
         manualRepairWarning = nil
+    }
+
+    /// The one place that decides *which* privileged path a manual repair
+    /// takes. If the helper can do it, it does — silently and without a
+    /// password. If it cannot, Fennec asks before summoning an admin prompt.
+    private func beginManualRepair() async {
+        if helperManager.state.isReachable {
+            await performRepair(trigger: .manual, decision: nil, viaAdministratorPrompt: false)
+            return
+        }
+        administratorRepairRequest = AdministratorRepairRequest(
+            reason: helperManager.state.isEnabled
+                ? "Fennec's repair helper is installed but is not answering, so it cannot restart Core Audio on its own."
+                : "Fennec's repair helper is not enabled, so it cannot restart Core Audio on its own.",
+            command: PrivilegedPromptRepair.command
+        )
+    }
+
+    func confirmAdministratorRepair() {
+        administratorRepairRequest = nil
+        Task { await performRepair(trigger: .manual, decision: nil, viaAdministratorPrompt: true) }
+    }
+
+    func cancelAdministratorRepair() {
+        administratorRepairRequest = nil
+        record(.init(kind: .repairSkipped, summary: "Administrator repair was cancelled."))
     }
 
     func openEventLog() {
@@ -351,15 +438,29 @@ final class AppModel: ObservableObject {
             return
         }
 
-        if let lastRepairDate {
-            let elapsed = Date().timeIntervalSince(lastRepairDate)
+        // The cooldown sits above every remaining gate on purpose. It used to
+        // sit below the helper check and key off the last *successful* repair,
+        // which meant a machine that had never repaired had no cooldown at all
+        // — so a fresh install, helper not yet enabled, answered every signal
+        // burst with another banner.
+        if let lastRepairAttemptDate {
+            let elapsed = Date().timeIntervalSince(lastRepairAttemptDate)
             if elapsed < settings.cooldownSeconds {
                 let remaining = Int(ceil(settings.cooldownSeconds - elapsed))
-                // Deliberately silent: the user was told about the repair that
-                // started this cooldown seconds ago.
+                // Deliberately silent: the user was told about the attempt
+                // that started this cooldown, seconds ago.
                 recordSkipped("Repair cooldown is active for another \(remaining) seconds.")
                 return
             }
+        }
+
+        guard LoginSession.isOnConsole() else {
+            // A repair is system-wide but the safety checks only see this
+            // user's processes. Acting from a background session could cut
+            // someone else's call and report the machine was clear.
+            let blocker = "Fennec is not the session at the keyboard."
+            recordSkipped(blocker)
+            return
         }
 
         guard helperManager.state.isReachable else {
@@ -385,14 +486,19 @@ final class AppModel: ObservableObject {
             return
         }
 
-        await performRepair(trigger: .automatic, decision: decision)
+        await performRepair(trigger: .automatic, decision: decision, viaAdministratorPrompt: false)
     }
 
     // MARK: The repair itself
 
-    private func performRepair(trigger: RepairRecord.Trigger, decision: DetectionDecision?) async {
+    private func performRepair(
+        trigger: RepairRecord.Trigger,
+        decision: DetectionDecision?,
+        viaAdministratorPrompt: Bool
+    ) async {
         guard !isRepairing else { return }
         isRepairing = true
+        lastRepairAttemptDate = Date()
         detectionEngine.reset()
         suppressSignalsUntil = Date().addingTimeInterval(12)
 
@@ -408,18 +514,14 @@ final class AppModel: ObservableObject {
         let started = Date()
 
         do {
-            let message: String
-            if automatic {
-                message = try await helperManager.restartCoreAudio()
-            } else if helperManager.state.isEnabled {
-                do {
-                    message = try await helperManager.restartCoreAudio()
-                } catch {
-                    message = try await PrivilegedPromptRepair.restartCoreAudio()
-                }
-            } else {
-                message = try await PrivilegedPromptRepair.restartCoreAudio()
-            }
+            // Exactly one privileged path per attempt, chosen before the call.
+            // The previous version fell through to an administrator prompt
+            // whenever the helper threw, which meant a transient XPC hiccup
+            // could raise a password dialog the user never asked for and
+            // Fennec never explained.
+            let message = viaAdministratorPrompt
+                ? try await PrivilegedPromptRepair.restartCoreAudio()
+                : try await helperManager.restartCoreAudio()
 
             let repair = makeRecord(
                 trigger: trigger,
@@ -431,6 +533,7 @@ final class AppModel: ObservableObject {
             )
             repairHistory.record(repair)
             lastError = nil
+            detectionNotificationBudget.reset()
             record(.init(
                 kind: .repairSucceeded,
                 summary: message,
@@ -466,6 +569,7 @@ final class AppModel: ObservableObject {
                 summary: error.localizedDescription,
                 details: repairDetails(repair)
             ))
+            needsAttention = true
             // Always surfaced: a failed repair is the one case where the user
             // has to do something.
             notificationController.postRepairResult(repair)
@@ -523,7 +627,14 @@ final class AppModel: ObservableObject {
 
     private func notifyUnrepaired(_ decision: DetectionDecision, blocker: String?) {
         guard settings.notifyOnDetection else { return }
-        notificationController.postUnrepairedDetection(reason: decision.reason, blocker: blocker)
+        guard detectionNotificationBudget.allow() else { return }
+        let suppressed = detectionNotificationBudget.suppressedSinceLastPost()
+        detectionNotificationBudget.clearSuppressed()
+        notificationController.postUnrepairedDetection(
+            reason: decision.reason,
+            blocker: blocker,
+            alsoSuppressed: suppressed
+        )
     }
 
     private func recordSkipped(_ summary: String) {

@@ -109,23 +109,40 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
             content.sound = .default
         }
 
-        post(content, prefix: "repair")
+        post(content, identifier: Identifier.repair)
     }
 
     /// A crackle Fennec detected but did not repair. Always actionable —
     /// something is switched off, protected, or cooling down.
-    func postUnrepairedDetection(reason: String, blocker: String?) {
+    ///
+    /// `alsoSuppressed` is the count the notification budget swallowed since
+    /// the last banner. Suppression is never silent: if Fennec held twelve of
+    /// these back, the one that gets through says so.
+    func postUnrepairedDetection(reason: String, blocker: String?, alsoSuppressed: Int?) {
         let content = UNMutableNotificationContent()
         content.title = "Crackling detected"
-        content.body = [reason, blocker].compactMap { $0 }.joined(separator: " ")
+
+        var body = [reason, blocker].compactMap { $0 }.joined(separator: " ")
+        if let alsoSuppressed, alsoSuppressed > 0 {
+            body += " \(alsoSuppressed) more since the last time Fennec mentioned it."
+        }
+        content.body = body
         content.categoryIdentifier = Category.detected
         content.sound = .default
-        post(content, prefix: "detection")
+        post(content, identifier: Identifier.detection)
     }
 
-    private func post(_ content: UNMutableNotificationContent, prefix: String) {
+    /// Stable per-class identifiers, so a new banner *replaces* the previous
+    /// one of its kind instead of stacking. Notification Centre should never
+    /// accumulate a wall of Fennec.
+    private enum Identifier {
+        static let detection = "fennec.detection"
+        static let repair = "fennec.repair"
+    }
+
+    private func post(_ content: UNMutableNotificationContent, identifier: String) {
         let request = UNNotificationRequest(
-            identifier: "\(prefix)-\(UUID().uuidString)",
+            identifier: identifier,
             content: content,
             trigger: nil
         )

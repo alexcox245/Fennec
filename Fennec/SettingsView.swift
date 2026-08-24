@@ -29,18 +29,43 @@ struct SettingsView: View {
         }
         .frame(width: 650, height: 560)
         .task { model.refreshAll() }
-        .alert(item: $model.manualRepairWarning) { warning in
-            Alert(
-                title: Text("Audio is in use"),
-                message: Text(warning.message),
-                primaryButton: .destructive(Text("Repair Anyway")) {
-                    model.confirmManualRepair()
-                },
-                secondaryButton: .cancel {
-                    model.cancelManualRepair()
-                }
-            )
+        .sheet(item: Binding(
+            get: { model.pendingConfirmation },
+            set: { if $0 == nil, let open = model.pendingConfirmation { model.cancel(open) } }
+        )) { confirmation in
+            confirmationSheet(confirmation)
         }
+    }
+
+    /// Settings is a real window, so this can be a sheet — but it renders the
+    /// same `PendingConfirmation` as the popover's inline card, so the two
+    /// cannot say different things about the same decision.
+    private func confirmationSheet(_ confirmation: PendingConfirmation) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(confirmation.title)
+                .font(.headline)
+            Text(confirmation.message)
+                .fixedSize(horizontal: false, vertical: true)
+            if let detail = confirmation.monospacedDetail {
+                Text(detail)
+                    .font(.callout.monospaced())
+                    .textSelection(.enabled)
+                    .padding(9)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            }
+            HStack {
+                Spacer()
+                Button(confirmation.cancelTitle) { model.cancel(confirmation) }
+                    .keyboardShortcut(.cancelAction)
+                Button(confirmation.confirmTitle) { model.confirm(confirmation) }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+                    .tint(confirmation.isDestructive ? .red : FennecBrand.sky)
+            }
+        }
+        .padding(20)
+        .frame(width: 420)
     }
 
     private var brandHeader: some View {

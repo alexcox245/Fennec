@@ -27,18 +27,6 @@ struct MenuView: View {
         .padding(16)
         .frame(width: 384)
         .background(background)
-        .alert(item: $model.manualRepairWarning) { warning in
-            Alert(
-                title: Text("Audio is in use"),
-                message: Text(warning.message),
-                primaryButton: .destructive(Text("Repair Anyway")) {
-                    model.confirmManualRepair()
-                },
-                secondaryButton: .cancel {
-                    model.cancelManualRepair()
-                }
-            )
-        }
         .task { model.refreshAll() }
     }
 
@@ -145,22 +133,27 @@ struct MenuView: View {
 
     private var repairControls: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Button {
-                model.requestManualRepair()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                    Text(model.isRepairing ? "Restarting Core Audio…" : "Repair Audio Now")
-                        .fontWeight(.semibold)
-                    Spacer()
+            if let confirmation = model.pendingConfirmation {
+                confirmationCard(confirmation)
+            } else {
+                Button {
+                    model.requestManualRepair()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                        Text(model.isRepairing ? "Restarting Core Audio…" : "Repair Audio Now")
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(FennecBrand.sky)
+                .disabled(model.isRepairing)
+                .keyboardShortcut(.defaultAction)
+                .help("Restart Core Audio now. Playback and recording stop for about a second.")
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(FennecBrand.sky)
-            .disabled(model.isRepairing)
-            .help("Restart Core Audio now. Playback and recording stop for about a second.")
 
             Toggle(isOn: $settings.autoRepairEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -200,6 +193,57 @@ struct MenuView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// Asked inline, never as an alert.
+    ///
+    /// An `.alert` raised from a `MenuBarExtra(.window)` scene dismisses the
+    /// popover that is presenting it, so the dialog appears and vanishes in
+    /// the same frame. This card lives in the popover's own layout and cannot.
+    private func confirmationCard(_ confirmation: PendingConfirmation) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 7) {
+                Image(systemName: confirmation.isDestructive ? "exclamationmark.triangle.fill" : "lock.fill")
+                    .foregroundStyle(FennecBrand.dune)
+                    .accessibilityHidden(true)
+                Text(confirmation.title)
+                    .font(.subheadline.weight(.semibold))
+            }
+
+            Text(confirmation.message)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let detail = confirmation.monospacedDetail {
+                Text(detail)
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            }
+
+            HStack(spacing: 8) {
+                Spacer()
+                Button(confirmation.cancelTitle) { model.cancel(confirmation) }
+                    .keyboardShortcut(.cancelAction)
+                Button(confirmation.confirmTitle) { model.confirm(confirmation) }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+                    .tint(confirmation.isDestructive ? .red : FennecBrand.sky)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FennecBrand.dune.opacity(0.10), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke(FennecBrand.dune.opacity(0.30), lineWidth: 1)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(confirmation.accessibilityDescription)
     }
 
     /// The receipt. Aviator gold is reserved in the brand for exactly this —

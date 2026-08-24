@@ -1,6 +1,11 @@
 import Foundation
 
 enum PrivilegedPromptRepair {
+    /// The exact command the administrator prompt will run. Shown to the user
+    /// verbatim before they approve it, so the dialog is never a surprise and
+    /// the disclosure can never drift from the behaviour.
+    static let command = "/usr/bin/killall -TERM coreaudiod"
+
     static func restartCoreAudio() async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
@@ -9,7 +14,7 @@ enum PrivilegedPromptRepair {
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
                 process.arguments = [
                     "-e",
-                    "do shell script \"/usr/bin/killall -TERM coreaudiod\" with administrator privileges"
+                    "do shell script \"\(command)\" with administrator privileges"
                 ]
                 process.standardOutput = FileHandle.nullDevice
                 process.standardError = errorPipe

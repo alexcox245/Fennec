@@ -50,7 +50,9 @@ These are load-bearing. Violating one produces a build that looks fine and fails
 
 6. **Keep it a system utility.** Native macOS materials, typography, and controls stay intact. The brand lives in the icon, accents, and voice — not in a re-skinned UI. See §7.
 
-7. **User-facing repair copy lives in `RepairCopy.swift`, and it is under test.** The notification, the menu receipt, and the activity list must say the same thing in the same voice. `FennecTests/RepairCopyTests.swift` pins the exact strings, including a check that nothing shouts or uses emoji. If you need new copy, add it there rather than inlining a string in a view.
+7. **Never present an `.alert` or `.confirmationDialog` from the `MenuBarExtra` scene.** The popover is a panel that dismisses the moment it resigns key, and presenting an alert *is* what makes it resign key — so the dialog flashes and vanishes, on the code path that restarts the audio system. Ask inline with `PendingConfirmation` instead. Settings may use a sheet, but it renders the same `PendingConfirmation` so the two cannot disagree.
+
+8. **User-facing repair copy lives in `RepairCopy.swift`, and it is under test.** The notification, the menu receipt, and the activity list must say the same thing in the same voice. `FennecTests/RepairCopyTests.swift` pins the exact strings, including a check that nothing shouts or uses emoji. If you need new copy, add it there rather than inlining a string in a view.
 
 ---
 
@@ -78,6 +80,10 @@ Fennec/                        app target (15 Swift files, 1 C file)
   RepairHistoryStore.swift     persisted repair receipts + RepairSummary
   RepairCopy.swift             every user-facing sentence about a repair  ← see rule 7
   SetupChecklist.swift         pure readiness model behind every setup CTA
+  NotificationBudget.swift     rate limiter for the one banner class that bursts
+  SystemEvents.swift           wake/unlock/session quiet windows + console-session gate
+  PendingConfirmation.swift    the inline confirmation card's model  ← see rule 8
+  MenuBarIcon.swift            the fennec silhouette, drawn as a template NSImage
 
 FennecHelper/                  root LaunchDaemon target
   main.swift                   NSXPCListener bootstrap
@@ -287,7 +293,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-015**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-016**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -316,7 +322,8 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-006 | Add a unit-test target covering `DetectionEngine` and `EventLogger` | 2026-08-25 | `b0af227` | `FennecTests`, a standalone XCTest bundle (no `TEST_HOST`) compiling the pure-logic sources directly. `EventLogger` gained an injectable directory and size cap plus a test-only `flush(completion:)` so rotation is observable without writing 5 MB. Scheme `Fennec` now has a TestAction. |
 | T-011 | Make `audit-source.sh` verify `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `b0af227` | Added `Scripts/update-manifest.sh` (regenerates from `git ls-files`, so new files are never missed) and a `shasum -c` gate at the end of `audit-source.sh`. `FennecTests/*.swift` added to the per-file Swift parse. |
 | T-013 | Catch & Fix: automatic repair the user can see | 2026-08-25 | `35d35e8` | Auto-repair now defaults **on** (still inert until the helper is enabled). `DetectionDecision` carries the real elapsed span between signals, not just the configured window, so the copy can say "2 crackle signals in 5.8 s". Every repair is timed across the privileged call only and persisted as a `RepairRecord` in `repairs.json`; the popover shows the newest as a receipt in aviator gold, plus a running total. Notifications were rebuilt around proportionality: success is `.passive` with no sound and no buttons, failure and unrepaired-detection get a sound and an action. |
-| T-014 | Always On: start with the Mac, and say what is left to do | 2026-08-25 | `PENDING_SHA` | `LoginItemState` wraps `SMAppService.Status` with a name and a next step, and `LoginItemManager` re-reads it on every `didBecomeActive` because the user can switch Fennec off in System Settings without telling the app. `SMAppServiceErrorDomain` failures are translated into the cause that is almost always true. New `SetupChecklist` is the single pure model behind every setup CTA — the popover, Settings, and (later) first-run cannot disagree about what a button means. |
+| T-014 | Always On: start with the Mac, and say what is left to do | 2026-08-25 | `bccc379` | `LoginItemState` wraps `SMAppService.Status` with a name and a next step, and `LoginItemManager` re-reads it on every `didBecomeActive` because the user can switch Fennec off in System Settings without telling the app. `SMAppServiceErrorDomain` failures are translated into the cause that is almost always true. New `SetupChecklist` is the single pure model behind every setup CTA — the popover, Settings, and (later) first-run cannot disagree about what a button means. |
+| T-015 | Stop being hostile out of the box | 2026-08-25 | `PENDING_SHA` | Four confirmed defects. (1) The cooldown was keyed on the last *successful* repair and sat **below** the helper gate, so a fresh install had no cooldown at all; it now keys on the last attempt and gates everything. (2) `NotificationBudget` rate-limits unrepaired-detection banners to one per 10 min and reports how many it swallowed — suppression is never silent. Stable per-class request identifiers mean a new banner replaces its predecessor rather than stacking. (3) `SystemEvents` adds quiet windows after wake (20 s), screen wake, unlock, fast-user-switch, and launch; without them the first thing Fennec did when a lid opened was restart the audio daemon. (4) The silent `osascript` fallback on an XPC failure is gone — an unexplained admin-password dialog is the visual signature of credential phishing, so Fennec now asks first and shows the literal command. Also: automatic repair is gated on being the console session, and a failed repair leaves a persistent attention mark in the menu bar rather than relying on a sound played through the audio system that is by hypothesis broken. |
 
 ---
 
