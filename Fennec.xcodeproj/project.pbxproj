@@ -1,0 +1,625 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		184B66728EE207383BD33630 /* com.ludicrousdesigns.Fennec.helper.plist in Copy LaunchDaemons Property Lists */ = {isa = PBXBuildFile; fileRef = 4C80E5666AA24D868969FC39 /* com.ludicrousdesigns.Fennec.helper.plist */; };
+		1CD48FA92DE3437305698673 /* PrivilegedPromptRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = C16222E31215FAC2BFF7D3E5 /* PrivilegedPromptRepair.swift */; };
+		22E10D42E43A20D8ABC383B8 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B353FB5A77EE2D133F4C123 /* AppConstants.swift */; };
+		2314A5D92FF4B8C71DC8321B /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D829C0EC13A8BD0AE0098EE4 /* SettingsStore.swift */; };
+		2424B6F407DC66A4CF4AD533 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7622B11D2604FBF82BADF3F5 /* Foundation.framework */; };
+		276655BA2FCAE2C5104DE02F /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E9871955C512F60DEFBDF1E /* Security.framework */; };
+		298336037414581DC6FC61CC /* EventLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B233DA6AF57F421BFCB0823E /* EventLogger.swift */; };
+		2DA43838568DB6BA11F53012 /* HelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7487F769540EC02C845ACFBE /* HelperProtocol.swift */; };
+		2F1A1151F8DD8B70FCDF93E3 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B353FB5A77EE2D133F4C123 /* AppConstants.swift */; };
+		31CBF21E7A33A03A50BD5350 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E0116E5ECF5DE3FE4F88F894 /* Assets.xcassets */; };
+		43F5E29056FBFB2B050829B4 /* FennecApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF62FD06C836551278EF2A5F /* FennecApp.swift */; };
+		4AA33EB12F5BE962B056A3C2 /* DetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E81B922C1C991B91B9DC0C /* DetectionEngine.swift */; };
+		54FFEFDEB90CCE55D7C0E2C4 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 340302929D6F05C511151D5A /* UserNotifications.framework */; };
+		553276B525BD6F234991FBC3 /* FennecHelper in Embed Helper Tools */ = {isa = PBXBuildFile; fileRef = D0B5ADFE8B3F9D96BD4B623E /* FennecHelper */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		554AD40B194C6FA89FE36C86 /* HelperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A488EB9C4AB69E68908473 /* HelperService.swift */; };
+		58D67E318915CDC75AA178C3 /* CodeSigningRequirement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFB8E501F4CB9747BA53320 /* CodeSigningRequirement.swift */; };
+		6E225F03FD467727FB855895 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA51376CF664DBDDC575E374 /* ServiceManagement.framework */; };
+		718DFE65EADFDAAE4B651A32 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA248C5807CA32CF3F60E04 /* LoginItemManager.swift */; };
+		843DF1FC79CD875595A0E516 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E9871955C512F60DEFBDF1E /* Security.framework */; };
+		8F13B399321BB51CCECAE615 /* CoreAudioMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3913E3A4C84114EFA828C0BA /* CoreAudioMonitor.swift */; };
+		941CAE5A49209FACDF0BF9D7 /* RTSignalCounters.c in Sources */ = {isa = PBXBuildFile; fileRef = 4C9729E62FDDFA9005541FED /* RTSignalCounters.c */; };
+		96B21F651B3C5BA1933BAD09 /* CoreAudioProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = D28391C38692AFD0EEB9408B /* CoreAudioProperty.swift */; };
+		9CCEC2E73B999823A8A60339 /* NotificationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFE7DDE900B5D730A3ED404 /* NotificationController.swift */; };
+		A00BDA13044DE88036ADC1FF /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02297A3860F35CFFEA8E0570 /* AppKit.framework */; };
+		AAF71FD4D6B45773DA9248E8 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7622B11D2604FBF82BADF3F5 /* Foundation.framework */; };
+		B2FA550159EED0202CC473F9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D04D2E653B06A75B57A5C3 /* SettingsView.swift */; };
+		B6B697C3DE7C5D3C289EDEA3 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58BCBAD72911F6AC59B6E176 /* SwiftUI.framework */; };
+		BF19FB7476C52655BA269182 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A06F8169D00867F6EE1F126 /* CoreAudio.framework */; };
+		C380DB7F367AA2309142D744 /* HelperProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7487F769540EC02C845ACFBE /* HelperProtocol.swift */; };
+		CADCC727AA8522F3C1B0A166 /* HelperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD593676AD5850B211E9864 /* HelperManager.swift */; };
+		DA8245D65355DAEB558285D8 /* RecoverySafetyChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF096055C39F19938215420 /* RecoverySafetyChecker.swift */; };
+		DE2118719C40ADFB52564296 /* CodeSigningRequirement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFB8E501F4CB9747BA53320 /* CodeSigningRequirement.swift */; };
+		E049477CCF731A07453CF8A9 /* MenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0506E94237D63DD8AFAA1AB8 /* MenuView.swift */; };
+		E0E8FBA798201B7929ED4789 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FEDF8CEF7192028FA01B0BB /* AppModel.swift */; };
+		EEFF32BBAAE2C1FBA6C67168 /* CoreAudioTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 973809A098DA43BC5681C812 /* CoreAudioTypes.swift */; };
+		F65BF058088393B8CFE952EF /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC673D1B8F7E82B6925199A5 /* main.swift */; };
+		F8DEBCB05EDDF7A910456767 /* Combine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95420E64D265D947181B9F20 /* Combine.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		413BB33755CE03E6E6C2A618 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C0DFCD4F7B9B74251BA3118B;
+			remoteInfo = FennecHelper;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		771A4FC91506205FA8940CD5 /* Copy LaunchDaemons Property Lists */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LaunchDaemons;
+			dstSubfolderSpec = 1;
+			files = (
+				184B66728EE207383BD33630 /* com.ludicrousdesigns.Fennec.helper.plist in Copy LaunchDaemons Property Lists */,
+			);
+			name = "Copy LaunchDaemons Property Lists";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CEBEF71518B5B0D91F3DECE5 /* Embed Helper Tools */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				553276B525BD6F234991FBC3 /* FennecHelper in Embed Helper Tools */,
+			);
+			name = "Embed Helper Tools";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		02297A3860F35CFFEA8E0570 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		03D04D2E653B06A75B57A5C3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		0506E94237D63DD8AFAA1AB8 /* MenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuView.swift; sourceTree = "<group>"; };
+		0CD8BE596B3235C2193FEE0D /* RTSignalCounters.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RTSignalCounters.h; sourceTree = "<group>"; };
+		1FEDF8CEF7192028FA01B0BB /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		21A488EB9C4AB69E68908473 /* HelperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperService.swift; sourceTree = "<group>"; };
+		340302929D6F05C511151D5A /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
+		3913E3A4C84114EFA828C0BA /* CoreAudioMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioMonitor.swift; sourceTree = "<group>"; };
+		397FFD593105403F4245E769 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3CFB8E501F4CB9747BA53320 /* CodeSigningRequirement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSigningRequirement.swift; sourceTree = "<group>"; };
+		4AFE7DDE900B5D730A3ED404 /* NotificationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationController.swift; sourceTree = "<group>"; };
+		4B353FB5A77EE2D133F4C123 /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
+		4C80E5666AA24D868969FC39 /* com.ludicrousdesigns.Fennec.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.ludicrousdesigns.Fennec.helper.plist; sourceTree = "<group>"; };
+		4C9729E62FDDFA9005541FED /* RTSignalCounters.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = RTSignalCounters.c; sourceTree = "<group>"; };
+		58BCBAD72911F6AC59B6E176 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		6AD593676AD5850B211E9864 /* HelperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperManager.swift; sourceTree = "<group>"; };
+		6E9871955C512F60DEFBDF1E /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		7487F769540EC02C845ACFBE /* HelperProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperProtocol.swift; sourceTree = "<group>"; };
+		7622B11D2604FBF82BADF3F5 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		845F65209D19F1E91A3C573D /* Fennec.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fennec.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8CA248C5807CA32CF3F60E04 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
+		95420E64D265D947181B9F20 /* Combine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Combine.framework; path = System/Library/Frameworks/Combine.framework; sourceTree = SDKROOT; };
+		973809A098DA43BC5681C812 /* CoreAudioTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioTypes.swift; sourceTree = "<group>"; };
+		9A06F8169D00867F6EE1F126 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		AA51376CF664DBDDC575E374 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
+		B233DA6AF57F421BFCB0823E /* EventLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLogger.swift; sourceTree = "<group>"; };
+		BF62FD06C836551278EF2A5F /* FennecApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FennecApp.swift; sourceTree = "<group>"; };
+		C16222E31215FAC2BFF7D3E5 /* PrivilegedPromptRepair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedPromptRepair.swift; sourceTree = "<group>"; };
+		CFF096055C39F19938215420 /* RecoverySafetyChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoverySafetyChecker.swift; sourceTree = "<group>"; };
+		D0B5ADFE8B3F9D96BD4B623E /* FennecHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = FennecHelper; sourceTree = BUILT_PRODUCTS_DIR; };
+		D28391C38692AFD0EEB9408B /* CoreAudioProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioProperty.swift; sourceTree = "<group>"; };
+		D829C0EC13A8BD0AE0098EE4 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		E0116E5ECF5DE3FE4F88F894 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EBEADEBA0C7EC8CC2E619169 /* Fennec-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Fennec-Bridging-Header.h"; sourceTree = "<group>"; };
+		F1E81B922C1C991B91B9DC0C /* DetectionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionEngine.swift; sourceTree = "<group>"; };
+		F5B38D1B01E62E4D93EA8947 /* Fennec.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fennec.entitlements; sourceTree = "<group>"; };
+		FA873153271ABB329C9DA512 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FC673D1B8F7E82B6925199A5 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BF8D21E9E84F4DF4F2CFEE1E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00BDA13044DE88036ADC1FF /* AppKit.framework in Frameworks */,
+				F8DEBCB05EDDF7A910456767 /* Combine.framework in Frameworks */,
+				BF19FB7476C52655BA269182 /* CoreAudio.framework in Frameworks */,
+				2424B6F407DC66A4CF4AD533 /* Foundation.framework in Frameworks */,
+				843DF1FC79CD875595A0E516 /* Security.framework in Frameworks */,
+				6E225F03FD467727FB855895 /* ServiceManagement.framework in Frameworks */,
+				B6B697C3DE7C5D3C289EDEA3 /* SwiftUI.framework in Frameworks */,
+				54FFEFDEB90CCE55D7C0E2C4 /* UserNotifications.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFB02FE7593B8FEE1D7AB370 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AAF71FD4D6B45773DA9248E8 /* Foundation.framework in Frameworks */,
+				276655BA2FCAE2C5104DE02F /* Security.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		239D4B6E1360302B8ED4C8C0 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				4B353FB5A77EE2D133F4C123 /* AppConstants.swift */,
+				7487F769540EC02C845ACFBE /* HelperProtocol.swift */,
+				3CFB8E501F4CB9747BA53320 /* CodeSigningRequirement.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		692092DE1C1C8624E142B71D = {
+			isa = PBXGroup;
+			children = (
+				845F65209D19F1E91A3C573D /* Fennec.app */,
+				D0B5ADFE8B3F9D96BD4B623E /* FennecHelper */,
+			);
+			sourceTree = "<group>";
+		};
+		711ABBDCDB3BC1505F7F8060 /* LaunchDaemons */ = {
+			isa = PBXGroup;
+			children = (
+				4C80E5666AA24D868969FC39 /* com.ludicrousdesigns.Fennec.helper.plist */,
+			);
+			path = LaunchDaemons;
+			sourceTree = "<group>";
+		};
+		82A58B054AB5A2B8BDEDCC2F /* FennecHelper */ = {
+			isa = PBXGroup;
+			children = (
+				21A488EB9C4AB69E68908473 /* HelperService.swift */,
+				FC673D1B8F7E82B6925199A5 /* main.swift */,
+				FA873153271ABB329C9DA512 /* Info.plist */,
+			);
+			path = FennecHelper;
+			sourceTree = "<group>";
+		};
+		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
+			isa = PBXGroup;
+			children = (
+				1FEDF8CEF7192028FA01B0BB /* AppModel.swift */,
+				3913E3A4C84114EFA828C0BA /* CoreAudioMonitor.swift */,
+				D28391C38692AFD0EEB9408B /* CoreAudioProperty.swift */,
+				973809A098DA43BC5681C812 /* CoreAudioTypes.swift */,
+				BF62FD06C836551278EF2A5F /* FennecApp.swift */,
+				F1E81B922C1C991B91B9DC0C /* DetectionEngine.swift */,
+				B233DA6AF57F421BFCB0823E /* EventLogger.swift */,
+				6AD593676AD5850B211E9864 /* HelperManager.swift */,
+				8CA248C5807CA32CF3F60E04 /* LoginItemManager.swift */,
+				0506E94237D63DD8AFAA1AB8 /* MenuView.swift */,
+				4AFE7DDE900B5D730A3ED404 /* NotificationController.swift */,
+				C16222E31215FAC2BFF7D3E5 /* PrivilegedPromptRepair.swift */,
+				CFF096055C39F19938215420 /* RecoverySafetyChecker.swift */,
+				D829C0EC13A8BD0AE0098EE4 /* SettingsStore.swift */,
+				03D04D2E653B06A75B57A5C3 /* SettingsView.swift */,
+				4C9729E62FDDFA9005541FED /* RTSignalCounters.c */,
+				0CD8BE596B3235C2193FEE0D /* RTSignalCounters.h */,
+				EBEADEBA0C7EC8CC2E619169 /* Fennec-Bridging-Header.h */,
+				397FFD593105403F4245E769 /* Info.plist */,
+				F5B38D1B01E62E4D93EA8947 /* Fennec.entitlements */,
+				E0116E5ECF5DE3FE4F88F894 /* Assets.xcassets */,
+			);
+			path = Fennec;
+			sourceTree = "<group>";
+		};
+		CAEE220ED3D0CE5D599C3E39 = {
+			isa = PBXGroup;
+			children = (
+				C8A1E76B6CA46DDC89E29CCD /* Fennec */,
+				82A58B054AB5A2B8BDEDCC2F /* FennecHelper */,
+				239D4B6E1360302B8ED4C8C0 /* Shared */,
+				711ABBDCDB3BC1505F7F8060 /* LaunchDaemons */,
+				E98EF9E8E463C4AD21FCC778,
+				692092DE1C1C8624E142B71D,
+			);
+			sourceTree = "<group>";
+		};
+		E98EF9E8E463C4AD21FCC778 = {
+			isa = PBXGroup;
+			children = (
+				02297A3860F35CFFEA8E0570 /* AppKit.framework */,
+				95420E64D265D947181B9F20 /* Combine.framework */,
+				9A06F8169D00867F6EE1F126 /* CoreAudio.framework */,
+				7622B11D2604FBF82BADF3F5 /* Foundation.framework */,
+				6E9871955C512F60DEFBDF1E /* Security.framework */,
+				AA51376CF664DBDDC575E374 /* ServiceManagement.framework */,
+				58BCBAD72911F6AC59B6E176 /* SwiftUI.framework */,
+				340302929D6F05C511151D5A /* UserNotifications.framework */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B902F7C2327297FC583709E1 /* Fennec */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A60603318F4F2D479103030 /* Build configuration list for PBXNativeTarget "Fennec" */;
+			buildPhases = (
+				68794D95D50DF8ED5158D413 /* Sources */,
+				BF8D21E9E84F4DF4F2CFEE1E /* Frameworks */,
+				253694B87BCB5FB6ECA0DC84 /* Resources */,
+				CEBEF71518B5B0D91F3DECE5 /* Embed Helper Tools */,
+				771A4FC91506205FA8940CD5 /* Copy LaunchDaemons Property Lists */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0FBC5C7CDCE0FAEAE7CFE449 /* PBXTargetDependency */,
+			);
+			name = Fennec;
+			productName = Fennec;
+			productReference = 845F65209D19F1E91A3C573D /* Fennec.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C0DFCD4F7B9B74251BA3118B /* FennecHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 56176EBD74853FC74E13B456 /* Build configuration list for PBXNativeTarget "FennecHelper" */;
+			buildPhases = (
+				534DF8DBF24BD317BB32E2AE /* Sources */,
+				BFB02FE7593B8FEE1D7AB370 /* Frameworks */,
+				BB16F6E1D9A7004E7DC31234 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FennecHelper;
+			productName = FennecHelper;
+			productReference = D0B5ADFE8B3F9D96BD4B623E /* FennecHelper */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		98F54143AB4E86B28C3AFEE0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					B902F7C2327297FC583709E1 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					C0DFCD4F7B9B74251BA3118B = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = 99DE79F146C1665D0B462638 /* Build configuration list for PBXProject "Fennec" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CAEE220ED3D0CE5D599C3E39;
+			productRefGroup = 692092DE1C1C8624E142B71D;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B902F7C2327297FC583709E1 /* Fennec */,
+				C0DFCD4F7B9B74251BA3118B /* FennecHelper */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		253694B87BCB5FB6ECA0DC84 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				31CBF21E7A33A03A50BD5350 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB16F6E1D9A7004E7DC31234 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		534DF8DBF24BD317BB32E2AE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				554AD40B194C6FA89FE36C86 /* HelperService.swift in Sources */,
+				F65BF058088393B8CFE952EF /* main.swift in Sources */,
+				22E10D42E43A20D8ABC383B8 /* AppConstants.swift in Sources */,
+				2DA43838568DB6BA11F53012 /* HelperProtocol.swift in Sources */,
+				DE2118719C40ADFB52564296 /* CodeSigningRequirement.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		68794D95D50DF8ED5158D413 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E0E8FBA798201B7929ED4789 /* AppModel.swift in Sources */,
+				8F13B399321BB51CCECAE615 /* CoreAudioMonitor.swift in Sources */,
+				96B21F651B3C5BA1933BAD09 /* CoreAudioProperty.swift in Sources */,
+				EEFF32BBAAE2C1FBA6C67168 /* CoreAudioTypes.swift in Sources */,
+				43F5E29056FBFB2B050829B4 /* FennecApp.swift in Sources */,
+				4AA33EB12F5BE962B056A3C2 /* DetectionEngine.swift in Sources */,
+				298336037414581DC6FC61CC /* EventLogger.swift in Sources */,
+				CADCC727AA8522F3C1B0A166 /* HelperManager.swift in Sources */,
+				718DFE65EADFDAAE4B651A32 /* LoginItemManager.swift in Sources */,
+				E049477CCF731A07453CF8A9 /* MenuView.swift in Sources */,
+				9CCEC2E73B999823A8A60339 /* NotificationController.swift in Sources */,
+				1CD48FA92DE3437305698673 /* PrivilegedPromptRepair.swift in Sources */,
+				DA8245D65355DAEB558285D8 /* RecoverySafetyChecker.swift in Sources */,
+				2314A5D92FF4B8C71DC8321B /* SettingsStore.swift in Sources */,
+				B2FA550159EED0202CC473F9 /* SettingsView.swift in Sources */,
+				941CAE5A49209FACDF0BF9D7 /* RTSignalCounters.c in Sources */,
+				2F1A1151F8DD8B70FCDF93E3 /* AppConstants.swift in Sources */,
+				C380DB7F367AA2309142D744 /* HelperProtocol.swift in Sources */,
+				58D67E318915CDC75AA178C3 /* CodeSigningRequirement.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0FBC5C7CDCE0FAEAE7CFE449 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C0DFCD4F7B9B74251BA3118B /* FennecHelper */;
+			targetProxy = 413BB33755CE03E6E6C2A618 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		41F4B1CEEACC5CF5F3860887 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		8931D22D5340A79AD672B19B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Fennec/Fennec.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 249X253HS3;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Fennec/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.Fennec;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Fennec/Fennec-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		96B9C483016A0F8F6F2C8217 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		CDBCAF175918EF5D9F7D8226 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_DEBUG_DYLIB_SUPPORT = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FennecHelper/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.Fennec.helper;
+				PRODUCT_NAME = FennecHelper;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F0072E1DB883B369DE225D69 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_DEBUG_DYLIB_SUPPORT = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FennecHelper/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.Fennec.helper;
+				PRODUCT_NAME = FennecHelper;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		FCF409BC55A1B31258718FD8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Fennec/Fennec.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 249X253HS3;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Fennec/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.Fennec;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Fennec/Fennec-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		56176EBD74853FC74E13B456 /* Build configuration list for PBXNativeTarget "FennecHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F0072E1DB883B369DE225D69 /* Debug */,
+				CDBCAF175918EF5D9F7D8226 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8A60603318F4F2D479103030 /* Build configuration list for PBXNativeTarget "Fennec" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8931D22D5340A79AD672B19B /* Debug */,
+				FCF409BC55A1B31258718FD8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		99DE79F146C1665D0B462638 /* Build configuration list for PBXProject "Fennec" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				41F4B1CEEACC5CF5F3860887 /* Debug */,
+				96B9C483016A0F8F6F2C8217 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+}
