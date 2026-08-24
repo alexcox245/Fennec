@@ -485,12 +485,12 @@ struct MenuView: View {
             Spacer()
 
             Menu {
-                Button("Activity") { model.showActivityWindow() }
+                Button("Repair History") { model.showActivityWindow() }
                 Divider()
                 Button("What Fennec Does") { model.showWelcomeWindow() }
                 Button("About & Uninstall…") { model.showAboutWindow() }
                 Divider()
-                Button("Reveal Event Log in Finder") { model.openEventLog() }
+                Button("Reveal Event Log") { model.openEventLog() }
             } label: {
                 Label("More", systemImage: "info.circle")
                     .labelStyle(.iconOnly)

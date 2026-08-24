@@ -4,6 +4,11 @@ Written 2026-08-25, after the two requested features (T-013 Catch & Fix, T-014 A
 
 Every item below is one commit. Ordered by execution, not by how interesting it is.
 
+**Status: all ten items shipped on 2026-08-25.** Commit SHAs are in the task
+ledger (`AGENTS.md` §8, rows T-015 through T-023). R10's adversarial review
+found 33 verified defects — including two blockers in features written the
+same night — and they are fixed in `1825767`.
+
 ---
 
 ## The thesis

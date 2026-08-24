@@ -87,7 +87,15 @@ enum MenuBarIcon {
                 NSGraphicsContext.current?.compositingOperation = .sourceOver
                 NSColor.black.setFill()
                 NSBezierPath(ovalIn: badgeRect).fill()
-            case .listening, .repairing:
+            case .repairing:
+                // The one moment audio actually drops out system-wide used to
+                // be pixel-identical to resting; only VoiceOver could tell.
+                // A knocked-out centre, not motion — the desert does not
+                // animate, but it can be missing a piece.
+                NSGraphicsContext.current?.compositingOperation = .clear
+                NSBezierPath(ovalIn: CGRect(x: 8.6, y: 4.6, width: 6.8, height: 6.8)).fill()
+                NSGraphicsContext.current?.compositingOperation = .sourceOver
+            case .listening:
                 break
             }
             return true

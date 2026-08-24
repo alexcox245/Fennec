@@ -24,6 +24,7 @@ struct AboutView: View {
     @State private var showingUninstall = false
     @State private var confirmingHelperRemoval = false
     @State private var keepLogs = true
+    @State private var copiedCommands = false
 
     init(model: AppModel) {
         self.model = model
@@ -156,11 +157,21 @@ struct AboutView: View {
                 .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             HStack(spacing: 10) {
-                Button("Copy Commands") {
+                Button(copiedCommands ? "Copied" : "Copy Commands") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(Self.verifyCommands, forType: .string)
+                    // A button that writes the pasteboard and changes nothing
+                    // is indistinguishable from one that did not work.
+                    copiedCommands = true
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(1_500))
+                        copiedCommands = false
+                    }
                 }
+                .disabled(copiedCommands)
+                .help("Copies the three verification commands to the clipboard.")
                 Button("Reveal Event Log") { model.openEventLog() }
+                    .help("The raw JSONL stream Fennec writes: every signal, every skipped repair, every device change.")
                 Spacer()
             }
         }

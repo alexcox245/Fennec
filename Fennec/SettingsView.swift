@@ -335,10 +335,9 @@ struct SettingsView: View {
             }
 
             GroupBox("Recent Events") {
-                if model.recentActivity.isEmpty {
-                    ContentUnavailableView("No activity yet", systemImage: "ear")
-                        .frame(maxWidth: .infinity, minHeight: 150)
-                } else {
+                // No empty branch: `startMonitoring()` records an event before
+                // this view can ever be built, so it was dead code.
+                Group {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 8) {
                             ForEach(model.recentActivity) { activity in

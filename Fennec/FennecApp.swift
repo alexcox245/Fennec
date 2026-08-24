@@ -60,10 +60,10 @@ struct FennecCommands: Commands {
                 }
             }
             Divider()
-            Button("Activity") { model.showActivityWindow() }
+            Button("Repair History") { model.showActivityWindow() }
                 .keyboardShortcut("1", modifiers: .command)
             Button("Restart Monitor") { model.restartMonitoring() }
-            Button("Reveal Event Log in Finder") { model.openEventLog() }
+            Button("Reveal Event Log") { model.openEventLog() }
         }
     }
 
