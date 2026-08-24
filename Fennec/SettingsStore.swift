@@ -15,6 +15,7 @@ final class SettingsStore: ObservableObject {
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
         static let pausedUntil = "pausedUntil"
         static let pausedIndefinitely = "pausedIndefinitely"
+        static let listeningSince = "listeningSince"
     }
 
     private let defaults: UserDefaults
@@ -76,6 +77,13 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(pausedIndefinitely, forKey: Key.pausedIndefinitely) }
     }
 
+    /// When Fennec first started listening on this Mac. Stamped once and
+    /// never changed, so the days-without-incident sign has something honest
+    /// to count from before there has ever been an incident.
+    @Published private(set) var listeningSince: Date {
+        didSet { defaults.set(listeningSince, forKey: Key.listeningSince) }
+    }
+
     var pauseState: PauseState {
         get { PauseState(isIndefinite: pausedIndefinitely, until: pausedUntil) }
         set {
@@ -100,5 +108,13 @@ final class SettingsStore: ObservableObject {
         hasCompletedFirstRun = defaults.object(forKey: Key.hasCompletedFirstRun) as? Bool ?? false
         pausedUntil = defaults.object(forKey: Key.pausedUntil) as? Date
         pausedIndefinitely = defaults.object(forKey: Key.pausedIndefinitely) as? Bool ?? false
+
+        if let stored = defaults.object(forKey: Key.listeningSince) as? Date {
+            listeningSince = stored
+        } else {
+            let now = Date()
+            listeningSince = now
+            defaults.set(now, forKey: Key.listeningSince)
+        }
     }
 }

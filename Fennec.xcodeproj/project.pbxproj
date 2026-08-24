@@ -97,6 +97,10 @@
 		F737DFE6A886F7065ED40A37 /* Uninstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E25A70DAA04F3A79401019 /* Uninstaller.swift */; };
 		DF4BE0122C23ED5B35E04838 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */; };
 		8DB547A04E8D966F3B118A2A /* UninstallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB135AAE4E46F154D69E127 /* UninstallTests.swift */; };
+		9F6332CB2A48D4417A9DFCAC /* DaysWithoutIncident.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */; };
+		994538879492BD78F8013B00 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A64E84489F0B6AB889C87C9 /* ActivityView.swift */; };
+		7E0CF26E72EE5E2E421ED0CD /* DaysWithoutIncident.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */; };
+		ACE9E60920BDD58FF9F5CDDD /* DaysWithoutIncidentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -204,6 +208,9 @@
 		C4E25A70DAA04F3A79401019 /* Uninstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstaller.swift; sourceTree = "<group>"; };
 		0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		BDB135AAE4E46F154D69E127 /* UninstallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallTests.swift; sourceTree = "<group>"; };
+		70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysWithoutIncident.swift; sourceTree = "<group>"; };
+		7A64E84489F0B6AB889C87C9 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
+		8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysWithoutIncidentTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -281,6 +288,8 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */,
+				7A64E84489F0B6AB889C87C9 /* ActivityView.swift */,
 				0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */,
 				C4E25A70DAA04F3A79401019 /* Uninstaller.swift */,
 				396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */,
@@ -355,6 +364,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */,
 				BDB135AAE4E46F154D69E127 /* UninstallTests.swift */,
 				52BDA5C884966B4725C0A2CF /* RepairGovernorTests.swift */,
 				9138C747DC013328BFA964FF /* PauseScheduleTests.swift */,
@@ -511,6 +521,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9F6332CB2A48D4417A9DFCAC /* DaysWithoutIncident.swift in Sources */,
+				994538879492BD78F8013B00 /* ActivityView.swift in Sources */,
 				DF4BE0122C23ED5B35E04838 /* AboutView.swift in Sources */,
 				084CEC2A86884EBEDC096878 /* Uninstaller.swift in Sources */,
 				B5AEF99F6BEF808081AC239A /* HelperIdentity.swift in Sources */,
@@ -556,6 +568,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ACE9E60920BDD58FF9F5CDDD /* DaysWithoutIncidentTests.swift in Sources */,
+				7E0CF26E72EE5E2E421ED0CD /* DaysWithoutIncident.swift in Sources */,
 				8DB547A04E8D966F3B118A2A /* UninstallTests.swift in Sources */,
 				2E1A6CEFAF4900506117116A /* HelperIdentity.swift in Sources */,
 				F737DFE6A886F7065ED40A37 /* Uninstaller.swift in Sources */,

@@ -203,17 +203,9 @@ struct MenuView: View {
 
             if let repair = history.records.first {
                 receiptCard(repair)
-            } else if let lastDetectionDate = model.lastDetectionDate {
-                HStack(alignment: .firstTextBaseline) {
-                    Label("Last suspected crackle", systemImage: "ear.badge.waveform")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(lastDetectionDate, style: .relative)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                .font(.caption)
             }
+
+            daysWithoutIncidentSign
 
             if let lastError = model.lastError {
                 Label(lastError, systemImage: "exclamationmark.triangle.fill")
@@ -222,6 +214,53 @@ struct MenuView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// The sign on the workshop wall.
+    ///
+    /// A background utility that works is indistinguishable from one that
+    /// does nothing. This is the honest answer to that — not a dashboard, one
+    /// number that means something, kept the way a real safety sign is kept.
+    /// It counts up while nothing goes wrong and reads 0 on the day something
+    /// does, with no softening.
+    ///
+    /// It is sand and ink in both appearances on purpose: a sign is a
+    /// physical object, and physical objects do not invert at dusk. Sand is a
+    /// surface here and ink is the number, which is exactly what the palette
+    /// reserves them for.
+    private var daysWithoutIncidentSign: some View {
+        let record = model.daysWithoutIncident
+        return Button {
+            model.showActivityWindow()
+        } label: {
+            HStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("DAYS WITHOUT INCIDENT")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(0.9)
+                    Text(record.caption)
+                        .font(.caption2)
+                        .opacity(0.7)
+                }
+                Spacer(minLength: 8)
+                Text("\(record.days)")
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .monospacedDigit()
+            }
+            .foregroundStyle(FennecBrand.ink)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(FennecBrand.sand, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(FennecBrand.ink.opacity(0.28), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .help("Open Fennec Activity — every repair, grouped by day.")
+        .accessibilityLabel(record.accessibilityLabel)
+        .accessibilityHint("Opens Fennec Activity.")
     }
 
     /// Fennec has stopped trying, and says why in the machine's own numbers.
@@ -414,6 +453,8 @@ struct MenuView: View {
             Spacer()
 
             Menu {
+                Button("Activity") { model.showActivityWindow() }
+                Divider()
                 Button("What Fennec Does") { model.showWelcomeWindow() }
                 Button("About & Uninstall…") { model.showAboutWindow() }
                 Divider()

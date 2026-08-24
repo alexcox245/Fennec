@@ -126,6 +126,19 @@ final class AppModel: ObservableObject {
 
     var lastRepairDate: Date? { lastSuccessfulRepair?.date }
 
+    /// The sign on the wall. Recomputed on demand rather than cached, because
+    /// it changes at midnight and nothing else needs to know when that is.
+    var daysWithoutIncident: DaysWithoutIncident {
+        DaysWithoutIncident.make(
+            records: repairHistory.records,
+            listeningSince: settings.listeningSince
+        )
+    }
+
+    func showActivityWindow() {
+        WindowPresenter.shared.showActivity(model: self)
+    }
+
     /// The menu bar is Fennec's only persistent channel. A banner auto-
     /// dismisses and a sound played through a broken audio system was never an
     /// escalation at all — so anything that needs the user leaves a visible

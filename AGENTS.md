@@ -104,6 +104,8 @@ Fennec/                        app target (15 Swift files, 1 C file)
   AboutView.swift              the privilege panel: what runs as root, and removal
   Uninstaller.swift            the removal plan, and performing it  ← see rule 12
   HelperIdentity.swift         parses the helper's ping reply (build + path)
+  ActivityView.swift           every repair, grouped by day
+  DaysWithoutIncident.swift    the sign on the wall  ← see §7
 
 FennecHelper/                  root LaunchDaemon target
   main.swift                   NSXPCListener bootstrap
@@ -287,7 +289,8 @@ Keep the existing mapping — it is already coherent:
 - **Dune** — audio, output, and warning. Signals detected, thresholds approached, transient suppression.
 - **Sand / Cream** — surfaces and mascot framing only. Never a state colour.
 - **Ink** — text and hardware-adjacent chrome.
-- **Aviator gold** — reserved. Suggested use: repair *succeeded*. A rare, warm, earned accent, not a third warning colour.
+- **Aviator gold** — reserved, and now in use: a repair that **held**. Not a repair that merely returned successfully — see rule 11. A rare, warm, earned accent, never a third warning colour.
+- **Sand + ink together** — the days-without-incident sign, and nothing else. It is the one element that keeps fixed colours in both appearances, because a safety sign is a physical object and physical objects do not invert at dusk.
 
 Blue and orange are complementary and near-maximum contrast at full strength. Do not put dune orange on sky blue in body text — use ink or cream on either.
 
@@ -314,7 +317,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-021**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-022**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -348,8 +351,9 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-017 | First run: a consent record, not a welcome tour | 2026-08-25 | `b525569` | Before this, double-clicking Fennec produced nothing at all — no window, no Dock icon, one more glyph in a crowded menu bar. The window states the **complete** privileged surface before asking for any of it (including the `osascript` administrator path, which every obvious version of this panel would have omitted), costs a repair in plain seconds, and ends with a real repair the user runs on purpose while nothing is at stake. No test tone: Fennec does not know the user's monitor gain. `InstallLocation` guards the `/Applications` requirement that the README previously only documented. The actual menu-bar mark is rendered inline under "Where Fennec lives", with the three real reasons a status item goes missing. |
 | T-018 | Pause | 2026-08-25 | `5c19039` | The manual override. Fennec's safety checks can only see what Core Audio tells them; a person about to hit record knows more than that. `PauseState` is persisted as two plain values so a timestamp that expired while Fennec was not running resolves to "running" on the next read rather than reviving a dead pause. Every duration except the last expires on its own and posts one passive banner when it does, and the menu-bar mark carries its own paused variant, so a pause can never be quietly left on. Blocks automatic repair only — Repair Audio Now keeps working, because a person pressing the button has decided. The real reason it exists is retention: the alternative to a two-hour pause is a professional switching automatic repair off permanently after one mistimed restart. |
 | T-019 | Stop claiming "fixed" until it holds | 2026-08-25 | `af1e9a5` | `RepairRecord` gained an outcome (`pending` → `held`/`returned`/`failed`), decoded tolerantly so `repairs.json` files from earlier builds still read. A detection inside the 60 s verification window marks the last repair `returned` and *replaces* the success banner in place rather than stacking a contradiction under it. Gold, and the headline tally, now require `held`. `RepairGovernor` stands Fennec down for an hour after three automatic repairs in twenty minutes that did not hold — otherwise a machine where the restart is not the cure gets its audio silenced every 45 seconds, forever, by the default configuration doing exactly what it was told. The stand-down states the real numbers and names the possibility the user needs to consider. |
-| T-012 | Add a `LICENSE` | 2026-08-25 | `PENDING_SHA` | MIT. Landed with `SECURITY.md` (disclosure contact, the privilege boundary stated precisely, and the second privileged path named rather than buried) and `UNINSTALL.md`. |
-| T-020 | Take it back: uninstall, and the privilege panel | 2026-08-25 | `PENDING_SHA` | Closes the gap nobody in the review had ranked: the root daemon survives dragging Fennec to the Trash. `Uninstaller` unregisters the daemon, removes the login item, optionally deletes the support folder, forgets preferences, moves the bundle to the Trash, and reports each step's failure separately. `AboutView` replaces the stock About panel with the four things a person evaluating a root-privileged 3 MB app actually asks: what it can do, what is running as root *right now* (read back over XPC — `ping` now returns a parseable reply, no protocol change), how to verify the build against `SOURCE_MANIFEST.sha256`, and how to remove all of it. Also closes T-012: `LICENSE`, plus `SECURITY.md` and `UNINSTALL.md`. |
+| T-012 | Add a `LICENSE` | 2026-08-25 | `8b3142e` | MIT. Landed with `SECURITY.md` (disclosure contact, the privilege boundary stated precisely, and the second privileged path named rather than buried) and `UNINSTALL.md`. |
+| T-020 | Take it back: uninstall, and the privilege panel | 2026-08-25 | `8b3142e` | Closes the gap nobody in the review had ranked: the root daemon survives dragging Fennec to the Trash. `Uninstaller` unregisters the daemon, removes the login item, optionally deletes the support folder, forgets preferences, moves the bundle to the Trash, and reports each step's failure separately. `AboutView` replaces the stock About panel with the four things a person evaluating a root-privileged 3 MB app actually asks: what it can do, what is running as root *right now* (read back over XPC — `ping` now returns a parseable reply, no protocol change), how to verify the build against `SOURCE_MANIFEST.sha256`, and how to remove all of it. Also closes T-012: `LICENSE`, plus `SECURITY.md` and `UNINSTALL.md`. |
+| T-021 | Activity, and the sign on the wall | 2026-08-25 | `PENDING_SHA` | `ActivityView` is a receipt book grouped by day, deliberately not a sortable table with filters and CSV export — every version of that is a window someone opens once, on install day, to find empty. The delighter is `DaysWithoutIncident`: an industrial safety sign in sand and ink that counts calendar days and reads **0** on a repair day with no softening. It does not invert with the appearance, because a sign is a physical object; sand is a surface and ink is the number, which is exactly what the palette reserves them for. It changes only at midnight — a sign that ticks is a timer, and nobody should watch this. |
 
 ---
 

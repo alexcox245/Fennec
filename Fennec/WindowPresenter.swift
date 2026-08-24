@@ -62,6 +62,18 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         }
     }
 
+    /// The receipt book. Everything Fennec has had to do, grouped by day.
+    func showActivity(model: AppModel) {
+        show(
+            id: ID.activity,
+            title: "Fennec Activity",
+            size: CGSize(width: 620, height: 560),
+            minSize: CGSize(width: 520, height: 400)
+        ) {
+            ActivityView(model: model).tint(FennecBrand.sky)
+        }
+    }
+
     func showSettings(model: AppModel) {
         show(id: ID.settings, title: "Fennec Settings", size: CGSize(width: 650, height: 580), resizable: false) {
             SettingsView(model: model).tint(FennecBrand.sky)
