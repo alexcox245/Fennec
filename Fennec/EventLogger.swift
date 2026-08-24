@@ -35,19 +35,38 @@ final class EventLogger: @unchecked Sendable {
     private let rotatedLogURL: URL
     private let queue = DispatchQueue(label: "com.ludicrousdesigns.Fennec.event-log")
     private let encoder: JSONEncoder
-    private let maximumLogSize: UInt64 = 5 * 1_024 * 1_024
+    private let maximumLogSize: UInt64
 
-    init(fileManager: FileManager = .default) {
+    /// The directory Fennec keeps its user-visible files in. Shared with
+    /// `RepairHistoryStore` so everything a user might inspect sits together.
+    static func defaultDirectory(fileManager: FileManager = .default) -> URL {
         let baseURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
         let directory = baseURL.appendingPathComponent(AppConstants.supportDirectoryName, isDirectory: true)
         try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
+    init(
+        directory: URL? = nil,
+        maximumLogSize: UInt64 = 5 * 1_024 * 1_024,
+        fileManager: FileManager = .default
+    ) {
+        let directory = directory ?? Self.defaultDirectory(fileManager: fileManager)
+        try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
         logURL = directory.appendingPathComponent(AppConstants.eventLogFileName)
         rotatedLogURL = directory.appendingPathComponent("events.previous.jsonl")
+        self.maximumLogSize = maximumLogSize
 
         encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]
+    }
+
+    /// Runs `completion` once every queued append has hit the disk. Only the
+    /// tests need this; the app never waits on its own audit log.
+    func flush(completion: @escaping @Sendable () -> Void) {
+        queue.async(execute: completion)
     }
 
     func append(_ record: ActivityRecord) {

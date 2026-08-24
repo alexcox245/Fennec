@@ -13,8 +13,8 @@ Operating guide for AI agents working on this repository. Read this file **befor
 | **Default branch** | `main` |
 | **Git owner** | `alexcox245` (auth via `gh`, HTTPS) |
 | **Xcode project** | `Fennec.xcodeproj` (no standalone `.xcworkspace`, no SPM packages, no CocoaPods) |
-| **Targets** | `Fennec` (app), `FennecHelper` (privileged helper) |
-| **Schemes** | `Fennec`, `FennecHelper` — both shared |
+| **Targets** | `Fennec` (app), `FennecHelper` (privileged helper), `FennecTests` (unit tests) |
+| **Schemes** | `Fennec` (builds the app, runs `FennecTests`), `FennecHelper` — both shared |
 | **Bundle IDs** | `com.ludicrousdesigns.Fennec`, `com.ludicrousdesigns.Fennec.helper` |
 | **Team ID** | `249X253HS3` |
 | **Deployment target** | macOS 14.2 · Swift 5 language mode · arm64 |
@@ -46,7 +46,7 @@ These are load-bearing. Violating one produces a build that looks fine and fails
 
 4. **Do not run the repair path or install the helper without explicit user approval.** `restartCoreAudio` kills audio system-wide for a moment; installing the LaunchDaemon needs root and a user approval in System Settings. Never `sudo ditto` into `/Applications`, never invoke `SMAppService` registration, and never trigger a repair as part of "just testing." Ask first, every time.
 
-5. **Regenerate the source manifest after editing any tracked file.** See §5. Nothing enforces this automatically yet ([T-011](#open)).
+5. **Regenerate the source manifest after editing any tracked file** with `zsh Scripts/update-manifest.sh`. `audit-source.sh` verifies it and fails when it is stale, so skipping this breaks the audit rather than shipping quietly.
 
 6. **Keep it a system utility.** Native macOS materials, typography, and controls stay intact. The brand lives in the icon, accents, and voice — not in a re-skinned UI. See §7.
 
@@ -84,7 +84,9 @@ Shared/                        compiled into BOTH targets
   CodeSigningRequirement.swift peer requirement construction  ← see rule 2
 
 LaunchDaemons/                 plist copied to Contents/Library/LaunchDaemons
-Scripts/                       audit-source.sh, build-release.sh
+FennecTests/                   standalone XCTest bundle (no TEST_HOST)
+
+Scripts/                       audit-source.sh, build-release.sh, update-manifest.sh
 Docs/                          ARCHITECTURE.md, VALIDATION.md, SOURCE_MANIFEST.sha256
 Brand/                         Fennec-AppIcon-Master.png (1254×1254), README.md
 ```
@@ -129,24 +131,28 @@ Writes to `build/DerivedData/`, which is gitignored. It ends by *printing* the `
 **Regenerate `Docs/SOURCE_MANIFEST.sha256` after editing tracked files:**
 
 ```bash
-python3 - <<'PY'
-import hashlib
-p = "Docs/SOURCE_MANIFEST.sha256"
-out = []
-for line in open(p):
-    h, _, rel = line.rstrip("\n").partition("  ")
-    out.append(f"{hashlib.sha256(open(rel,'rb').read()).hexdigest()}  {rel}\n")
-open(p, "w").writelines(out)
-PY
+zsh Scripts/update-manifest.sh
 ```
 
-**There is no test target.** `xcodebuild test` fails with `Scheme Fennec is not currently configured for the test action`. The `DetectionEngine` and `EventLogger` behavior checks described in `Docs/VALIDATION.md` were run outside this repo and cannot currently be re-run here — that is [T-006](#open).
+It rebuilds the manifest from `git ls-files` plus anything staged for addition, so new files are picked up automatically. `audit-source.sh` now verifies the manifest with `shasum -c` and fails if it is stale, so a forgotten regeneration is caught instead of silently shipped.
+
+**Run the unit tests:**
+
+```bash
+xcodebuild -project Fennec.xcodeproj -scheme Fennec \
+  -configuration Debug -destination 'platform=macOS' test
+```
+
+`FennecTests` is a **standalone** XCTest bundle with no `TEST_HOST`: it compiles Fennec's pure-logic sources directly instead of loading the app. That is deliberate — hosting the tests in `Fennec.app` would start Core Audio monitoring, request notification authorization, and touch the user's real Application Support directory on every run. Anything that talks to Core Audio, `SMAppService`, or XPC is **not** unit-testable here and belongs in [T-005](#open).
+
+To put another source file under test, add a `PBXBuildFile` for its existing `PBXFileReference` to the `FennecTests` Sources phase (or drag it into the target in Xcode).
 
 ### Definition of done
 
 A change is not done until:
 
 - [ ] `Fennec` and `FennecHelper` build in **both** Debug and Release
+- [ ] `xcodebuild … test` passes with no failures
 - [ ] `zsh Scripts/audit-source.sh` passes
 - [ ] No **new** compiler warnings (4 pre-existing ones are catalogued in [T-007](#open) / [T-008](#open))
 - [ ] `Docs/SOURCE_MANIFEST.sha256` regenerated
@@ -288,12 +294,10 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | ID | P | Task | Status | Owner | Notes |
 |---|---|---|---|---|---|
 | T-005 | P0 | Run the 9-step on-device runtime validation in `Docs/VALIDATION.md` §"Still required on macOS" | Open | — | **Requires a human.** Needs signing, `/Applications` install, helper approval in System Settings, and reproducing the audible fault. Until this is done, nobody should trust automatic repair or switch detection to Immediate. Agents must not attempt this unsupervised (rule 4). |
-| T-006 | P1 | Add a unit-test target covering `DetectionEngine` and `EventLogger` | Open | — | `VALIDATION.md` claims both passed behavior checks, but those ran outside the repo and nothing here re-runs them. `DetectionEngine` (83 loc, pure logic) is the highest-value target: balanced 2-in-8s, immediate, and abnormal-I/O paths. Also cover the suppression windows. |
 | T-007 | P2 | Fix 2 unsafe-pointer warnings in `CoreAudioProperty.swift:192` and `:223` | Open | — | "forming `UnsafeMutableRawPointer` to a variable of type `T` / `Optional<CFString>`; may contain an object reference." Real hazard for the `CFString` case. Touches Core Audio property reads — verify carefully. |
 | T-008 | P2 | Fix 2 non-`Sendable` capture warnings in `HelperManager.swift:90` and `:135` | Open | — | `NSXPCConnection` captured in `@Sendable` closures. Will become an error under Swift 6 language mode; project is currently `SWIFT_VERSION = 5.0`. |
 | T-009 | P2 | Reconcile brand tokens against the master art | Open | — | See the drift table in §7. Decide per-role whether the art or the shipped token wins, then align `Brand/README.md` and `FennecBrand` in `FennecApp.swift`. Consider adding aviator gold `#DA963E` and lens void `#23190E` as tokens. **Owner's design call — propose, don't unilaterally apply.** |
 | T-010 | P2 | Refresh `Docs/VALIDATION.md` | Open | — | It states the source "has not been SDK type-checked, linked, [or] code-signed," which is no longer true — the full Debug+Release matrix builds and `build-release.sh` runs `codesign --verify`. Rewrite the completed section; keep the on-device list intact and cross-reference T-005. `README.md` §"Validation status" carries the same stale claim and should be updated in the same pass. |
-| T-011 | P2 | Make `audit-source.sh` verify `Docs/SOURCE_MANIFEST.sha256` | Open | — | The manifest goes stale on any edit and nothing catches it. Add a `shasum -c` step. Note the manifest does not list itself, `.DS_Store`, or `xcuserdata/`. |
 | T-012 | P2 | Add a `LICENSE` | Open | — | Repo has none. Owner's choice; the repo is private today, so this only becomes load-bearing if it goes public. |
 
 ### Done
@@ -304,6 +308,8 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-002 | Fix `Scripts/audit-source.sh` | 2026-08-25 | `aa22cc6` | Loop variable `path` clobbered `$PATH` under zsh, failing every command from line 31 onward and reporting a false packaging error. Renamed to `required_path`. Audit now passes end to end. See §6. |
 | T-003 | Publish to GitHub | 2026-08-25 | `aa22cc6` | `git init` (repo had no `.git` despite appearances), initial commit of 56 files, pushed to `alexcox245/Fennec` — private, default branch `main`. |
 | T-004 | Regenerate `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `aa22cc6` | Rehashed after the T-001/T-002 edits. |
+| T-006 | Add a unit-test target covering `DetectionEngine` and `EventLogger` | 2026-08-25 | `684f08a` | `FennecTests`, a standalone XCTest bundle (no `TEST_HOST`) compiling the pure-logic sources directly. `EventLogger` gained an injectable directory and size cap plus a test-only `flush(completion:)` so rotation is observable without writing 5 MB. Scheme `Fennec` now has a TestAction. |
+| T-011 | Make `audit-source.sh` verify `Docs/SOURCE_MANIFEST.sha256` | 2026-08-25 | `684f08a` | Added `Scripts/update-manifest.sh` (regenerates from `git ls-files`, so new files are never missed) and a `shasum -c` gate at the end of `audit-source.sh`. `FennecTests/*.swift` added to the per-file Swift parse. |
 
 ---
 

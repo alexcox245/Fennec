@@ -56,7 +56,8 @@ if command -v xcrun >/dev/null 2>&1; then
   for source in \
     "$ROOT"/Fennec/*.swift \
     "$ROOT"/FennecHelper/*.swift \
-    "$ROOT"/Shared/*.swift; do
+    "$ROOT"/Shared/*.swift \
+    "$ROOT"/FennecTests/*.swift; do
     xcrun swiftc -parse "$source" >/dev/null
   done
 
@@ -72,5 +73,11 @@ if command -v xcodebuild >/dev/null 2>&1; then
   xcodebuild -project "$ROOT/Fennec.xcodeproj" -list \
     | grep -q 'Fennec'
 fi
+
+print "Verifying Docs/SOURCE_MANIFEST.sha256…"
+(cd "$ROOT" && shasum -a 256 -c Docs/SOURCE_MANIFEST.sha256 --quiet) || {
+  print -u2 "The source manifest is stale. Run: zsh Scripts/update-manifest.sh"
+  exit 1
+}
 
 print "Source audit passed. Run build-release.sh on macOS for SDK type-checking, linking, signing, and bundle verification."
