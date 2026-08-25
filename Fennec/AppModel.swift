@@ -370,7 +370,8 @@ final class AppModel: ObservableObject {
         SetupChecklist.steps(
             helper: helperManager.state,
             loginItem: loginItemManager.state,
-            notificationsAuthorized: notificationController.isAuthorized
+            notificationsAuthorized: notificationController.isAuthorized,
+            location: installLocation
         )
     }
 
@@ -378,7 +379,8 @@ final class AppModel: ObservableObject {
         SetupChecklist.remaining(
             helper: helperManager.state,
             loginItem: loginItemManager.state,
-            notificationsAuthorized: notificationController.isAuthorized
+            notificationsAuthorized: notificationController.isAuthorized,
+            location: installLocation
         )
     }
 
@@ -390,9 +392,39 @@ final class AppModel: ObservableObject {
         SetupChecklist.summary(
             helper: helperManager.state,
             loginItem: loginItemManager.state,
-            notificationsAuthorized: notificationController.isAuthorized
+            notificationsAuthorized: notificationController.isAuthorized,
+            location: installLocation
         )
     }
+
+    /// Copies the bundle to Applications and relaunches from there. The old
+    /// registration problem this solves is documented on `InstallLocation`.
+    func moveToApplications() {
+        installError = nil
+        do {
+            let destination = try InstallLocation.moveToApplications()
+            let configuration = NSWorkspace.OpenConfiguration()
+            // The same bundle id is already running — this process — so the
+            // relaunch must be allowed to be a second instance for the
+            // moment the two overlap.
+            configuration.createsNewApplicationInstance = true
+            configuration.activates = true
+            NSWorkspace.shared.openApplication(at: destination, configuration: configuration) { _, error in
+                DispatchQueue.main.async {
+                    if error == nil {
+                        NSApp.terminate(nil)
+                    } else {
+                        self.installError = "Fennec was copied to Applications but could not relaunch itself. "
+                            + "Quit this copy and open the one in Applications."
+                    }
+                }
+            }
+        } catch {
+            installError = "Could not copy Fennec to Applications: \(error.localizedDescription)"
+        }
+    }
+
+    @Published var installError: String?
 
     /// Somewhere for `pendingConfirmation` to be rendered.
     ///
@@ -411,6 +443,12 @@ final class AppModel: ObservableObject {
     /// "Turn On" means.
     func performSetupAction(for step: SetupStep) {
         switch step.kind {
+        case .install:
+            // The button says Move to Applications, so it moves — for a
+            // development build too: the step is optional there, and a
+            // developer clicking it anyway has decided.
+            if case .applications = installLocation { break }
+            moveToApplications()
         case .helper:
             helperManager.register()
         case .helperApproval:

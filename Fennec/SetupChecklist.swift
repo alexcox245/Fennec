@@ -3,6 +3,8 @@ import Foundation
 /// One thing standing between the user and a Fennec that works unattended.
 struct SetupStep: Identifiable, Equatable, Sendable {
     enum Kind: String, Sendable {
+        /// Put the bundle where registrations survive: Applications.
+        case install
         /// Install the root helper so a repair needs no password prompt.
         case helper
         /// Approve the helper in System Settings once macOS has staged it.
@@ -41,9 +43,11 @@ enum SetupChecklist {
     static func steps(
         helper: RepairHelperState,
         loginItem: LoginItemState,
-        notificationsAuthorized: Bool
+        notificationsAuthorized: Bool,
+        location: InstallLocation = .applications
     ) -> [SetupStep] {
         [
+            installStep(for: location),
             helperStep(for: helper),
             loginItemStep(for: loginItem),
             notificationStep(authorized: notificationsAuthorized)
@@ -54,9 +58,15 @@ enum SetupChecklist {
     static func remaining(
         helper: RepairHelperState,
         loginItem: LoginItemState,
-        notificationsAuthorized: Bool
+        notificationsAuthorized: Bool,
+        location: InstallLocation = .applications
     ) -> [SetupStep] {
-        steps(helper: helper, loginItem: loginItem, notificationsAuthorized: notificationsAuthorized)
+        steps(
+            helper: helper,
+            loginItem: loginItem,
+            notificationsAuthorized: notificationsAuthorized,
+            location: location
+        )
             .filter { !$0.isComplete }
             .sorted { lhs, rhs in
                 lhs.isRequired == rhs.isRequired ? false : lhs.isRequired
@@ -72,12 +82,14 @@ enum SetupChecklist {
     static func summary(
         helper: RepairHelperState,
         loginItem: LoginItemState,
-        notificationsAuthorized: Bool
+        notificationsAuthorized: Bool,
+        location: InstallLocation = .applications
     ) -> String {
         let outstanding = remaining(
             helper: helper,
             loginItem: loginItem,
-            notificationsAuthorized: notificationsAuthorized
+            notificationsAuthorized: notificationsAuthorized,
+            location: location
         )
         guard !outstanding.isEmpty else {
             return "Fennec is set up. It starts with your Mac and repairs without asking."
@@ -90,6 +102,41 @@ enum SetupChecklist {
     }
 
     // MARK: Individual steps
+
+    private static func installStep(for location: InstallLocation) -> SetupStep {
+        switch location {
+        case .applications:
+            return SetupStep(
+                kind: .install,
+                title: "Live in Applications",
+                detail: "Fennec is in your Applications folder, where macOS keeps its registrations pointed at the right bundle.",
+                compactDetail: "Installed in Applications.",
+                actionTitle: "Installed",
+                isComplete: true,
+                isRequired: true
+            )
+        case .developmentBuild:
+            return SetupStep(
+                kind: .install,
+                title: "Live in Applications",
+                detail: "This build runs from Xcode's build folder, so every registration breaks when the build is replaced. Fine for development; move it before relying on it.",
+                compactDetail: "Development build. Registrations break on rebuild.",
+                actionTitle: "Move to Applications",
+                isComplete: false,
+                isRequired: false
+            )
+        case .elsewhere(let folder):
+            return SetupStep(
+                kind: .install,
+                title: "Live in Applications",
+                detail: "Fennec is running from \(folder). macOS ties the helper and login item to the app's location, so moving it later silently breaks both. One click copies Fennec to Applications and relaunches it there — or drag the icon into Applications yourself.",
+                compactDetail: "Running from \(folder); registrations will break.",
+                actionTitle: "Move to Applications",
+                isComplete: false,
+                isRequired: true
+            )
+        }
+    }
 
     private static func helperStep(for helper: RepairHelperState) -> SetupStep {
         switch helper {

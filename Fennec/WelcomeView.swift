@@ -98,7 +98,11 @@ struct WelcomeView: View {
             Spacer(minLength: 8)
             if let title = location.actionTitle {
                 Button(title) {
-                    NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
+                    if case .elsewhere = location {
+                        model.moveToApplications()
+                    } else {
+                        NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
+                    }
                 }
                 .layoutPriority(1)
             }
@@ -175,13 +179,46 @@ struct WelcomeView: View {
                 }
             }
 
-            if let error = helper.lastError ?? loginItem.lastError {
+            if !model.isFullySetUp {
+                dragWell
+            }
+
+            if let error = helper.lastError ?? loginItem.lastError ?? model.installError {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+
+    /// The Clicky move: hand the user the app icon right where the
+    /// instructions are, so "find the app" is a drag, not a Finder safari.
+    /// The Open at Login list in System Settings takes the drop directly, and
+    /// so does the Applications folder.
+    private var dragWell: some View {
+        HStack(alignment: .center, spacing: 14) {
+            DraggableAppIcon()
+            VStack(alignment: .leading, spacing: 4) {
+                Text("When a list wants the app itself, drag this.")
+                    .font(.callout.weight(.semibold))
+                Text("The Open at Login list in System Settings accepts the drop, and so does "
+                     + "your Applications folder. It is the same Fennec.app wherever it lands. "
+                     + "When every step above is done, press Done and Fennec fades into the "
+                     + "menu bar.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke(FennecBrand.cardStroke, lineWidth: 1)
         }
     }
 

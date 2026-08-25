@@ -110,6 +110,7 @@
 		A1B7F009E2D34C5B6A7890F9 /* StallAdvisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7F00CE2D34C5B6A7890FC /* StallAdvisor.swift */; };
 		A1B7F00AE2D34C5B6A7890FA /* SignalGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7F00DE2D34C5B6A7890FD /* SignalGraphView.swift */; };
 		A1B7F00BE2D34C5B6A7890FB /* StallAdvisorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7F00EE2D34C5B6A7890FE /* StallAdvisorTests.swift */; };
+		A1B7F010E2D34C5B6A789010 /* DraggableAppIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7F011E2D34C5B6A789011 /* DraggableAppIcon.swift */; };
 		93C51749F5343408E13287AF /* DrainSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */; };
 		3C63A347EE064254A020DC46 /* DrainScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */; };
 		37F12AD758BF162F2F0E866A /* HelperThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */; };
@@ -235,6 +236,7 @@
 		A1B7F00CE2D34C5B6A7890FC /* StallAdvisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StallAdvisor.swift; sourceTree = "<group>"; };
 		A1B7F00DE2D34C5B6A7890FD /* SignalGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalGraphView.swift; sourceTree = "<group>"; };
 		A1B7F00EE2D34C5B6A7890FE /* StallAdvisorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StallAdvisorTests.swift; sourceTree = "<group>"; };
+		A1B7F011E2D34C5B6A789011 /* DraggableAppIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraggableAppIcon.swift; sourceTree = "<group>"; };
 		B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainScheduleTests.swift; sourceTree = "<group>"; };
 		DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperThrottle.swift; sourceTree = "<group>"; };
 		C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewRegressionTests.swift; sourceTree = "<group>"; };
@@ -323,6 +325,7 @@
 				A1B7F006E2D34C5B6A7890F6 /* SystemLogMonitor.swift */,
 				A1B7F00CE2D34C5B6A7890FC /* StallAdvisor.swift */,
 				A1B7F00DE2D34C5B6A7890FD /* SignalGraphView.swift */,
+				A1B7F011E2D34C5B6A789011 /* DraggableAppIcon.swift */,
 				70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */,
 				7A64E84489F0B6AB889C87C9 /* ActivityView.swift */,
 				0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */,
@@ -568,6 +571,7 @@
 				A1B7F003E2D34C5B6A7890F3 /* SystemLogMonitor.swift in Sources */,
 				A1B7F008E2D34C5B6A7890F8 /* StallAdvisor.swift in Sources */,
 				A1B7F00AE2D34C5B6A7890FA /* SignalGraphView.swift in Sources */,
+				A1B7F010E2D34C5B6A789010 /* DraggableAppIcon.swift in Sources */,
 				9F6332CB2A48D4417A9DFCAC /* DaysWithoutIncident.swift in Sources */,
 				994538879492BD78F8013B00 /* ActivityView.swift in Sources */,
 				DF4BE0122C23ED5B35E04838 /* AboutView.swift in Sources */,

@@ -25,6 +25,11 @@ are the milestones on `main`.
   signals plotted against the exact repair threshold, with playback stalls
   marked on the baseline. Scrolls continuously while visible; costs nothing
   while the popover is closed.
+- **Onboarding that hands you the icon.** The setup checklist now leads with
+  where Fennec lives: one click copies it to Applications and relaunches it
+  there, and the first-run window offers the app icon as a real drag source —
+  the Open at Login list in System Settings and the Applications folder both
+  accept the drop.
 - **First-run window.** Launching Fennec used to produce nothing at all. It
   now opens a consent record that states the complete privileged surface —
   both XPC methods *and* the administrator-prompt path — the cost of a repair

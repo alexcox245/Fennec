@@ -44,8 +44,28 @@ enum InstallLocation: Equatable, Sendable {
     var actionTitle: String? {
         switch self {
         case .applications: return nil
-        case .developmentBuild, .elsewhere: return "Reveal in Finder"
+        case .developmentBuild: return "Reveal in Finder"
+        case .elsewhere: return "Move to Applications"
         }
+    }
+
+    /// Copies the running bundle into `/Applications`, replacing any older
+    /// copy (the replaced one goes to the Trash, not oblivion). The caller
+    /// relaunches from the returned URL; the original stays where it is for
+    /// the user to discard, because deleting things out from under people is
+    /// not this app's style.
+    static func moveToApplications(bundleURL: URL = Bundle.main.bundleURL) throws -> URL {
+        let destination = URL(fileURLWithPath: "/Applications")
+            .appendingPathComponent(bundleURL.lastPathComponent)
+        let source = bundleURL.standardizedFileURL
+        guard source.path != destination.path else { return destination }
+
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: destination.path) {
+            try fileManager.trashItem(at: destination, resultingItemURL: nil)
+        }
+        try fileManager.copyItem(at: source, to: destination)
+        return destination
     }
 
     static func current(bundleURL: URL = Bundle.main.bundleURL) -> InstallLocation {

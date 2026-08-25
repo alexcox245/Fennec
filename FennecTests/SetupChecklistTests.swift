@@ -8,9 +8,15 @@ final class SetupChecklistTests: XCTestCase {
     private func remaining(
         helper: RepairHelperState = .notConfigured,
         loginItem: LoginItemState = .notRegistered,
-        notifications: Bool = false
+        notifications: Bool = false,
+        location: InstallLocation = .applications
     ) -> [SetupStep] {
-        SetupChecklist.remaining(helper: helper, loginItem: loginItem, notificationsAuthorized: notifications)
+        SetupChecklist.remaining(
+            helper: helper,
+            loginItem: loginItem,
+            notificationsAuthorized: notifications,
+            location: location
+        )
     }
 
     func testAFreshInstallHasEverythingLeftToDo() {
@@ -31,14 +37,38 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertTrue(remaining(helper: .enabled(reachable: true), loginItem: .enabled, notifications: true).isEmpty)
     }
 
-    func testTheChecklistAlwaysReportsAllThreeStepsRegardlessOfState() {
+    func testTheChecklistAlwaysReportsAllFourStepsRegardlessOfState() {
         let steps = SetupChecklist.steps(
             helper: .enabled(reachable: true),
             loginItem: .enabled,
-            notificationsAuthorized: true
+            notificationsAuthorized: true,
+            location: .applications
         )
-        XCTAssertEqual(steps.count, 3)
+        XCTAssertEqual(steps.count, 4)
         XCTAssertTrue(steps.allSatisfy(\.isComplete))
+    }
+
+    // MARK: Install location
+
+    func testApplicationsCountsAsInstalled() {
+        XCTAssertTrue(remaining(location: .applications).allSatisfy { $0.kind != .install })
+    }
+
+    func testRunningFromElsewhereIsARequiredStepAndItLeads() throws {
+        let steps = remaining(location: .elsewhere("~/Downloads"))
+        let install = try XCTUnwrap(steps.first { $0.kind == .install })
+        XCTAssertTrue(install.isRequired)
+        XCTAssertEqual(install.actionTitle, "Move to Applications")
+        XCTAssertTrue(install.detail.contains("~/Downloads"))
+        // Registrations bind to the bundle path, so nothing else on the list
+        // is safe to do first.
+        XCTAssertEqual(steps.first?.kind, .install)
+    }
+
+    func testADevelopmentBuildIsNotedButNotRequired() throws {
+        let steps = remaining(location: .developmentBuild)
+        let install = try XCTUnwrap(steps.first { $0.kind == .install })
+        XCTAssertFalse(install.isRequired)
     }
 
     // MARK: Helper states
