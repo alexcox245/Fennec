@@ -49,6 +49,7 @@ final class AppModel: ObservableObject {
     let notificationController: NotificationController
 
     private let monitor = CoreAudioMonitor()
+    private let logMonitor = SystemLogMonitor()
     private let detectionEngine = DetectionEngine()
     private let safetyChecker = RecoverySafetyChecker()
     private let eventLogger = EventLogger()
@@ -91,6 +92,19 @@ final class AppModel: ObservableObject {
         monitor.onError = { [weak self] error in
             Task { @MainActor in
                 self?.handleMonitorError(error)
+            }
+        }
+
+        logMonitor.onOverloads = { [weak self] eventDates in
+            Task { @MainActor in
+                self?.handleLogOverloads(eventDates: eventDates)
+            }
+        }
+        logMonitor.onError = { [weak self] error in
+            Task { @MainActor in
+                // The listener path is unaffected, so this is a note in the
+                // record, not a monitoring failure.
+                self?.record(.init(kind: .monitorError, summary: error.localizedDescription))
             }
         }
 
@@ -140,6 +154,7 @@ final class AppModel: ObservableObject {
 
     deinit {
         monitor.stop()
+        logMonitor.stop()
     }
 
     // MARK: Derived state
@@ -410,6 +425,9 @@ final class AppModel: ObservableObject {
 
     func startMonitoring() {
         monitoringState = .starting
+        // The log watcher is independent of the listener graph on purpose:
+        // whichever of the two witnesses still works should keep working.
+        logMonitor.start()
         do {
             try monitor.start()
             guard monitor.isAttached else {
@@ -428,11 +446,13 @@ final class AppModel: ObservableObject {
 
     func stopMonitoring() {
         monitor.stop()
+        logMonitor.stop()
         monitoringState = .stopped
     }
 
     func restartMonitoring() {
         monitor.stop()
+        logMonitor.stop()
         detectionEngine.reset()
         startMonitoring()
     }
@@ -588,7 +608,8 @@ final class AppModel: ObservableObject {
                 details: [
                     "count": String(batch.overloads),
                     "device": batch.device.name,
-                    "sampleRate": String(format: "%.0f", batch.device.sampleRate)
+                    "sampleRate": String(format: "%.0f", batch.device.sampleRate),
+                    "source": batch.source.title
                 ],
                 date: batch.date
             ))
@@ -959,6 +980,29 @@ final class AppModel: ObservableObject {
     /// registration on the way out, so the monitor keeps its timer and loses
     /// its ears. This used to leave the popover showing a blue dot and the
     /// word "Listening" over an app that could no longer hear anything.
+    /// Overload events that `coreaudiod` recorded in the unified log. These
+    /// are the overloads the property listener cannot hear: the ones that
+    /// happened in some other process's IO cycle — which, in the field, is
+    /// where the audible fault actually lives. They enter the same pipeline
+    /// as listener signals, so every suppression window, threshold, and
+    /// safety gate applies to both witnesses identically.
+    private func handleLogOverloads(eventDates: [Date]) {
+        guard let newest = eventDates.max() else { return }
+        let snapshot = (try? CoreAudioReader.defaultOutputSnapshot()) ?? .unavailable
+        handle(AudioSignalBatch(
+            date: newest,
+            overloads: UInt64(eventDates.count),
+            abnormalStops: 0,
+            defaultOutputChanges: 0,
+            sampleRateChanges: 0,
+            deviceStateChanges: 0,
+            serviceRestarts: 0,
+            device: snapshot,
+            source: .systemLog,
+            overloadDates: eventDates
+        ))
+    }
+
     private func handleMonitorError(_ error: Error) {
         lastError = error.localizedDescription
         record(.init(kind: .monitorError, summary: error.localizedDescription))

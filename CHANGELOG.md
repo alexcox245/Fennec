@@ -7,6 +7,15 @@ are the milestones on `main`.
 
 ### Added
 
+- **A second detection witness: `coreaudiod`'s own overload log.** The
+  processor-overload notification fires in the process whose IO cycle missed
+  its deadline, so the property listener is deaf to the commonest form of the
+  field fault — another client (verified live: an iOS Simulator daemon's
+  silent audio context) overloading `coreaudiod` for hours while Fennec's
+  counters stayed at zero. `SystemLogMonitor` polls the unified log for
+  `HALS_OverloadMessage` entries, only while the output device is running IO,
+  and feeds each event's true timestamp into the same detection engine,
+  suppression windows, and safety gates as the listener path.
 - **First-run window.** Launching Fennec used to produce nothing at all. It
   now opens a consent record that states the complete privileged surface —
   both XPC methods *and* the administrator-prompt path — the cost of a repair

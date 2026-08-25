@@ -102,6 +102,10 @@
 		7E0CF26E72EE5E2E421ED0CD /* DaysWithoutIncident.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */; };
 		ACE9E60920BDD58FF9F5CDDD /* DaysWithoutIncidentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */; };
 		BD41497897092C7F0B59F685 /* DrainSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */; };
+		A1B7F001E2D34C5B6A7890F1 /* OverloadLogSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7F005E2D34C5B6A7890F5 /* OverloadLogSchedule.swift */; };
+		A1B7F002E2D34C5B6A7890F2 /* OverloadLogSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7F005E2D34C5B6A7890F5 /* OverloadLogSchedule.swift */; };
+		A1B7F003E2D34C5B6A7890F3 /* SystemLogMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7F006E2D34C5B6A7890F6 /* SystemLogMonitor.swift */; };
+		A1B7F004E2D34C5B6A7890F4 /* OverloadLogScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7F007E2D34C5B6A7890F7 /* OverloadLogScheduleTests.swift */; };
 		93C51749F5343408E13287AF /* DrainSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */; };
 		3C63A347EE064254A020DC46 /* DrainScheduleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */; };
 		37F12AD758BF162F2F0E866A /* HelperThrottle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */; };
@@ -221,6 +225,9 @@
 		7A64E84489F0B6AB889C87C9 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
 		8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysWithoutIncidentTests.swift; sourceTree = "<group>"; };
 		60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainSchedule.swift; sourceTree = "<group>"; };
+		A1B7F005E2D34C5B6A7890F5 /* OverloadLogSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverloadLogSchedule.swift; sourceTree = "<group>"; };
+		A1B7F006E2D34C5B6A7890F6 /* SystemLogMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemLogMonitor.swift; sourceTree = "<group>"; };
+		A1B7F007E2D34C5B6A7890F7 /* OverloadLogScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverloadLogScheduleTests.swift; sourceTree = "<group>"; };
 		B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainScheduleTests.swift; sourceTree = "<group>"; };
 		DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperThrottle.swift; sourceTree = "<group>"; };
 		C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewRegressionTests.swift; sourceTree = "<group>"; };
@@ -305,6 +312,8 @@
 			children = (
 				C0070FC9E50061BEA041F870 /* FennecBrand.swift */,
 				60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */,
+				A1B7F005E2D34C5B6A7890F5 /* OverloadLogSchedule.swift */,
+				A1B7F006E2D34C5B6A7890F6 /* SystemLogMonitor.swift */,
 				70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */,
 				7A64E84489F0B6AB889C87C9 /* ActivityView.swift */,
 				0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */,
@@ -383,6 +392,7 @@
 			children = (
 				C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */,
 				B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */,
+				A1B7F007E2D34C5B6A7890F7 /* OverloadLogScheduleTests.swift */,
 				8F31B94DAD7CB0C4EFAB17E5 /* DaysWithoutIncidentTests.swift */,
 				BDB135AAE4E46F154D69E127 /* UninstallTests.swift */,
 				52BDA5C884966B4725C0A2CF /* RepairGovernorTests.swift */,
@@ -544,6 +554,8 @@
 				F68A3F6E9FF3639D44AFDF2B /* FennecBrand.swift in Sources */,
 				37F12AD758BF162F2F0E866A /* HelperThrottle.swift in Sources */,
 				BD41497897092C7F0B59F685 /* DrainSchedule.swift in Sources */,
+				A1B7F001E2D34C5B6A7890F1 /* OverloadLogSchedule.swift in Sources */,
+				A1B7F003E2D34C5B6A7890F3 /* SystemLogMonitor.swift in Sources */,
 				9F6332CB2A48D4417A9DFCAC /* DaysWithoutIncident.swift in Sources */,
 				994538879492BD78F8013B00 /* ActivityView.swift in Sources */,
 				DF4BE0122C23ED5B35E04838 /* AboutView.swift in Sources */,
@@ -596,6 +608,8 @@
 				FAE57F84B5E7241F17F937CC /* HelperThrottle.swift in Sources */,
 				3C63A347EE064254A020DC46 /* DrainScheduleTests.swift in Sources */,
 				93C51749F5343408E13287AF /* DrainSchedule.swift in Sources */,
+				A1B7F002E2D34C5B6A7890F2 /* OverloadLogSchedule.swift in Sources */,
+				A1B7F004E2D34C5B6A7890F4 /* OverloadLogScheduleTests.swift in Sources */,
 				ACE9E60920BDD58FF9F5CDDD /* DaysWithoutIncidentTests.swift in Sources */,
 				7E0CF26E72EE5E2E421ED0CD /* DaysWithoutIncident.swift in Sources */,
 				8DB547A04E8D966F3B118A2A /* UninstallTests.swift in Sources */,

@@ -78,8 +78,15 @@ final class DetectionEngine {
         }
 
         guard batch.overloads > 0 else { return nil }
-        for _ in 0..<batch.overloads {
-            overloadDates.append(batch.date)
+        if let trueDates = batch.overloadDates, !trueDates.isEmpty {
+            // A polled witness reports events after the fact; window math on
+            // the poll time instead of the event times would make the poll
+            // interval, not the fault, decide whether a threshold is met.
+            overloadDates.append(contentsOf: trueDates)
+        } else {
+            for _ in 0..<batch.overloads {
+                overloadDates.append(batch.date)
+            }
         }
 
         let cutoff = batch.date.addingTimeInterval(-sensitivity.window)

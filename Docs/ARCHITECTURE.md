@@ -2,14 +2,25 @@
 
 ## Detection path
 
+Two independent witnesses feed one pipeline.
+
+**The listener path** (`CoreAudioMonitor`):
+
 1. `CoreAudioMonitor` attaches classic Core Audio property listeners to the system object and the current default output device.
 2. Core Audio may invoke the callback from a real-time I/O context.
 3. `RTSignalCounters.c` performs only relaxed atomic increments.
 4. A private serial queue drains the counters every 250 ms.
-5. `DetectionEngine` applies a time-window threshold.
-6. `AppModel` checks output transport, cooldown, active microphone input, protected audio applications, and helper reachability.
+
+**The log path** (`SystemLogMonitor`): `kAudioDeviceProcessorOverload` is delivered by the HAL inside the process whose IO cycle missed its deadline, so the listener path is deaf to overloads that happen in any other client — which, verified on a live faulting machine, is where the audible field failure actually lives (an iOS Simulator daemon's silent audio context overloaded `coreaudiod`'s IO thread several times a second for hours; the listener never fired once, and a healthy sibling IOProc showed no timing artifact either). `coreaudiod` records every overload it detects, for every client, in the unified log. `SystemLogMonitor` polls those `HALS_OverloadMessage` entries through `OSLogStore` — gated and paced by `OverloadLogSchedule`, since a log query costs real CPU and a ~40 µs device-running check is enough to know whether an overload is even possible — and reports each event with its true log timestamp.
+
+**Shared from there:**
+
+5. `DetectionEngine` applies a time-window threshold. Log-sourced batches carry the events' own timestamps (`AudioSignalBatch.overloadDates`), so the poll interval bounds only reporting latency and can never decide whether a window's threshold is met.
+6. `AppModel` checks output transport, cooldown, active microphone input, protected audio applications, and helper reachability. Suppression windows apply to both witnesses identically.
 7. The app asks the helper to restart Core Audio.
 8. The app waits for launchd to relaunch `coreaudiod`, then rebuilds all listeners. A spontaneous Core Audio service restart also triggers a full listener rebuild because Apple documents that service-reset state must be re-established.
+
+Reading the system log store requires an administrator account. Where that fails, `SystemLogMonitor` says so once in the activity record and stands down; the listener path is unaffected.
 
 ## Why the callback is implemented in C
 
@@ -45,7 +56,7 @@ The XPC protocol has no general execution API. Its repair method invokes fixed a
 
 ## Detection trade-off
 
-`kAudioDeviceProcessorOverload` indicates that Core Audio missed a processing deadline. It is a strong causal signal for an audio xrun but is not an acoustic classifier. Balanced mode requires two notifications within eight seconds to reduce false recovery. Immediate mode is appropriate only after confirming that one overload correlates with the user's audible failure.
+`kAudioDeviceProcessorOverload` indicates that Core Audio missed a processing deadline. It is a strong causal signal for an audio xrun but is not an acoustic classifier — and it is delivered per process, to the client whose IO cycle overloaded, which is why the listener alone missed the field failure entirely. The log path closes that blind spot at the cost of polling: roughly one second of utility-QoS CPU per query, spent only while the output device is actually running IO — every 30 seconds when the log is quiet, every 10 once overloads appear, and never while no audio is moving. Worst case, a fault that starts mid-playback is noticed within about 30 seconds of its first logged overload; the fault this product exists for persists until repaired, so the bound is latency, not loss. The log matching keys on `coreaudiod`'s private message text (`HALS_OverloadMessage`), which Apple can reword in any release; the marker-plus-cluster fallback in `OverloadLogGrouper` degrades that risk from silence to approximation, but a macOS update remains the way this path dies, and the listener path is retained partly for that reason. Balanced mode requires two signals within eight seconds to reduce false recovery. Immediate mode is appropriate only after confirming that one overload correlates with the user's audible failure.
 
 ## Failure behavior
 

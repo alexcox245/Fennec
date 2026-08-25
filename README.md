@@ -34,12 +34,20 @@ the right answer.
 - Attaches Core Audio property listeners to the current default output device
   and watches for `kAudioDeviceProcessorOverload` and
   `kAudioDevicePropertyIOStoppedAbnormally`.
+- Watches `coreaudiod`'s own overload record in the unified log as a second,
+  independent witness. The overload notification only fires in the process
+  whose IO cycle missed its deadline — when the misbehaving client is some
+  other app or daemon, the listener hears nothing while the speakers crackle.
+  `coreaudiod` logs every overload it detects, for every client, and Fennec
+  polls that record only while audio is actually playing.
 - Does **no** work in the real-time audio callback — only relaxed atomic
   increments on preallocated storage. Everything else happens after a timer
   drains those counters onto a normal queue.
 - Waits for the fault to confirm itself. One overload is usually a harmless
   blip; two in a row is the failure that stays broken. You hear about a second
-  of crackle, then it is gone.
+  of crackle, then it is gone — up to half a minute when only the log path
+  can see the fault, because polling the log costs CPU and Fennec spends it
+  sparingly.
 - Restarts Core Audio through a root helper that can do exactly one thing.
 - Verifies the repair. A restart is *provisional* until the fault has failed to
   return for a minute — Fennec does not call it fixed before then.
@@ -60,6 +68,10 @@ low-overhead system-level signal for this fault, but it is a proxy:
 - It cannot prove every overload was audible.
 - It cannot recognise a Mac that was already broken before Fennec started —
   use **Repair Audio Now** for that.
+- The log witness reads the system log store, which requires an administrator
+  account and keys on message text Apple can reword in any macOS release. If
+  either fails, Fennec says so once in Activity and the listener path carries
+  on alone.
 - Restarting Core Audio briefly disconnects playback and recording for every
   app and every logged-in user. The goal is a sub-second recovery, not a
   gapless one.
