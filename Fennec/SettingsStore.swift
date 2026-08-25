@@ -13,6 +13,7 @@ final class SettingsStore: ObservableObject {
         static let notifyOnDetection = "notifyOnDetection"
         static let cooldownSeconds = "cooldownSeconds"
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
+        static let hasAppliedFirstRunDefaults = "hasAppliedFirstRunDefaults"
         static let pausedUntil = "pausedUntil"
         static let pausedIndefinitely = "pausedIndefinitely"
         static let listeningSince = "listeningSince"
@@ -66,6 +67,18 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(hasCompletedFirstRun, forKey: Key.hasCompletedFirstRun) }
     }
 
+    /// Set the first time Fennec switches on the permissions it can switch on
+    /// by itself — the login item, and the single notification prompt macOS
+    /// allows an app in its lifetime.
+    ///
+    /// Deliberately a different flag from `hasCompletedFirstRun`. A user who
+    /// turns the login item off and later reopens the first-run window from the
+    /// Help menu must not find it turned back on underneath them; defaulting a
+    /// permission on is a courtesy exactly once, and a fight every time after.
+    @Published var hasAppliedFirstRunDefaults: Bool {
+        didSet { defaults.set(hasAppliedFirstRunDefaults, forKey: Key.hasAppliedFirstRunDefaults) }
+    }
+
     /// Persisted as two plain values so a stale timestamp can never outlive
     /// its meaning: an expired date simply resolves to "running" on the next
     /// read, including after a reboot.
@@ -106,6 +119,7 @@ final class SettingsStore: ObservableObject {
         notifyOnDetection = defaults.object(forKey: Key.notifyOnDetection) as? Bool ?? true
         cooldownSeconds = defaults.object(forKey: Key.cooldownSeconds) as? Double ?? 45
         hasCompletedFirstRun = defaults.object(forKey: Key.hasCompletedFirstRun) as? Bool ?? false
+        hasAppliedFirstRunDefaults = defaults.object(forKey: Key.hasAppliedFirstRunDefaults) as? Bool ?? false
         pausedUntil = defaults.object(forKey: Key.pausedUntil) as? Date
         pausedIndefinitely = defaults.object(forKey: Key.pausedIndefinitely) as? Bool ?? false
 

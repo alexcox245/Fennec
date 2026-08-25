@@ -101,15 +101,36 @@ verify Fennec is free of malware."* Right-click → **Open**, or
 
 ## First run
 
-Launching Fennec opens a window that states, before asking for anything:
+Launching Fennec opens a window that reads in one order — what it does, what
+that costs this Mac, then what it needs from you.
 
-- the complete privileged surface — both XPC methods **and** the administrator
-  prompt path;
-- what a repair costs, in seconds;
-- that there is no network code;
-- the two files it writes and where.
+**What it does**, first, because that is the only question you have yet: the
+two Core Audio signals it watches, the daemon it restarts when enough of them
+land, and the log it keeps.
 
-Then it offers a **test repair** you run on purpose, while nothing is at
+**What it will do to this Mac**, stated before anything is asked for: the
+complete privileged surface — both XPC methods **and** the administrator prompt
+path — what a repair costs in seconds, that there is no network code, and the
+two files it writes.
+
+**What it needs from you** — three permissions, and only one of them is a
+request:
+
+| Permission | Who grants it |
+|---|---|
+| Start with your Mac | Fennec, at first launch. No dialog. The row says so and carries the switch to turn it off. |
+| Post a banner after a repair | macOS, with its one authorization prompt, raised over the window so you can read what it is for before answering. |
+| **Your administrator password, once** | You. It installs the root helper, and it is the only thing Fennec asks you for. |
+
+Fennec grants what costs you nothing and asks for what costs you something.
+The login item is undone with one switch, so leaving it off for you to discover
+later buys nothing but an install that was not running when the crackling
+started; root is the opposite, so it stays behind a button, underneath the
+disclosure of everything it can do. Neither default is re-applied later: switch
+the login item off and it stays off, including if you reopen this window from
+the Help menu.
+
+The window ends with a **test repair** you run on purpose, while nothing is at
 stake, so you know exactly what an automatic one will cost on your machine.
 It does not play a test tone: Fennec does not know your monitor gain, and a
 sine wave through open-back headphones at whatever level the last session left

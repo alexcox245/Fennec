@@ -7,11 +7,23 @@ are the milestones on `main`.
 
 ### Added
 
+- **Onboarding that grants what it can and asks for what it cannot.** Fennec
+  now registers its own login item and raises the notification prompt itself
+  the first time it launches, leaving the administrator password as the single
+  thing a person is asked for. The rule is one sentence — Fennec grants what
+  costs the user nothing and asks for what costs them something — and root is
+  never on the granting side of it. Each permission row names who granted it,
+  and the login item carries its own off switch in the same line, so a default
+  set for you is never a default you have to hunt for. Applied once per
+  install and tracked separately from first-run completion, so reopening the
+  window can never switch back on something you switched off.
 - **First-run window.** Launching Fennec used to produce nothing at all. It
-  now opens a consent record that states the complete privileged surface —
-  both XPC methods *and* the administrator-prompt path — the cost of a repair
-  in seconds, that there is no network code, and the two files it writes.
-  Ends with a test repair you run on purpose while nothing is at stake.
+  now opens a consent record that reads in one order: what Fennec does, what
+  that costs this Mac — the complete privileged surface, both XPC methods
+  *and* the administrator-prompt path, the cost of a repair in seconds, that
+  there is no network code, the two files it writes — and only then what it
+  needs from you. Ends with a test repair you run on purpose while nothing is
+  at stake.
 - **A real menu-bar mark.** A template-rendered fennec silhouette with
   listening, repairing, paused, and attention states, replacing the stock
   `waveform` symbol.

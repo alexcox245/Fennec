@@ -9,6 +9,11 @@ import SwiftUI
 struct SetupStepRow: View {
     let step: SetupStep
     let compact: Bool
+    /// Renders the action as the window's primary button. Used by first run for
+    /// the administrator step and nowhere else — it is the only thing on that
+    /// window Fennec actually asks a person for, and a row of identical bordered
+    /// buttons gives a new user no idea which one matters.
+    var isPrimary: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -37,6 +42,12 @@ struct SetupStepRow: View {
                     .font(compact ? .caption2 : .caption)
                     .foregroundStyle(FennecBrand.sky)
                     .labelStyle(.titleAndIcon)
+            } else if isPrimary {
+                Button(step.actionTitle, action: action)
+                    .controlSize(compact ? .small : .regular)
+                    .buttonStyle(.borderedProminent)
+                    .tint(FennecBrand.sky)
+                    .layoutPriority(1)
             } else {
                 Button(step.actionTitle, action: action)
                     .controlSize(compact ? .small : .regular)

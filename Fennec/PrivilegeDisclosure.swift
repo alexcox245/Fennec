@@ -32,6 +32,39 @@ enum PrivilegeDisclosure {
         tell whether the problem is Core Audio or your hardware.
         """
 
+    /// What the product actually does, before a word about permissions.
+    ///
+    /// A person who has just double-clicked an unfamiliar 3 MB app that wants
+    /// root has one question, and it is not "which entitlements". It is "what
+    /// is this". Three sentences, mechanism first — the permissions section
+    /// underneath then reads as a consequence rather than a toll.
+    static var whatItDoes: [Item] {
+        [
+            Item(
+                id: "watch",
+                title: "It watches one device for two signals",
+                detail: "Core Audio's default output device, for the notifications that mean the "
+                    + "audio graph missed its real-time deadlines. Nothing else is observed.",
+                code: "kAudioDeviceProcessorOverload · kAudioDevicePropertyIOStoppedAbnormally"
+            ),
+            Item(
+                id: "repair",
+                title: "It restarts Core Audio when enough of them land",
+                detail: "Enough signals inside the detection window, and every safety check passing, "
+                    + "and Fennec restarts the audio daemon. Every application stays open. Audio "
+                    + "stops for about a second.",
+                code: nil
+            ),
+            Item(
+                id: "record",
+                title: "It writes down what it saw",
+                detail: "Every signal, every decision not to act and why, and a receipt for every "
+                    + "repair — so you can tell whether the fault is Core Audio or your hardware.",
+                code: nil
+            )
+        ]
+    }
+
     /// Every way Fennec can act with privilege. All of them.
     static var privilegedActions: [Item] {
         [

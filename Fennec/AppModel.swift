@@ -121,13 +121,21 @@ final class AppModel: ObservableObject {
             self?.completeFirstRun()
         }
 
-        if !settings.hasCompletedFirstRun {
+        if settings.hasCompletedFirstRun {
+            // An install that has already been through first run made its own
+            // choices about the login item and the notification prompt. Coming
+            // back after an update and switching them on would be overriding a
+            // decision rather than making one, so the grant is marked spent
+            // without being used.
+            settings.hasAppliedFirstRunDefaults = true
+        } else {
             // Next run loop turn: the scene has not finished building yet, and
             // opening a window from inside a StateObject's init is a good way
             // to get a window that never becomes key.
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 WindowPresenter.shared.showWelcome(model: self)
+                self.applyFirstRunDefaults()
             }
         }
 
@@ -271,6 +279,57 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Switch on everything that can be switched on without asking, the first
+    /// time Fennec runs.
+    ///
+    /// The dividing line is `SetupStep.Grant`: Fennec grants what costs the
+    /// user nothing and asks for what costs them something. A login item raises
+    /// no dialog and is undone with one switch — leaving it off so a person can
+    /// discover it later buys nothing but an install that was not running when
+    /// the crackling started. Root is the opposite, so the helper is never
+    /// touched here: it stays behind the one button in the first-run window,
+    /// underneath the disclosure of everything it can do.
+    ///
+    /// Runs once per install, tracked separately from `hasCompletedFirstRun` so
+    /// reopening the window later can never re-grant something the user has
+    /// since switched off.
+    func applyFirstRunDefaults() {
+        guard !settings.hasAppliedFirstRunDefaults else { return }
+        settings.hasAppliedFirstRunDefaults = true
+
+        loginItemManager.refresh()
+        let actions = FirstRunDefaults.actions(
+            loginItem: loginItemManager.state,
+            notificationsAnswered: notificationController.isDetermined
+        )
+
+        for action in actions {
+            switch action {
+            case .enableLoginItem:
+                // `revealingApproval: false`: if macOS stages the registration
+                // rather than enabling it outright, the first-run window says
+                // so in its own words and offers the button. It does not get
+                // shoved aside by System Settings a half-second after opening.
+                loginItemManager.enable(revealingApproval: false)
+                record(.init(
+                    kind: .setupChanged,
+                    summary: "Fennec added itself as a login item, so it is already running when the crackling starts.",
+                    details: ["grant": SetupStep.Grant.fennec.rawValue]
+                ))
+            case .requestNotificationPermission:
+                // One beat, so the window is on screen underneath it. macOS
+                // gives an app exactly one authorization prompt for the life of
+                // the install. Someone who has just read "Fennec will tell you
+                // when it fixed something" can answer that prompt; someone who
+                // sees it alone, from an app they have not been introduced to,
+                // presses Don't Allow — and there is no second chance.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                    self?.notificationController.requestAuthorization()
+                }
+            }
+        }
+    }
+
     /// The user pressed Done in the first-run window.
     func completeFirstRun() {
         settings.hasCompletedFirstRun = true
@@ -356,6 +415,16 @@ final class AppModel: ObservableObject {
 
     var isFullySetUp: Bool {
         SetupChecklist.isReady(helper: helperManager.state, loginItem: loginItemManager.state)
+    }
+
+    /// The line under the masthead in the first-run window. It has to stay true
+    /// as the three states change underneath it.
+    var firstRunStatus: String {
+        SetupChecklist.firstRunStatus(
+            helper: helperManager.state,
+            loginItem: loginItemManager.state,
+            notificationsAuthorized: notificationController.isAuthorized
+        )
     }
 
     var setupSummary: String {

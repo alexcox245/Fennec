@@ -19,6 +19,10 @@ struct ActivityRecord: Identifiable, Codable, Equatable, Sendable {
         case paused
         case resumed
         case helper
+        /// A permission changed — including the ones Fennec grants itself at
+        /// first run. Auto-granting anything silently would be indistinguishable
+        /// from auto-granting it dishonestly, so it goes in the log too.
+        case setupChanged
     }
 
     let id: UUID

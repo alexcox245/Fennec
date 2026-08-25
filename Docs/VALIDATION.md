@@ -10,7 +10,7 @@ Run from the repo root on macOS 26.5 with Xcode 26.6 (17F113).
 | Check | Command | Result |
 |---|---|---|
 | Build matrix | `xcodebuild -scheme {Fennec,FennecHelper} -configuration {Debug,Release} build` | All four green |
-| Unit tests | `xcodebuild -scheme Fennec -configuration Debug test` | 204 passing, 0 failures |
+| Unit tests | `xcodebuild -scheme Fennec -configuration Debug test` | 225 passing, 0 failures |
 | Static audit | `zsh Scripts/audit-source.sh` | Passes, including the `shasum -c` manifest gate |
 | Bundle + signature | `zsh Scripts/build-release.sh` | Layout verified, `codesign --verify` passes |
 | Warnings | Release clean build | Exactly 4, all catalogued as T-007 / T-008 |
@@ -75,6 +75,25 @@ System Settings, and a reproduction of the audible fault.
 9. Only after all of the above, consider changing detection from **Balanced**
    to **Immediate**.
 
+First run's automatic grants (T-024) are decided by pure, tested logic, but
+nothing below the decision has been exercised — every one of these calls into
+`SMAppService` or `UNUserNotificationCenter` on a live system:
+
+- That `SMAppService.mainApp.register()` at first launch actually produces
+  **Login Items & Extensions ▸ Open at Login ▸ Fennec**, rather than a staged
+  `.requiresApproval` registration. Both paths are handled, but only the first
+  has ever been reasoned about rather than seen.
+- That the notification prompt lands **on top of** the first-run window rather
+  than behind it or ahead of it. The 0.6 s deferral is a guess at the right
+  beat; it needs a person to watch it once. Getting this wrong is expensive —
+  macOS grants one prompt for the life of the install.
+- That "Turn Off" in the login-item row unregisters cleanly and the row falls
+  back to the un-granted state.
+- That an install upgraded from a build before T-024 does **not** get its login
+  item switched on underneath it. The code marks the grant spent when
+  `hasCompletedFirstRun` is already true; that branch has not been run against
+  a real preferences file carrying the old key.
+
 Also unverified because it needs root and a real registration:
 
 - The uninstaller's daemon-unregister step, and its refusal to trash the app
@@ -83,3 +102,6 @@ Also unverified because it needs root and a real registration:
   version-mismatch warning are untested against a live daemon.
 - Whether `applicationShouldTerminate`'s grace actually releases quit during a
   real privileged repair.
+- The administrator-password flow behind **Install Helper…** — the one thing
+  first run asks a person for, and the one step of onboarding that cannot be
+  tested without giving something root.

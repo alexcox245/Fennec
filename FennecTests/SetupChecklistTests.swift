@@ -129,6 +129,107 @@ final class SetupChecklistTests: XCTestCase {
         )
     }
 
+    // MARK: Who grants what
+
+    func testOnlyTheHelperNeedsAnAdministrator() {
+        let steps = SetupChecklist.steps(
+            helper: .notConfigured,
+            loginItem: .notRegistered,
+            notificationsAuthorized: false
+        )
+        let administrator = steps.filter { $0.grant == .administrator }
+        XCTAssertEqual(
+            administrator.map(\.kind),
+            [.helper],
+            "The password is the one thing Fennec asks a person for. If a second step ever "
+                + "needs an administrator, first run has to say so out loud."
+        )
+    }
+
+    func testApprovingAStagedHelperIsStillAnAdministratorAsk() {
+        let steps = SetupChecklist.steps(
+            helper: .awaitingApproval,
+            loginItem: .enabled,
+            notificationsAuthorized: true
+        )
+        XCTAssertEqual(steps.first { $0.kind == .helperApproval }?.grant, .administrator)
+    }
+
+    func testTheTwoFreeStepsAreMarkedAsFennecsAndTheSystemsToGive() {
+        let steps = SetupChecklist.steps(
+            helper: .enabled(reachable: true),
+            loginItem: .notRegistered,
+            notificationsAuthorized: false
+        )
+        XCTAssertEqual(steps.first { $0.kind == .loginItem }?.grant, .fennec)
+        XCTAssertEqual(steps.first { $0.kind == .notifications }?.grant, .systemPrompt)
+    }
+
+    func testEveryGrantExplainsWhoIsBeingAskedAndHowOften() {
+        for grant in [SetupStep.Grant.fennec, .systemPrompt, .administrator] {
+            XCTAssertFalse(grant.note.isEmpty)
+            XCTAssertFalse(grant.note.contains("!"))
+        }
+        XCTAssertTrue(
+            SetupStep.Grant.fennec.note.contains("Switch it off"),
+            "A default Fennec set for you is only honest if the row also says how to undo it."
+        )
+    }
+
+    func testTheHelperStepNamesThePasswordItIsAboutToAskFor() throws {
+        let step = try XCTUnwrap(remaining(helper: .notConfigured).first { $0.kind == .helper })
+        XCTAssertTrue(step.detail.contains("administrator password"))
+        XCTAssertTrue(
+            step.detail.contains("Login Items"),
+            "macOS asks twice — password, then approval. Naming only the first is a surprise."
+        )
+    }
+
+    // MARK: The first-run status line
+
+    func testFirstRunStatusSaysThePasswordIsAllThatIsLeftOnceTheFreeOnesAreOn() {
+        XCTAssertEqual(
+            SetupChecklist.firstRunStatus(
+                helper: .notConfigured,
+                loginItem: .enabled,
+                notificationsAuthorized: true
+            ),
+            "Fennec set up the first two itself. Your administrator password is the only thing left."
+        )
+    }
+
+    func testFirstRunStatusDoesNotClaimCreditForDefaultsThatDidNotTake() {
+        // A managed Mac can refuse the login item, and a user can decline the
+        // notification prompt. Either way the line above must not say Fennec
+        // set them up.
+        let line = SetupChecklist.firstRunStatus(
+            helper: .notConfigured,
+            loginItem: .requiresApproval,
+            notificationsAuthorized: false
+        )
+        XCTAssertFalse(line.contains("set up the first two"))
+        XCTAssertTrue(line.contains("What Fennec needs from you"))
+    }
+
+    func testFirstRunStatusIsSettledOnceEverythingIsInPlace() {
+        XCTAssertEqual(
+            SetupChecklist.firstRunStatus(
+                helper: .enabled(reachable: true),
+                loginItem: .enabled,
+                notificationsAuthorized: true
+            ),
+            "All three are in place. Fennec is listening."
+        )
+    }
+
+    func testWhatItNeedsStatesAllThreeBeforeAnyOfThemIsAskedFor() {
+        let text = SetupChecklist.whatItNeeds
+        XCTAssertTrue(text.contains("start with your Mac"))
+        XCTAssertTrue(text.contains("banner"))
+        XCTAssertTrue(text.contains("administrator rights"))
+        XCTAssertFalse(text.contains("!"))
+    }
+
     func testNoStepShoutsAtTheUser() {
         let states: [(RepairHelperState, LoginItemState, Bool)] = [
             (.notConfigured, .notRegistered, false),

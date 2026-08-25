@@ -41,7 +41,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         show(
             id: ID.welcome,
             title: "Welcome to Fennec",
-            size: CGSize(width: 620, height: 720),
+            size: CGSize(width: 640, height: 760),
             // Must not be below WelcomeView's own minHeight, or the host
             // clips the footer — and the footer holds Done.
             minSize: CGSize(width: 560, height: 640)

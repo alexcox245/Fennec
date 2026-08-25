@@ -96,7 +96,13 @@ final class LoginItemManager: ObservableObject {
         enabled ? enable() : disable()
     }
 
-    func enable() {
+    /// - Parameter revealingApproval: whether to open System Settings when
+    ///   macOS stages the registration instead of enabling it outright. True
+    ///   when a person pressed a button and is waiting for something to happen;
+    ///   **false** when Fennec registered itself at first run, because throwing
+    ///   a new user into System Settings before they have read a single line of
+    ///   the window they just opened is not onboarding, it is an ambush.
+    func enable(revealingApproval: Bool = true) {
         do {
             if service.status == .notRegistered || service.status == .notFound {
                 try service.register()
@@ -115,7 +121,7 @@ final class LoginItemManager: ObservableObject {
         }
 
         refresh()
-        if state.requiresApproval {
+        if state.requiresApproval && revealingApproval {
             openSettings()
         }
     }

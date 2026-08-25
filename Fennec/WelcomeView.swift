@@ -15,6 +15,15 @@ import SwiftUI
 /// their audio will let a background process interrupt their output device
 /// without first hearing what that interruption sounds like on their own rig.
 ///
+/// It reads top to bottom as one argument: **what Fennec does**, then what
+/// that costs this Mac, then **what it needs from you** — in that order,
+/// because a permission request that arrives before the mechanism is just a
+/// toll. By the time the window reaches that last section, two of the three
+/// permissions are already on: Fennec granted itself the ones that raise no
+/// dialog (`AppModel.applyFirstRunDefaults`), says so in the row, and puts the
+/// switch to undo it in the same line. What is left is the administrator
+/// password, which is the one thing on this screen that is genuinely a request.
+///
 /// What it deliberately does *not* do is play a test tone. Fennec does not
 /// know the user's monitor gain, and pushing a sine wave through open-back
 /// headphones at whatever level the last session left them is a hearing risk.
@@ -39,8 +48,9 @@ struct WelcomeView: View {
                 VStack(alignment: .leading, spacing: 26) {
                     masthead
                     if location.warning != nil { locationNotice }
+                    whatItDoes
                     disclosure
-                    setup
+                    permissions
                     rehearsal
                     whereToFindIt
                 }
@@ -80,11 +90,35 @@ struct WelcomeView: View {
                 Spacer(minLength: 0)
             }
 
-            Text(PrivilegeDisclosure.whyNotAShellAlias)
+            needs
+        }
+    }
+
+    /// The answer to "what is this going to ask me for", above the fold and
+    /// before a single button. The three permissions never change; which of
+    /// them are already handled does, so the second line is derived from live
+    /// state rather than written down as an assumption.
+    private var needs: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text(SetupChecklist.whatItNeeds)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            Text(model.firstRunStatus)
+                .font(.callout.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // Tinted rather than another neutral card. Three stacked panels in the
+        // same grey read as three equal blocks of small print; this one is the
+        // orienting statement, and the reader has to be able to tell.
+        .background(FennecBrand.sky.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(FennecBrand.sky.opacity(0.28), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var locationNotice: some View {
@@ -109,6 +143,33 @@ struct WelcomeView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .stroke(FennecBrand.dune.opacity(0.3), lineWidth: 1)
+        }
+    }
+
+    /// Mechanism first. Someone who has just double-clicked an unfamiliar app
+    /// that is about to want root is asking "what is this", and every answer
+    /// that starts with a permission has skipped the question.
+    private var whatItDoes: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionTitle("What Fennec does", symbol: "eye")
+
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(PrivilegeDisclosure.whatItDoes) { item in
+                    disclosureRow(item)
+                }
+            }
+
+            Text(PrivilegeDisclosure.whyNotAShellAlias)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(FennecBrand.cardStroke, lineWidth: 1)
         }
     }
 
@@ -159,19 +220,21 @@ struct WelcomeView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var setup: some View {
+    /// Every permission Fennec uses, in one place, each one saying who granted
+    /// it. Two of them Fennec granted itself at launch; the row says so and
+    /// carries the switch to take it back, because a default that is hard to
+    /// find is not a default, it is a helping of yourself.
+    private var permissions: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionTitle("Set it up", symbol: "checklist")
+            sectionTitle("What Fennec needs from you", symbol: "key")
             Text(model.setupSummary)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 14) {
+            VStack(spacing: 12) {
                 ForEach(model.setupSteps) { step in
-                    SetupStepRow(step: step, compact: false) {
-                        model.performSetupAction(for: step)
-                    }
+                    permissionRow(step)
                 }
             }
 
@@ -182,6 +245,46 @@ struct WelcomeView: View {
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+
+    private func permissionRow(_ step: SetupStep) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // The administrator step is the only prominent button on the
+            // window. Three identical bordered buttons tell a new user nothing
+            // about which one is the actual request.
+            SetupStepRow(
+                step: step,
+                compact: false,
+                isPrimary: step.grant == .administrator && !step.isComplete
+            ) {
+                model.performSetupAction(for: step)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(step.grant.note)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 6)
+                if step.kind == .loginItem && step.isComplete {
+                    // The undo, in the same line as the claim. Settings has the
+                    // same switch, but a person reading "Fennec turned this on
+                    // for you" should not have to go looking for it.
+                    Button("Turn Off") { loginItem.setEnabled(false) }
+                        .controlSize(.small)
+                        .buttonStyle(.borderless)
+                        .layoutPriority(1)
+                }
+            }
+            .padding(.leading, 25)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke(FennecBrand.cardStroke, lineWidth: 1)
         }
     }
 
@@ -305,7 +408,7 @@ struct WelcomeView: View {
         HStack(spacing: 12) {
             Text(model.isFullySetUp
                  ? "Fennec is listening. You can close this."
-                 : "You can finish setup later from the menu bar.")
+                 : "You can finish this later from the menu bar. Nothing here expires.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Spacer()

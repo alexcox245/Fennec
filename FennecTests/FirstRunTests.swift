@@ -110,13 +110,34 @@ final class PrivilegeDisclosureTests: XCTestCase {
         XCTAssertFalse(answer.contains("!"))
     }
 
+    func testWhatFennecDoesIsStatedBeforeWhatItNeeds() {
+        // Mechanism, then cost, then the ask. A window that opens with a
+        // permission has skipped the only question the reader has.
+        XCTAssertEqual(PrivilegeDisclosure.whatItDoes.map(\.id), ["watch", "repair", "record"])
+    }
+
+    func testTheWatchedSignalsAreNamedExactly() throws {
+        let item = try XCTUnwrap(PrivilegeDisclosure.whatItDoes.first { $0.id == "watch" })
+        let code = try XCTUnwrap(item.code)
+        XCTAssertTrue(code.contains("kAudioDeviceProcessorOverload"))
+        XCTAssertTrue(code.contains("kAudioDevicePropertyIOStoppedAbnormally"))
+    }
+
+    func testTheSecondOfAudioIsStatedInTheOpeningSectionToo() throws {
+        // It is in `facts` as well, but a reader who stops after "what it does"
+        // must still know a repair silences everything.
+        let item = try XCTUnwrap(PrivilegeDisclosure.whatItDoes.first { $0.id == "repair" })
+        XCTAssertTrue(item.detail.contains("about a second"))
+    }
+
     func testTheThreeReasonsAStatusItemGoesMissingAreCovered() {
         let ids = PrivilegeDisclosure.missingFromMenuBar.map(\.id)
         XCTAssertEqual(Set(ids), ["manager", "notch", "dragged"])
     }
 
     func testNoDisclosureCopyShoutsOrIsEmpty() {
-        let all = PrivilegeDisclosure.privilegedActions
+        let all = PrivilegeDisclosure.whatItDoes
+            + PrivilegeDisclosure.privilegedActions
             + PrivilegeDisclosure.facts
             + PrivilegeDisclosure.missingFromMenuBar
         for item in all {
@@ -125,6 +146,91 @@ final class PrivilegeDisclosureTests: XCTestCase {
             XCTAssertFalse(item.title.contains("!"))
             XCTAssertFalse(item.detail.contains("!"))
         }
+    }
+}
+
+/// What Fennec switches on for itself, and — the part that matters — what it
+/// refuses to.
+final class FirstRunDefaultsTests: XCTestCase {
+
+    func testAFreshInstallGetsTheLoginItemAndTheNotificationPrompt() {
+        XCTAssertEqual(
+            FirstRunDefaults.actions(loginItem: .notRegistered, notificationsAnswered: false),
+            [.enableLoginItem, .requestNotificationPermission]
+        )
+        XCTAssertEqual(
+            FirstRunDefaults.actions(loginItem: .notFound, notificationsAnswered: false),
+            [.enableLoginItem, .requestNotificationPermission]
+        )
+    }
+
+    func testFennecNeverGrantsItselfRoot() {
+        // There is no case for the helper in `FirstRunDefaults.Action`, and
+        // there must never be one: installing a root LaunchDaemon is the entire
+        // reason the first-run window is a consent record rather than a splash
+        // screen. If this test stops compiling because someone added a case,
+        // that is the conversation it was written to force.
+        for loginItem in [LoginItemState.notRegistered, .notFound, .enabled, .requiresApproval] {
+            for answered in [true, false] {
+                let actions = FirstRunDefaults.actions(
+                    loginItem: loginItem,
+                    notificationsAnswered: answered
+                )
+                for action in actions {
+                    XCTAssertTrue(
+                        action == .enableLoginItem || action == .requestNotificationPermission,
+                        "Nothing privileged may be granted without a person."
+                    )
+                }
+            }
+        }
+    }
+
+    func testAnAlreadyEnabledLoginItemIsLeftAlone() {
+        XCTAssertEqual(
+            FirstRunDefaults.actions(loginItem: .enabled, notificationsAnswered: true),
+            []
+        )
+    }
+
+    func testAStagedLoginItemIsNotRegisteredAgain() {
+        // macOS is already holding the registration and waiting on a human in
+        // System Settings. Re-registering does not move that, and first run
+        // must not open System Settings uninvited.
+        XCTAssertEqual(
+            FirstRunDefaults.actions(loginItem: .requiresApproval, notificationsAnswered: true),
+            []
+        )
+    }
+
+    func testAnAnsweredNotificationPromptIsNeverSpentAgain() {
+        // macOS allows exactly one prompt per install. Asking again does
+        // nothing, and deciding to ask again is how a product convinces itself
+        // a declined permission was a glitch.
+        XCTAssertEqual(
+            FirstRunDefaults.actions(loginItem: .enabled, notificationsAnswered: true),
+            []
+        )
+        XCTAssertEqual(
+            FirstRunDefaults.actions(loginItem: .enabled, notificationsAnswered: false),
+            [.requestNotificationPermission]
+        )
+    }
+
+    func testTheSilentGrantIsOrderedAheadOfThePrompt() {
+        let actions = FirstRunDefaults.actions(loginItem: .notRegistered, notificationsAnswered: false)
+        XCTAssertEqual(
+            actions.first,
+            .enableLoginItem,
+            "The system prompt should be the only thing on screen when it arrives."
+        )
+    }
+
+    func testAnUnknownServiceManagementStateIsNotGuessedAt() {
+        XCTAssertEqual(
+            FirstRunDefaults.actions(loginItem: .unknown("odd"), notificationsAnswered: true),
+            []
+        )
     }
 }
 
@@ -148,6 +254,18 @@ final class FirstRunPreferenceTests: XCTestCase {
 
     func testFirstLaunchHasNotCompletedFirstRun() {
         XCTAssertFalse(SettingsStore(defaults: defaults).hasCompletedFirstRun)
+    }
+
+    func testDefaultsHaveNotBeenGrantedOnAFreshInstall() {
+        XCTAssertFalse(SettingsStore(defaults: defaults).hasAppliedFirstRunDefaults)
+    }
+
+    func testTheGrantIsRememberedSoItIsNeverMadeTwice() {
+        // The whole hazard: a user switches the login item off, reopens the
+        // window from the Help menu, and finds it back on.
+        let store = SettingsStore(defaults: defaults)
+        store.hasAppliedFirstRunDefaults = true
+        XCTAssertTrue(SettingsStore(defaults: defaults).hasAppliedFirstRunDefaults)
     }
 
     func testCompletionPersistsAcrossRelaunch() {

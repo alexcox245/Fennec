@@ -30,6 +30,12 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
     /// said no. The UI uses this to explain why nothing appears.
     @Published private(set) var isAuthorized = false
     @Published private(set) var authorizationChecked = false
+    /// `true` once macOS has an answer on record — granted, denied, or
+    /// provisional. It is `false` only while the status is `.notDetermined`,
+    /// which is the single window in which `requestAuthorization` can actually
+    /// raise a prompt. First run reads this so it never *decides* to spend a
+    /// prompt that was already spent.
+    @Published private(set) var isDetermined = false
 
     override init() {
         super.init()
@@ -72,6 +78,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
             Task { @MainActor [weak self] in
                 self?.isAuthorized = granted
                 self?.authorizationChecked = true
+                self?.isDetermined = true
             }
         }
     }
@@ -83,6 +90,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
             Task { @MainActor [weak self] in
                 self?.isAuthorized = granted
                 self?.authorizationChecked = true
+                self?.isDetermined = true
             }
         }
     }
