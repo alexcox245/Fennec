@@ -120,6 +120,26 @@ enum RepairCopy {
             + "That usually means the restart is not the cure."
     }
 
+    // MARK: The helper blocker
+
+    /// Why an automatic repair could not use the helper — in terms of what
+    /// the user can actually do about it. "Not enabled" told a person who
+    /// had just approved the helper that they had not, which is worse than
+    /// no message at all.
+    static func helperBlocker(for state: RepairHelperState) -> String {
+        switch state {
+        case .awaitingApproval:
+            return "macOS is waiting for you to allow Fennec under Login Items & Extensions."
+        case .enabled:
+            return "The repair helper is enabled but did not answer. "
+                + "If Fennec was recently moved, re-enable the helper in Settings."
+        case .notConfigured:
+            return "The automatic repair helper is not enabled."
+        case .unavailable(let message):
+            return message
+        }
+    }
+
     // MARK: The stall advisory
 
     /// The banner for the failure Fennec cannot fix: playback starving under

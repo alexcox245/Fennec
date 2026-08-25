@@ -202,4 +202,19 @@ final class RepairCopyTests: XCTestCase {
         )
         XCTAssertEqual(RepairCopy.headlineNumber(for: summary), "1")
     }
+
+    /// A person who has just approved the helper must never be told it is
+    /// "not enabled" — the blocker names the actual obstacle per state.
+    func testHelperBlockerNamesTheActualObstacle() {
+        XCTAssertTrue(RepairCopy.helperBlocker(for: .awaitingApproval).contains("Login Items"))
+        XCTAssertTrue(RepairCopy.helperBlocker(for: .enabled(reachable: false)).contains("did not answer"))
+        XCTAssertEqual(
+            RepairCopy.helperBlocker(for: .notConfigured),
+            "The automatic repair helper is not enabled."
+        )
+        XCTAssertEqual(RepairCopy.helperBlocker(for: .unavailable("went sideways")), "went sideways")
+        for state: RepairHelperState in [.awaitingApproval, .enabled(reachable: false), .notConfigured] {
+            XCTAssertFalse(RepairCopy.helperBlocker(for: state).contains("!"))
+        }
+    }
 }

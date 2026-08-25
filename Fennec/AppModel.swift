@@ -779,7 +779,7 @@ final class AppModel: ObservableObject {
         }
 
         guard helperManager.state.isReachable else {
-            let blocker = "The automatic repair helper is not enabled."
+            let blocker = RepairCopy.helperBlocker(for: helperManager.state)
             recordSkipped(blocker)
             notifyUnrepaired(decision, blocker: blocker)
             return
