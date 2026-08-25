@@ -40,6 +40,12 @@ enum OverloadLogSchedule {
     /// How long after the last overload entry the fast interval applies.
     static let faultLingers: TimeInterval = 300
 
+    /// How long after the device was last seen running IO the query keeps
+    /// going anyway. A playback stall *is* the device stopping — gating
+    /// purely on "running right now" would blind the monitor to the very
+    /// stop/start churn it needs to see.
+    static let runningGrace: TimeInterval = 180
+
     /// Log lines that belong to the same overload event land within a few
     /// milliseconds of each other; distinct events observed in the field are
     /// tens of milliseconds apart or more.
@@ -50,15 +56,21 @@ enum OverloadLogSchedule {
         return quietFor < faultLingers ? fault : watch
     }
 
-    /// Whether a query is due on this tick.
+    /// Whether a query is due on this tick. `lastRunningSeen` extends the
+    /// device-running gate through short silences (see `runningGrace`).
     static func queryIsDue(
         deviceRunning: Bool,
         now: Date,
         lastQuery: Date?,
-        lastOverloadSeen: Date?
+        lastOverloadSeen: Date?,
+        lastRunningSeen: Date? = nil
     ) -> Bool {
+        let recentlyRunning = lastRunningSeen.map { now.timeIntervalSince($0) < runningGrace } ?? false
         let quietFor = lastOverloadSeen.map { now.timeIntervalSince($0) } ?? .infinity
-        guard let interval = queryInterval(deviceRunning: deviceRunning, quietFor: quietFor) else {
+        guard let interval = queryInterval(
+            deviceRunning: deviceRunning || recentlyRunning,
+            quietFor: quietFor
+        ) else {
             return false
         }
         guard let lastQuery else { return true }

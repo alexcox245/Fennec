@@ -58,6 +58,16 @@ The XPC protocol has no general execution API. Its repair method invokes fixed a
 
 `kAudioDeviceProcessorOverload` indicates that Core Audio missed a processing deadline. It is a strong causal signal for an audio xrun but is not an acoustic classifier — and it is delivered per process, to the client whose IO cycle overloaded, which is why the listener alone missed the field failure entirely. The log path closes that blind spot at the cost of polling: roughly one second of utility-QoS CPU per query, spent only while the output device is actually running IO — every 30 seconds when the log is quiet, every 10 once overloads appear, and never while no audio is moving. Worst case, a fault that starts mid-playback is noticed within about 30 seconds of its first logged overload; the fault this product exists for persists until repaired, so the bound is latency, not loss. The log matching keys on `coreaudiod`'s private message text (`HALS_OverloadMessage`), which Apple can reword in any release; the marker-plus-cluster fallback in `OverloadLogGrouper` degrades that risk from silence to approximation, but a macOS update remains the way this path dies, and the listener path is retained partly for that reason. Balanced mode requires two signals within eight seconds to reduce false recovery. Immediate mode is appropriate only after confirming that one overload correlates with the user's audible failure.
 
+## The stall advisory
+
+Playback that stops and starts on a starved machine is a different failure from the crackle fault, with a different signature: `coreaudiod` logs *clean* `StopIO`/`StartIO` pairs (error 0), no overloads. Diagnosed live — load average 17–25, swap nearly full, the player process in uninterruptible page-in waits, one stop/start cycle every 30–90 seconds. Restarting Core Audio does nothing for this, so Fennec must not offer it.
+
+`SystemLogMonitor` classifies the stop/start lines out of the same log query it already runs (and keeps querying through short silences — a stall *is* the device stopping, so the device-running gate carries a three-minute grace). `StallAdvisor` is pure and deliberately requires both halves of the story: at least 3 stops within 3 minutes **and** a visibly starved machine (load ≥ 1.25 per core, or memory pressure at warning). The pattern alone is a person skipping through an album; the advisory without the pattern is nagging. When both hold, Fennec posts one passive, button-free banner naming the numbers and refusing the wrong cure — budgeted to one per half hour — and records an `advisory` event.
+
+## The popover graph
+
+`SignalGraphView` plots the one quantity `DetectionEngine` actually compares — overload signals inside the configured window, at every instant of the last 30 seconds — so the dashed threshold rule on the chart is the literal repair trigger. Playback stalls sit on the baseline as triangles, identified by shape and legend rather than color alone. The strip scrolls continuously via `TimelineView`, which schedules nothing while the popover is closed; opening the popover also triggers an immediate log poll so the window is fresh. Signal dates come from `AppModel`'s pruned `recentOverloadDates`/`recentStallDates` buffers.
+
 ## Failure behavior
 
 - If the helper is absent, automatic repair is disabled and manual repair uses an administrator prompt.

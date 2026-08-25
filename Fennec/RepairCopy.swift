@@ -120,6 +120,32 @@ enum RepairCopy {
             + "That usually means the restart is not the cure."
     }
 
+    // MARK: The stall advisory
+
+    /// The banner for the failure Fennec cannot fix: playback starving under
+    /// system load. Named precisely so nobody reaches for Repair Audio Now
+    /// expecting it to help.
+    static func stallAdvisoryTitle() -> String {
+        "Audio is stalling, not crackling"
+    }
+
+    static func stallAdvisoryBody(for advisory: StallAdvisory) -> String {
+        let minutes = max(1, Int(advisory.windowSeconds / 60))
+        var pressure = "This Mac is under heavy load"
+        + String(format: " (load %.1f per core", advisory.loadPerCore)
+        if advisory.memoryPressureLevel >= StallAdvisor.memoryPressureFloor {
+            pressure += ", memory pressure \(advisory.memoryPressureLabel))."
+        } else {
+            pressure += ")."
+        }
+        return "Playback stopped and restarted "
+            + count(advisory.stopCount, "time", "times")
+            + " in \(count(minutes, "minute", "minutes")). "
+            + pressure
+            + " This is not the fault Fennec repairs — restarting Core Audio will not help."
+            + " Heavy apps, backups, or sync clients are the likely cause."
+    }
+
     // MARK: Running totals
 
     /// The line under the counter. Deadpan, and true even at zero.

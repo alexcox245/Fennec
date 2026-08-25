@@ -141,6 +141,17 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         static let repair = "fennec.repair"
         static let pause = "fennec.pause"
         static let standDown = "fennec.standdown"
+        static let stall = "fennec.stall"
+    }
+
+    /// The starvation stall: informational, quiet, and free of buttons —
+    /// there is nothing Fennec can press on the user's behalf here.
+    func postStallAdvisory(_ advisory: StallAdvisory) {
+        let content = UNMutableNotificationContent()
+        content.title = RepairCopy.stallAdvisoryTitle()
+        content.body = RepairCopy.stallAdvisoryBody(for: advisory)
+        content.interruptionLevel = .passive
+        post(content, identifier: Identifier.stall)
     }
 
     /// One quiet line when a pause runs out, so the user is never surprised

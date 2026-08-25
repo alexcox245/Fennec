@@ -40,6 +40,15 @@ the right answer.
   other app or daemon, the listener hears nothing while the speakers crackle.
   `coreaudiod` logs every overload it detects, for every client, and Fennec
   polls that record only while audio is actually playing.
+- Tells stalling apart from crackling. Playback that keeps stopping and
+  starting on a starved Mac — heavy load, memory pressure — is not a Core
+  Audio fault, and restarting Core Audio will not fix it. When Fennec sees
+  that pattern (clean IO stops while the system is busy) it says so, once,
+  instead of staying silent or offering the wrong cure.
+- Shows the last 30 seconds live. The popover carries a small rolling graph
+  of overload signals against the exact repair threshold, with playback
+  stalls marked along the baseline. It costs nothing while the popover is
+  closed.
 - Does **no** work in the real-time audio callback — only relaxed atomic
   increments on preallocated storage. Everything else happens after a timer
   drains those counters onto a normal queue.

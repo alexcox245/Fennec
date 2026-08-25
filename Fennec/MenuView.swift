@@ -21,6 +21,7 @@ struct MenuView: View {
         VStack(alignment: .leading, spacing: 16) {
             header
             deviceCard
+            SignalGraphView(model: model, settings: settings)
             repairControls
             footer
         }
@@ -28,6 +29,9 @@ struct MenuView: View {
         .frame(width: 384)
         .task {
             model.refreshAll()
+            // The graph should show the freshest log window, not whatever is
+            // left of the current poll interval.
+            model.pollSignalsNow()
             // Only here: this is the moment the user has actually looked.
             model.acknowledgeAttention()
         }

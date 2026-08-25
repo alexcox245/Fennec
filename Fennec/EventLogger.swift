@@ -16,6 +16,7 @@ struct ActivityRecord: Identifiable, Codable, Equatable, Sendable {
         case deviceChanged
         case serviceRestarted
         case suppressed
+        case advisory
         case paused
         case resumed
         case helper

@@ -33,6 +33,9 @@ final class SystemLogMonitor: @unchecked Sendable {
     /// detection window math runs on when the fault happened rather than on
     /// when the poll noticed it.
     typealias OverloadHandler = @Sendable (_ eventDates: [Date]) -> Void
+    /// Clean IO stop and start timestamps from the same query — the playback
+    /// stall signature, delivered raw for the advisor and the graph to judge.
+    typealias IOStateHandler = @Sendable (_ stopDates: [Date], _ startDates: [Date]) -> Void
     typealias ErrorHandler = @Sendable (Error) -> Void
 
     /// One overload event writes exactly one line containing this marker
@@ -40,6 +43,11 @@ final class SystemLogMonitor: @unchecked Sendable {
     /// error-level cause lines matched by `auxiliaryNeedle` below.
     private static let markerNeedle = "Audio IO Overload thread"
     private static let auxiliaryNeedle = "HALS_OverloadMessage"
+    /// Clean IO teardown and bring-up (`HALS_IOEngine2`). One stop and one
+    /// start per playback stall; also emitted by ordinary pause/play, which
+    /// is why `StallAdvisor` demands a starved machine before saying anything.
+    private static let ioStopNeedle = "StopIO: stopping IO"
+    private static let ioStartNeedle = "StartIO: starting IO"
 
     private let queue = DispatchQueue(
         label: "com.ludicrousdesigns.Fennec.system-log-monitor",
@@ -52,8 +60,10 @@ final class SystemLogMonitor: @unchecked Sendable {
     private var lastProcessedDate = Date()
     private var lastQueryDate: Date?
     private var lastOverloadSeen: Date?
+    private var lastRunningSeen: Date?
 
     var onOverloads: OverloadHandler?
+    var onIOStateChanges: IOStateHandler?
     var onError: ErrorHandler?
 
     func start() {
@@ -64,6 +74,7 @@ final class SystemLogMonitor: @unchecked Sendable {
             lastProcessedDate = Date()
             lastQueryDate = nil
             lastOverloadSeen = nil
+            lastRunningSeen = nil
 
             let timer = DispatchSource.makeTimerSource(queue: queue)
             timer.schedule(
@@ -90,14 +101,29 @@ final class SystemLogMonitor: @unchecked Sendable {
         }
     }
 
+    /// Runs the next due query immediately rather than waiting out the
+    /// current interval — for the moment the popover opens and the graph
+    /// wants the freshest window it can get.
+    func pollNow() {
+        queue.async { [weak self] in
+            guard let self, self.isRunning, !self.hasFailed else { return }
+            self.lastQueryDate = nil
+            self.tickLocked()
+        }
+    }
+
     private func tickLocked() {
         guard isRunning, !hasFailed else { return }
         let now = Date()
+        if defaultOutputIsRunningSomewhere() {
+            lastRunningSeen = now
+        }
         guard OverloadLogSchedule.queryIsDue(
-            deviceRunning: defaultOutputIsRunningSomewhere(),
+            deviceRunning: lastRunningSeen == now,
             now: now,
             lastQuery: lastQueryDate,
-            lastOverloadSeen: lastOverloadSeen
+            lastOverloadSeen: lastOverloadSeen,
+            lastRunningSeen: lastRunningSeen
         ) else { return }
         lastQueryDate = now
         queryLocked()
@@ -121,17 +147,25 @@ final class SystemLogMonitor: @unchecked Sendable {
 
         var markers: [Date] = []
         var auxiliary: [Date] = []
+        var ioStops: [Date] = []
+        var ioStarts: [Date] = []
         var newest = lastProcessedDate
         do {
             let position = store.position(date: lastProcessedDate)
             let predicate = NSPredicate(
-                format: "process == 'coreaudiod' AND (composedMessage CONTAINS %@ OR composedMessage CONTAINS %@)",
-                Self.markerNeedle, Self.auxiliaryNeedle
+                format: "process == 'coreaudiod' AND (composedMessage CONTAINS %@ OR composedMessage CONTAINS %@ "
+                    + "OR composedMessage CONTAINS %@ OR composedMessage CONTAINS %@)",
+                Self.markerNeedle, Self.auxiliaryNeedle, Self.ioStopNeedle, Self.ioStartNeedle
             )
             for entry in try store.getEntries(at: position, matching: predicate) {
                 guard let log = entry as? OSLogEntryLog, log.date > lastProcessedDate else { continue }
-                if log.composedMessage.contains(Self.markerNeedle) {
+                let message = log.composedMessage
+                if message.contains(Self.markerNeedle) {
                     markers.append(log.date)
+                } else if message.contains(Self.ioStopNeedle) {
+                    ioStops.append(log.date)
+                } else if message.contains(Self.ioStartNeedle) {
+                    ioStarts.append(log.date)
                 } else {
                     auxiliary.append(log.date)
                 }
@@ -143,9 +177,14 @@ final class SystemLogMonitor: @unchecked Sendable {
             return
         }
         lastProcessedDate = newest
+        guard isRunning else { return }
+
+        if !ioStops.isEmpty || !ioStarts.isEmpty {
+            onIOStateChanges?(ioStops.sorted(), ioStarts.sorted())
+        }
 
         let events = OverloadLogGrouper.eventDates(markers: markers, auxiliary: auxiliary)
-        guard let newestEvent = events.last, isRunning else { return }
+        guard let newestEvent = events.last else { return }
         lastOverloadSeen = newestEvent
         onOverloads?(events)
     }

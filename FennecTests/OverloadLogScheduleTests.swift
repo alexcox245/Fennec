@@ -57,6 +57,26 @@ final class OverloadLogScheduleTests: XCTestCase {
         ))
     }
 
+    /// A playback stall is the device stopping — the grace window keeps
+    /// queries flowing through short silences so the stop/start churn is
+    /// still observed.
+    func testRecentRunningExtendsQueriesThroughASilence() {
+        XCTAssertTrue(OverloadLogSchedule.queryIsDue(
+            deviceRunning: false,
+            now: epoch,
+            lastQuery: epoch.addingTimeInterval(-OverloadLogSchedule.watch),
+            lastOverloadSeen: nil,
+            lastRunningSeen: epoch.addingTimeInterval(-(OverloadLogSchedule.runningGrace - 1))
+        ))
+        XCTAssertFalse(OverloadLogSchedule.queryIsDue(
+            deviceRunning: false,
+            now: epoch,
+            lastQuery: epoch.addingTimeInterval(-OverloadLogSchedule.watch),
+            lastOverloadSeen: nil,
+            lastRunningSeen: epoch.addingTimeInterval(-OverloadLogSchedule.runningGrace)
+        ))
+    }
+
     func testFaultIntervalLapsesBackToWatch() {
         XCTAssertEqual(
             OverloadLogSchedule.queryInterval(

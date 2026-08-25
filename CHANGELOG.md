@@ -16,6 +16,15 @@ are the milestones on `main`.
   `HALS_OverloadMessage` entries, only while the output device is running IO,
   and feeds each event's true timestamp into the same detection engine,
   suppression windows, and safety gates as the listener path.
+- **The stall advisory.** Playback stopping and starting on a starved Mac is
+  not the crackle fault — coreaudiod logs clean IO stops, no overloads, and a
+  restart would not help. When the stop/start pattern coincides with heavy
+  load or memory pressure, Fennec posts one quiet banner naming the numbers
+  and the actual likely cause, budgeted to one per half hour.
+- **A live signal graph in the popover.** The last 30 seconds of overload
+  signals plotted against the exact repair threshold, with playback stalls
+  marked on the baseline. Scrolls continuously while visible; costs nothing
+  while the popover is closed.
 - **First-run window.** Launching Fennec used to produce nothing at all. It
   now opens a consent record that states the complete privileged surface —
   both XPC methods *and* the administrator-prompt path — the cost of a repair

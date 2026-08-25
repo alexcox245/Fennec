@@ -23,6 +23,11 @@ final class AppModel: ObservableObject {
     @Published private(set) var currentDevice: AudioDeviceSnapshot = .unavailable
     @Published private(set) var overloadSignalCount: UInt64 = 0
     @Published private(set) var abnormalStopCount: UInt64 = 0
+    /// The raw material for the popover's rolling graph: recent overload
+    /// signal timestamps (both witnesses) and clean playback-stall stops,
+    /// pruned as they age out of every window that reads them.
+    @Published private(set) var recentOverloadDates: [Date] = []
+    @Published private(set) var recentStallDates: [Date] = []
     @Published private(set) var detectionCount = 0
     @Published private(set) var lastDetectionDate: Date?
     @Published private(set) var lastDetectionReason: String?
@@ -61,6 +66,9 @@ final class AppModel: ObservableObject {
     /// work, not less.
     private var lastRepairAttemptDate: Date?
     private var detectionNotificationBudget = NotificationBudget()
+    /// Half an hour between stall advisories. The condition persists for as
+    /// long as the machine is busy, and being told twice is being nagged.
+    private var stallNotificationBudget = NotificationBudget(minimumInterval: 1800)
     private var pauseTimer: Timer?
     private var monitorRecoveryInFlight = false
     private var rehearsalRequested = false
@@ -105,6 +113,11 @@ final class AppModel: ObservableObject {
                 // The listener path is unaffected, so this is a note in the
                 // record, not a monitoring failure.
                 self?.record(.init(kind: .monitorError, summary: error.localizedDescription))
+            }
+        }
+        logMonitor.onIOStateChanges = { [weak self] stops, _ in
+            Task { @MainActor in
+                self?.handleIOStops(stops)
             }
         }
 
@@ -602,6 +615,11 @@ final class AppModel: ObservableObject {
 
         if batch.overloads > 0 {
             overloadSignalCount += batch.overloads
+            recentOverloadDates.append(
+                contentsOf: batch.overloadDates
+                    ?? Array(repeating: batch.date, count: Int(batch.overloads))
+            )
+            pruneRecentDates()
             record(.init(
                 kind: .signal,
                 summary: "Core Audio processor overload signal received.",
@@ -980,6 +998,48 @@ final class AppModel: ObservableObject {
     /// registration on the way out, so the monitor keeps its timer and loses
     /// its ears. This used to leave the popover showing a blue dot and the
     /// word "Listening" over an app that could no longer hear anything.
+    /// Clean IO stops from the unified log: the playback-stall signature.
+    /// `StallAdvisor` decides whether the pattern plus a starved machine adds
+    /// up to something worth saying; the budget keeps it to one banner per
+    /// half hour, and the graph gets every stop regardless.
+    private func handleIOStops(_ stops: [Date]) {
+        guard !stops.isEmpty else { return }
+        recentStallDates.append(contentsOf: stops)
+        pruneRecentDates()
+
+        guard let advisory = StallAdvisor.assess(
+            stopDates: recentStallDates,
+            now: Date(),
+            loadPerCore: SystemLoadSampler.loadPerCore(),
+            memoryPressureLevel: SystemLoadSampler.memoryPressureLevel()
+        ) else { return }
+        guard stallNotificationBudget.allow() else { return }
+        record(.init(
+            kind: .advisory,
+            summary: "Playback is stalling under system load. A Core Audio restart will not help.",
+            details: [
+                "stops": String(advisory.stopCount),
+                "windowSeconds": String(Int(advisory.windowSeconds)),
+                "loadPerCore": String(format: "%.2f", advisory.loadPerCore),
+                "memoryPressure": advisory.memoryPressureLabel
+            ]
+        ))
+        notificationController.postStallAdvisory(advisory)
+    }
+
+    private func pruneRecentDates(now: Date = Date()) {
+        // 120 s keeps the 30 s graph honest with slack for late-polled
+        // entries; stalls also serve the advisor's three-minute window.
+        recentOverloadDates.removeAll { $0 < now.addingTimeInterval(-120) }
+        recentStallDates.removeAll { $0 < now.addingTimeInterval(-StallAdvisor.window) }
+    }
+
+    /// The popover just opened; give its graph the freshest log window
+    /// instead of whatever is left of the current poll interval.
+    func pollSignalsNow() {
+        logMonitor.pollNow()
+    }
+
     /// Overload events that `coreaudiod` recorded in the unified log. These
     /// are the overloads the property listener cannot hear: the ones that
     /// happened in some other process's IO cycle — which, in the field, is
