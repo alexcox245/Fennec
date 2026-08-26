@@ -1,6 +1,6 @@
 d194be127be2eed0f990f747f04cabfe34912b5a4a1ebc28ea29fdd04f85e963  ./.github/workflows/ci.yml
 889843dea70d4f39222c327485bbd9a131fc0dd9983778bbd1b86cf89638bc92  ./.gitignore
-f68a73c8c1020a0981a0856da8e4aea60fbec1dcce767636de08982686559e9a  ./AGENTS.md
+0a5e2ff3439aa8724adab9ee4cd6db485ead5a8716d2e87338a25ddd422b0ac2  ./AGENTS.md
 298d797f35a20453f4ca8a74856f43ab1d4472be0803577e41852844fc500dd7  ./Brand/Fennec-AppIcon-Master.png
 7ed806746d509b68dc2ff4b9131860904760fe4d99ffa95c6dbdb900bbbac29d  ./Brand/README.md
 e25f48842e168c999a504e766aed046d082246a47cfcaea77966229d42bf30eb  ./CHANGELOG.md
@@ -13,7 +13,7 @@ dfe5bb33d140eb7e460c941af55a5149c67a2ab7f0696f6bb2db889b60fbb400  ./Docs/VALIDAT
 a096cb33c5c865427e4de718420e43055fd696f0a8ffb669e6df6fab40fb5e3f  ./Fennec/AboutView.swift
 8e9247a58c246114ab83d882f89b8ce65d7b9b0fd3a299c21f68c332b394abc7  ./Fennec/ActivityView.swift
 c2a3bacbf4d3f8c8e45463e0ce9ef4f0500e66da24ab49c6e0975e944adb4c1a  ./Fennec/AppDelegate.swift
-e45adfb76daaebe69bd8d1846d74899d3b3f6f161512e332e5980bd66ffe61b1  ./Fennec/AppModel.swift
+2e43d2e75ed45a56856c9197fd0244001461fac0aa2ef60d70ce8ac839335b3c  ./Fennec/AppModel.swift
 afc53479a1cd24d1db8b90b5bb08688bc0c977c6ce1e18af5479c8314a16ed51  ./Fennec/Assets.xcassets/AccentColor.colorset/Contents.json
 13b1c7461192863c9f3ab3ceab313acd6f6531898360983495bf13d48dfc967f  ./Fennec/Assets.xcassets/AppIcon.appiconset/Contents.json
 2332fed1d798815a1ebdfb4a7828cfa90d58ce9073b5914be4de7fade72ac5ed  ./Fennec/Assets.xcassets/AppIcon.appiconset/icon_128x128.png
@@ -68,7 +68,7 @@ d8f1870529b5cf4b55cc0eda5365f4fefdae001f356bce41232549d5f23506ce  ./Fennec/RTSig
 d02fb72db3470dc9cde04ef21e263778b86fc41dda5b1b650e73624d538365d2  ./Fennec/SettingsView.swift
 df9b7eba3a4c22e3ef4fea9a4426d0b8a6f144ee21e1265b693e64ad71aeaa29  ./Fennec/SetupChecklist.swift
 dd4b900f94a066e3384baaab5f7c313baa04843719086357327559dc3fb44add  ./Fennec/SetupStepRow.swift
-cbaf1bba2c6872fc834c16c99a2eefbcc058dfdae0b7c5eb1793a882e9aa3d1f  ./Fennec/SignalGraphView.swift
+4cec23cbc50105682b3cb98b087c2bbc8c3e3f533b9008b4b90095180f60f7e9  ./Fennec/SignalGraphView.swift
 2cdbe3b00f96117270b64935673a143299b5581c011eb8f27437c560e10cd073  ./Fennec/StallAdvisor.swift
 f7e72faf5bb767a6af51acd96464ba6983e8c8a9bf84686e50c071a2d961091d  ./Fennec/SystemEvents.swift
 8c2655bc7a96a286a9716d1364820a9b142389ec0581a3e4537fdd83b1838aae  ./Fennec/SystemLogMonitor.swift

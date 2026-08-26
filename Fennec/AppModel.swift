@@ -126,11 +126,7 @@ final class AppModel: ObservableObject {
         }
         logMonitor.onActivitySample = { [weak self] date in
             Task { @MainActor in
-                guard let self else { return }
-                self.recentAudioActivity.append(date)
-                if self.recentAudioActivity.count % 30 == 0 {
-                    self.pruneRecentDates()
-                }
+                self?.ingestActivitySample(date)
             }
         }
 
@@ -1076,6 +1072,47 @@ final class AppModel: ObservableObject {
             ]
         ))
         notificationController.postStallAdvisory(advisory)
+    }
+
+    /// Activity samples arrive once a second while audio plays, and every
+    /// `@Published` mutation re-evaluates two live view graphs — the closed
+    /// popover's and the menu-bar item's — which sampled at about two
+    /// percent of a core for data nobody was looking at. Off screen, the
+    /// samples pool in a plain array and publish once per pool; on screen,
+    /// they publish per second, because that is when the ribbon's leading
+    /// edge is being watched.
+    private var pendingActivity: [Date] = []
+    private var graphIsOnScreen = false
+    private static let hiddenActivityFlushCount = 30
+
+    private func ingestActivitySample(_ date: Date) {
+        if graphIsOnScreen {
+            recentAudioActivity.append(date)
+            if recentAudioActivity.count % 30 == 0 {
+                pruneRecentDates()
+            }
+        } else {
+            pendingActivity.append(date)
+            if pendingActivity.count >= Self.hiddenActivityFlushCount {
+                flushPendingActivity()
+            }
+        }
+    }
+
+    private func flushPendingActivity() {
+        guard !pendingActivity.isEmpty else { return }
+        recentAudioActivity.append(contentsOf: pendingActivity)
+        pendingActivity.removeAll()
+        pruneRecentDates()
+    }
+
+    /// The graph's visibility probe reports here so buffered samples land
+    /// before the first visible frame.
+    func setGraphVisible(_ visible: Bool) {
+        graphIsOnScreen = visible
+        if visible {
+            flushPendingActivity()
+        }
     }
 
     private func pruneRecentDates(now: Date = Date()) {

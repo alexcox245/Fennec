@@ -67,6 +67,9 @@ struct SignalGraphView: View {
         }
         .padding(13)
         .background(WindowVisibilityProbe(isOnScreen: $isOnScreen))
+        .onChange(of: isOnScreen) { _, visible in
+            model.setGraphVisible(visible)
+        }
         .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
