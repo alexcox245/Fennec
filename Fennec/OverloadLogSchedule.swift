@@ -36,19 +36,25 @@ enum OverloadLogSchedule {
     }
 
     /// Query interval while audio is playing and the log has been quiet.
-    /// This is the worst-case added latency between an inaudible machine
-    /// and Fennec noticing, and it is deliberately the slowest number here:
-    /// the fault this exists for persists until repaired.
-    static let watch: TimeInterval = 30
+    ///
+    /// The budget arithmetic, measured on this machine: one query costs
+    /// roughly a second of CPU (store open ~0.7 s + enumeration), so the
+    /// steady-state cost while music plays is queryCost / watch. At 120 s
+    /// that is under one percent of a core, which is the whole app's CPU
+    /// budget. The price is latency: a fault that starts mid-playback is
+    /// noticed within about two minutes — acceptable, because the fault
+    /// this exists for persists until repaired.
+    static let watch: TimeInterval = 120
 
     /// Query interval once overload entries have been seen recently. The
     /// cadence only bounds *reporting* latency: detection windows run on the
     /// events' own log timestamps, so a poll interval wider than a window
-    /// cannot starve it of a second signal.
-    static let fault: TimeInterval = 10
+    /// cannot starve it of a second signal. ~3% of a core, only while a
+    /// fault is actually in progress.
+    static let fault: TimeInterval = 30
 
     /// How long after the last overload entry the fast interval applies.
-    static let faultLingers: TimeInterval = 300
+    static let faultLingers: TimeInterval = 120
 
     /// How long after the device was last seen running IO the query keeps
     /// going anyway. A playback stall *is* the device stopping — gating

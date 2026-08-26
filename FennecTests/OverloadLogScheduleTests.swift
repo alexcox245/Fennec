@@ -77,6 +77,16 @@ final class OverloadLogScheduleTests: XCTestCase {
         ))
     }
 
+    /// A log query costs on the order of a second of CPU (measured), so the
+    /// steady-state cost while music plays is roughly cost/watch. The whole
+    /// app's budget is one percent of a core; a shorter watch interval
+    /// spends the entire budget on a single feature.
+    func testTheWatchCadenceRespectsTheCPUBudget() {
+        XCTAssertGreaterThanOrEqual(OverloadLogSchedule.watch, 100)
+        // The fault tier may spend more, but only while a fault is live.
+        XCTAssertGreaterThanOrEqual(OverloadLogSchedule.fault, 20)
+    }
+
     func testFaultIntervalLapsesBackToWatch() {
         XCTAssertEqual(
             OverloadLogSchedule.queryInterval(

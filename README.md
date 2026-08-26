@@ -54,9 +54,9 @@ the right answer.
   drains those counters onto a normal queue.
 - Waits for the fault to confirm itself. One overload is usually a harmless
   blip; two in a row is the failure that stays broken. You hear about a second
-  of crackle, then it is gone — up to half a minute when only the log path
-  can see the fault, because polling the log costs CPU and Fennec spends it
-  sparingly.
+  of crackle, then it is gone — up to a couple of minutes when only the log
+  path can see the fault, because polling the log costs CPU and Fennec's
+  whole budget is under one percent of a core.
 - Restarts Core Audio through a root helper that can do exactly one thing.
 - Verifies the repair. A restart is *provisional* until the fault has failed to
   return for a minute — Fennec does not call it fixed before then.

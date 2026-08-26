@@ -17,12 +17,22 @@ import SwiftUI
 struct SignalGraphView: View {
     @ObservedObject var model: AppModel
     @ObservedObject var settings: SettingsStore
+    /// Whether the hosting window is actually on screen. `MenuBarExtra`
+    /// keeps its hosting view alive after the popover closes, and a
+    /// display-driven `TimelineView` in a live-but-invisible window renders
+    /// forever — measured at a third of a core, in an app whose brand is
+    /// stillness. The occlusion probe below is the ground truth the view
+    /// hierarchy cannot lie about.
+    @State private var isOnScreen = false
 
     /// The rolling window the user watches.
     private static let span: TimeInterval = 30
-    /// Step-line sampling resolution. Finer than the drain interval, coarser
+    /// Step-line sampling resolution. Finer than a signal burst, coarser
     /// than pointless.
-    private static let sampleStep: TimeInterval = 0.25
+    private static let sampleStep: TimeInterval = 0.5
+    /// Redraw cadence while visible. Four frames a second reads as steady
+    /// motion on a 30-second window; the desert does not need 120.
+    private static let frameInterval: TimeInterval = 0.25
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -39,18 +49,24 @@ struct SignalGraphView: View {
                     .foregroundStyle(.secondary)
             }
 
-            TimelineView(.animation(minimumInterval: 0.1)) { context in
-                VStack(alignment: .leading, spacing: 3) {
-                    chart(at: context.date)
-                        .frame(height: 62)
-                    activityRibbon(at: context.date)
-                        .frame(height: 6)
+            if isOnScreen {
+                TimelineView(.periodic(from: .now, by: Self.frameInterval)) { context in
+                    VStack(alignment: .leading, spacing: 3) {
+                        chart(at: context.date)
+                            .frame(height: 62)
+                        activityRibbon(at: context.date)
+                            .frame(height: 6)
+                    }
                 }
+            } else {
+                // Off screen, nobody is looking: hold the layout, do no work.
+                Color.clear.frame(height: 62 + 3 + 6)
             }
 
             legend
         }
         .padding(13)
+        .background(WindowVisibilityProbe(isOnScreen: $isOnScreen))
         .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -207,5 +223,76 @@ struct SignalGraphView: View {
             + "\(stalls) playback stall\(stalls == 1 ? "" : "s"), "
             + "audio playing for about \(min(playingSeconds, Int(Self.span))) seconds. "
             + "Repairs at \(settings.sensitivity.threshold) signals in \(Int(settings.sensitivity.window)) seconds."
+    }
+}
+
+/// Reports whether the view's window is genuinely on screen — attached,
+/// visible, and not fully occluded. SwiftUI's own appearance callbacks are
+/// not that: `MenuBarExtra` keeps the popover's hosting view alive after it
+/// closes, so `onAppear`/`onDisappear` cannot be trusted to bracket
+/// visibility, and anything animation-driven keeps rendering unseen.
+private struct WindowVisibilityProbe: NSViewRepresentable {
+    @Binding var isOnScreen: Bool
+
+    func makeNSView(context: Context) -> ProbeView {
+        let view = ProbeView()
+        view.onChange = { [self] visible in
+            if isOnScreen != visible {
+                isOnScreen = visible
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: ProbeView, context: Context) {
+        nsView.onChange = { [self] visible in
+            if isOnScreen != visible {
+                isOnScreen = visible
+            }
+        }
+    }
+
+    final class ProbeView: NSView {
+        var onChange: ((Bool) -> Void)?
+        private var observers: [NSObjectProtocol] = []
+
+        deinit {
+            observers.forEach(NotificationCenter.default.removeObserver(_:))
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            observers.forEach(NotificationCenter.default.removeObserver(_:))
+            observers = []
+            if let window {
+                // Occlusion flips both ways when the popover opens and
+                // closes; willClose is the belt for teardown paths that
+                // never post an occlusion change.
+                let names: [Notification.Name] = [
+                    NSWindow.didChangeOcclusionStateNotification,
+                    NSWindow.willCloseNotification
+                ]
+                observers = names.map { name in
+                    NotificationCenter.default.addObserver(
+                        forName: name, object: window, queue: .main
+                    ) { [weak self] _ in
+                        self?.report()
+                    }
+                }
+            }
+            report()
+        }
+
+        private func report() {
+            let visible = window.map {
+                $0.isVisible && $0.occlusionState.contains(.visible)
+            } ?? false
+            let onChange = onChange
+            // Next runloop turn: this can fire mid-layout, and mutating
+            // SwiftUI state from inside a layout pass is undefined.
+            DispatchQueue.main.async {
+                onChange?(visible)
+            }
+        }
     }
 }
