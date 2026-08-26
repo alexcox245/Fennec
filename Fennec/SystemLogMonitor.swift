@@ -36,6 +36,9 @@ final class SystemLogMonitor: @unchecked Sendable {
     /// Clean IO stop and start timestamps from the same query — the playback
     /// stall signature, delivered raw for the advisor and the graph to judge.
     typealias IOStateHandler = @Sendable (_ stopDates: [Date], _ startDates: [Date]) -> Void
+    /// One per tick while audio is actually playing — the graph's activity
+    /// trace. Silence delivers nothing; a gap in the trace is the gap.
+    typealias ActivityHandler = @Sendable (_ date: Date) -> Void
     typealias ErrorHandler = @Sendable (Error) -> Void
 
     /// One overload event writes exactly one line containing this marker
@@ -62,8 +65,11 @@ final class SystemLogMonitor: @unchecked Sendable {
     private var lastOverloadSeen: Date?
     private var lastRunningSeen: Date?
 
+    private var currentTickInterval: TimeInterval = OverloadLogSchedule.tick
+
     var onOverloads: OverloadHandler?
     var onIOStateChanges: IOStateHandler?
+    var onActivitySample: ActivityHandler?
     var onError: ErrorHandler?
 
     func start() {
@@ -77,13 +83,8 @@ final class SystemLogMonitor: @unchecked Sendable {
             lastRunningSeen = nil
 
             let timer = DispatchSource.makeTimerSource(queue: queue)
-            timer.schedule(
-                deadline: .now() + OverloadLogSchedule.tick,
-                repeating: OverloadLogSchedule.tick,
-                // Nothing here is timing-critical to better than a tick, so
-                // let the kernel coalesce these wake-ups aggressively.
-                leeway: .milliseconds(Int(OverloadLogSchedule.tick * 500))
-            )
+            currentTickInterval = OverloadLogSchedule.tick
+            scheduleLocked(timer, interval: currentTickInterval)
             timer.setEventHandler { [weak self] in
                 self?.tickLocked()
             }
@@ -112,14 +113,38 @@ final class SystemLogMonitor: @unchecked Sendable {
         }
     }
 
+    private func scheduleLocked(_ timer: DispatchSourceTimer, interval: TimeInterval) {
+        timer.schedule(
+            deadline: .now() + interval,
+            repeating: interval,
+            // Nothing here is timing-critical to better than a tick, so
+            // let the kernel coalesce these wake-ups aggressively.
+            leeway: .milliseconds(Int(interval * 500))
+        )
+    }
+
     private func tickLocked() {
         guard isRunning, !hasFailed else { return }
         let now = Date()
-        if defaultOutputIsRunningSomewhere() {
+        let running = defaultOutputIsRunningSomewhere()
+        if running {
             lastRunningSeen = now
+            onActivitySample?(now)
         }
+
+        // 1 s ticks while audio plays make playback gaps visible on the
+        // graph; silence relaxes back to the slow tick.
+        let recentlyRunning = lastRunningSeen.map {
+            now.timeIntervalSince($0) < OverloadLogSchedule.runningGrace
+        } ?? false
+        let desiredTick = OverloadLogSchedule.tickInterval(recentlyRunning: recentlyRunning)
+        if desiredTick != currentTickInterval, let timer {
+            currentTickInterval = desiredTick
+            scheduleLocked(timer, interval: desiredTick)
+        }
+
         guard OverloadLogSchedule.queryIsDue(
-            deviceRunning: lastRunningSeen == now,
+            deviceRunning: running,
             now: now,
             lastQuery: lastQueryDate,
             lastOverloadSeen: lastOverloadSeen,

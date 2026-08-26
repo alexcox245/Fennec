@@ -40,9 +40,13 @@ struct SignalGraphView: View {
             }
 
             TimelineView(.animation(minimumInterval: 0.1)) { context in
-                chart(at: context.date)
+                VStack(alignment: .leading, spacing: 3) {
+                    chart(at: context.date)
+                        .frame(height: 62)
+                    activityRibbon(at: context.date)
+                        .frame(height: 6)
+                }
             }
-            .frame(height: 68)
 
             legend
         }
@@ -131,6 +135,38 @@ struct SignalGraphView: View {
         }
     }
 
+    /// The proof-of-life strip under the time axis: painted for every second
+    /// the output device was actually running IO, blank where it was not. A
+    /// break in the ribbon while music was supposed to be playing *is* the
+    /// dropout — the graph agreeing with the user's ears. Drawn as its own
+    /// strip rather than a series so the count axis stays a count axis.
+    private func activityRibbon(at now: Date) -> some View {
+        let start = now.addingTimeInterval(-Self.span)
+        let segments = AudioActivitySegments.merged(
+            sampleDates: model.recentAudioActivity.filter { $0 >= start.addingTimeInterval(-2) }
+        )
+        return Canvas { context, size in
+            for segment in segments {
+                // Each sample covers its second, so a lone sample still
+                // paints a visible sliver rather than a zero-width rect.
+                let from = max(0, segment.lowerBound.timeIntervalSince(start))
+                let to = min(Self.span, segment.upperBound.timeIntervalSince(start) + 1)
+                guard to > from else { continue }
+                let rect = CGRect(
+                    x: from / Self.span * size.width,
+                    y: 0,
+                    width: (to - from) / Self.span * size.width,
+                    height: size.height
+                )
+                context.fill(
+                    Path(roundedRect: rect, cornerRadius: size.height / 2),
+                    with: .color(FennecBrand.sky.opacity(0.55))
+                )
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
     private func xLabel(for date: Date, now: Date) -> String {
         let ago = now.timeIntervalSince(date)
         return ago < 1 ? "now" : "\(Int(ago.rounded())) s"
@@ -150,6 +186,12 @@ struct SignalGraphView: View {
                     .foregroundStyle(.secondary)
                 Text("playback stall")
             }
+            HStack(spacing: 5) {
+                Capsule()
+                    .fill(FennecBrand.sky.opacity(0.55))
+                    .frame(width: 12, height: 4)
+                Text("audio playing")
+            }
             Spacer()
         }
         .font(.caption2)
@@ -157,14 +199,13 @@ struct SignalGraphView: View {
     }
 
     private var accessibilitySummary: String {
-        let overloads = model.recentOverloadDates.filter {
-            $0 > Date().addingTimeInterval(-Self.span)
-        }.count
-        let stalls = model.recentStallDates.filter {
-            $0 > Date().addingTimeInterval(-Self.span)
-        }.count
+        let cutoff = Date().addingTimeInterval(-Self.span)
+        let overloads = model.recentOverloadDates.filter { $0 > cutoff }.count
+        let stalls = model.recentStallDates.filter { $0 > cutoff }.count
+        let playingSeconds = model.recentAudioActivity.filter { $0 > cutoff }.count
         return "Last 30 seconds: \(overloads) overload signal\(overloads == 1 ? "" : "s"), "
-            + "\(stalls) playback stall\(stalls == 1 ? "" : "s"). "
+            + "\(stalls) playback stall\(stalls == 1 ? "" : "s"), "
+            + "audio playing for about \(min(playingSeconds, Int(Self.span))) seconds. "
             + "Repairs at \(settings.sensitivity.threshold) signals in \(Int(settings.sensitivity.window)) seconds."
     }
 }

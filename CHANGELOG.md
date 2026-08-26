@@ -25,6 +25,10 @@ are the milestones on `main`.
   signals plotted against the exact repair threshold, with playback stalls
   marked on the baseline. Scrolls continuously while visible; costs nothing
   while the popover is closed.
+- **The activity ribbon.** A strip under the graph's time axis painted for
+  every second audio was actually flowing, so a dropout shows as a visible
+  break next to the stall triangle that explains it — the graph agreeing
+  with your ears.
 - **Onboarding that hands you the icon.** The setup checklist now leads with
   where Fennec lives: one click copies it to Applications and relaunches it
   there, and the first-run window offers the app icon as a real drag source —

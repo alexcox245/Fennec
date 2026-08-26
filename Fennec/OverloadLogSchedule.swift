@@ -25,6 +25,16 @@ enum OverloadLogSchedule {
     /// and decide whether the expensive query is due.
     static let tick: TimeInterval = 5
 
+    /// The tick while audio is (or was just) playing. Each tick is a ~40 µs
+    /// property read, and it doubles as the graph's activity trace — one
+    /// sample per second is what makes a playback gap visible as a gap.
+    /// Silence relaxes back to the 5 s tick, per the stillness rule.
+    static let activityTick: TimeInterval = 1
+
+    static func tickInterval(recentlyRunning: Bool) -> TimeInterval {
+        recentlyRunning ? activityTick : tick
+    }
+
     /// Query interval while audio is playing and the log has been quiet.
     /// This is the worst-case added latency between an inaudible machine
     /// and Fennec noticing, and it is deliberately the slowest number here:
@@ -85,6 +95,30 @@ enum OverloadLogSchedule {
 /// Counting the marker is exact. If a macOS update ever rewords the marker
 /// but not the rest, the fallback clusters whatever cause lines still match
 /// into bursts, so the signal degrades to approximate instead of to zero.
+/// Turns per-second "the output device was running" samples into the merged
+/// time segments the graph paints as its activity ribbon. A gap wider than
+/// the merge window is a real gap — the moment the music cut out.
+enum AudioActivitySegments {
+    /// A shade over one sample interval, so adjacent samples fuse and a
+    /// single missed sample does not fake a dropout.
+    static let mergeWindow: TimeInterval = OverloadLogSchedule.activityTick * 1.6
+
+    static func merged(
+        sampleDates: [Date],
+        mergeWithin: TimeInterval = mergeWindow
+    ) -> [ClosedRange<Date>] {
+        var segments: [ClosedRange<Date>] = []
+        for date in sampleDates.sorted() {
+            if let last = segments.last, date.timeIntervalSince(last.upperBound) <= mergeWithin {
+                segments[segments.count - 1] = last.lowerBound...date
+            } else {
+                segments.append(date...date)
+            }
+        }
+        return segments
+    }
+}
+
 enum OverloadLogGrouper {
     static func eventDates(
         markers: [Date],

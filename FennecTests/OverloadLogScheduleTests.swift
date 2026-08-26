@@ -117,6 +117,51 @@ final class OverloadLogScheduleTests: XCTestCase {
         XCTAssertNil(engine.ingest(batch, sensitivity: .balanced))
     }
 
+    // MARK: The activity trace
+
+    func testAudioTightensTheTickAndSilenceRelaxesIt() {
+        XCTAssertEqual(
+            OverloadLogSchedule.tickInterval(recentlyRunning: true),
+            OverloadLogSchedule.activityTick
+        )
+        XCTAssertEqual(
+            OverloadLogSchedule.tickInterval(recentlyRunning: false),
+            OverloadLogSchedule.tick
+        )
+        XCTAssertLessThan(OverloadLogSchedule.activityTick, OverloadLogSchedule.tick)
+    }
+
+    func testContinuousSamplesMergeIntoOneSegment() {
+        let samples = (0..<5).map { epoch.addingTimeInterval(Double($0)) }
+        let segments = AudioActivitySegments.merged(sampleDates: samples)
+        XCTAssertEqual(segments, [epoch...epoch.addingTimeInterval(4)])
+    }
+
+    func testAPlaybackGapSplitsTheRibbon() {
+        // Three seconds of music, a two-second dropout, two more seconds.
+        let samples = [0, 1, 2, 5, 6].map { epoch.addingTimeInterval(Double($0)) }
+        let segments = AudioActivitySegments.merged(sampleDates: samples)
+        XCTAssertEqual(segments, [
+            epoch...epoch.addingTimeInterval(2),
+            epoch.addingTimeInterval(5)...epoch.addingTimeInterval(6)
+        ])
+    }
+
+    func testOneMissedSampleDoesNotFakeADropout() {
+        // The merge window is wider than one tick, so a single late or
+        // coalesced sample cannot split the ribbon.
+        let samples = [0, 1, 2.5].map { epoch.addingTimeInterval($0) }
+        XCTAssertEqual(AudioActivitySegments.merged(sampleDates: samples).count, 1)
+    }
+
+    func testUnsortedSamplesStillMergeCorrectly() {
+        let samples = [2, 0, 1].map { epoch.addingTimeInterval(Double($0)) }
+        XCTAssertEqual(
+            AudioActivitySegments.merged(sampleDates: samples),
+            [epoch...epoch.addingTimeInterval(2)]
+        )
+    }
+
     // MARK: Grouping
 
     func testMarkersCountExactly() {

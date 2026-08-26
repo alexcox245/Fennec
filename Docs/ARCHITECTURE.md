@@ -68,6 +68,8 @@ Playback that stops and starts on a starved machine is a different failure from 
 
 `SignalGraphView` plots the one quantity `DetectionEngine` actually compares — overload signals inside the configured window, at every instant of the last 30 seconds — so the dashed threshold rule on the chart is the literal repair trigger. Playback stalls sit on the baseline as triangles, identified by shape and legend rather than color alone. The strip scrolls continuously via `TimelineView`, which schedules nothing while the popover is closed; opening the popover also triggers an immediate log poll so the window is fresh. Signal dates come from `AppModel`'s pruned `recentOverloadDates`/`recentStallDates` buffers.
 
+Under the time axis runs the activity ribbon: one painted second for every second the output device was actually running IO, sampled by `SystemLogMonitor`'s tick (which tightens to 1 s while audio plays — each sample is a ~40 µs property read — and relaxes to 5 s in silence). A break in the ribbon while music was supposed to be playing *is* the dropout, on screen, next to the stall triangle that explains it: the graph agreeing with the user's ears. It is drawn as its own strip rather than a series so the count axis stays a count axis; `AudioActivitySegments` merges samples with a window wider than one tick, so a single coalesced timer wake-up cannot fake a gap.
+
 ## Failure behavior
 
 - If the helper is absent, automatic repair is disabled and manual repair uses an administrator prompt.

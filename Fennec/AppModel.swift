@@ -28,6 +28,10 @@ final class AppModel: ObservableObject {
     /// pruned as they age out of every window that reads them.
     @Published private(set) var recentOverloadDates: [Date] = []
     @Published private(set) var recentStallDates: [Date] = []
+    /// One date per second the output device was actually running IO. The
+    /// graph paints these as its activity ribbon; a hole in them is a
+    /// playback gap the user can point at.
+    @Published private(set) var recentAudioActivity: [Date] = []
     @Published private(set) var detectionCount = 0
     @Published private(set) var lastDetectionDate: Date?
     @Published private(set) var lastDetectionReason: String?
@@ -118,6 +122,15 @@ final class AppModel: ObservableObject {
         logMonitor.onIOStateChanges = { [weak self] stops, _ in
             Task { @MainActor in
                 self?.handleIOStops(stops)
+            }
+        }
+        logMonitor.onActivitySample = { [weak self] date in
+            Task { @MainActor in
+                guard let self else { return }
+                self.recentAudioActivity.append(date)
+                if self.recentAudioActivity.count % 30 == 0 {
+                    self.pruneRecentDates()
+                }
             }
         }
 
@@ -1070,6 +1083,7 @@ final class AppModel: ObservableObject {
         // entries; stalls also serve the advisor's three-minute window.
         recentOverloadDates.removeAll { $0 < now.addingTimeInterval(-120) }
         recentStallDates.removeAll { $0 < now.addingTimeInterval(-StallAdvisor.window) }
+        recentAudioActivity.removeAll { $0 < now.addingTimeInterval(-120) }
     }
 
     /// The popover just opened; give its graph the freshest log window
