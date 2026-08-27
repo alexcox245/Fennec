@@ -54,6 +54,14 @@ Both sides enforce peer code-signing requirements. Release builds require the sa
 
 The XPC protocol has no general execution API. Its repair method invokes fixed absolute executables with fixed arguments and verifies that `coreaudiod` was relaunched.
 
+## The registration self-heal
+
+An `SMAppService` daemon registration binds to the bundle path and signature that made it. Replace the build or move the app and macOS keeps reporting the daemon *enabled* while launchd holds a record it can no longer spawn — observed live as 9,736 spawn attempts ending in "Could not find and/or execute program specified by service". Every prior version of Fennec could only describe this state ("Enabled, not responding") and fall back to the administrator prompt, which is exactly the password dialog the helper exists to avoid.
+
+The fix is automatable because rebuilding a registration is not privileged: `unregister()` + `register()` from the running bundle rewrites the record with no password, and the user's standing approval either survives or macOS downgrades the daemon to `.requiresApproval` — a Settings toggle the setup UI already explains, and still not a password.
+
+`HelperHealPolicy` (pure, tested) is the only place that decides when: never unless macOS reports the daemon enabled — `.requiresApproval` and `.notRegistered` are the user's decision, and healing there would overrule it — never when the helper is answering, at most once per ten minutes automatically, always for a user-initiated attempt. `HelperManager.rebuildRegistration()` re-pings before touching anything so a stale "not answering" can never tear down a healthy registration, and re-pings up to three times afterwards because launchd spawns the helper on demand. `AppModel` runs the heal at three moments: shortly after launch (a registration that died while Fennec was not running should be rebuilt before the first 2am detection), when a confirmed detection would otherwise be skipped for an unreachable helper, and before a manual repair falls back to the administrator prompt. Every attempt and outcome is a `helper` event in the record — a daemon registration being rewritten is exactly what the event log exists to admit to.
+
 ## Detection trade-off
 
 `kAudioDeviceProcessorOverload` indicates that Core Audio missed a processing deadline. It is a strong causal signal for an audio xrun but is not an acoustic classifier — and it is delivered per process, to the client whose IO cycle overloaded, which is why the listener alone missed the field failure entirely. The log path closes that blind spot at the cost of polling: roughly one second of utility-QoS CPU per query, spent only while the output device is actually running IO — every two minutes when the log is quiet (which keeps the steady-state cost under one percent of a core, the whole app's budget), every 30 seconds once overloads appear, and never while no audio is moving. Worst case, a fault that starts mid-playback is noticed within about two minutes of its first logged overload; the fault this product exists for persists until repaired, so the bound is latency, not loss. The log matching keys on `coreaudiod`'s private message text (`HALS_OverloadMessage`), which Apple can reword in any release; the marker-plus-cluster fallback in `OverloadLogGrouper` degrades that risk from silence to approximation, but a macOS update remains the way this path dies, and the listener path is retained partly for that reason. Balanced mode requires two signals within eight seconds to reduce false recovery. Immediate mode is appropriate only after confirming that one overload correlates with the user's audible failure.
@@ -76,6 +84,7 @@ Under the time axis runs the activity ribbon: one painted second for every secon
 - If safety checks cannot determine whether recording is active, automatic repair is blocked.
 - If Bluetooth is selected and Bluetooth skipping is enabled, no automatic reset occurs.
 - If the helper does not answer, the app times out rather than hanging.
+- If the helper is enabled but not answering, the app rebuilds its registration (see "The registration self-heal") before treating the repair as blocked.
 - After repair, signals are suppressed briefly while the audio graph reconnects.
 
 ## Transient-change suppression

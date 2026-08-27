@@ -270,4 +270,80 @@ final class HelperManager: ObservableObject {
     func restartCoreAudio() async throws -> String {
         try await client.restartCoreAudio()
     }
+
+    /// Rebuilds a registration that macOS reports enabled but that is not
+    /// producing a helper that answers.
+    ///
+    /// A registration binds to the bundle path and signature that made it, so
+    /// a replaced build or a moved app leaves launchd holding a record it can
+    /// no longer spawn — the state every prior version could only describe
+    /// ("Enabled, not responding") and never fix. Unregistering and
+    /// registering again from the *running* bundle rewrites the record. No
+    /// password is involved at any point: these are the same unprivileged
+    /// Service Management calls the setup buttons use, and the user's
+    /// standing approval either survives (the daemon comes back enabled) or
+    /// macOS demands the Login Items toggle again (`.awaitingApproval`, which
+    /// the setup UI already explains). When to call this is
+    /// `HelperHealPolicy`'s decision, not this method's.
+    ///
+    /// Returns `true` when the helper answers afterwards.
+    func rebuildRegistration() async -> Bool {
+        // Confirm the silence first. The last ping may be minutes old, and a
+        // healthy registration must never be torn down over stale news.
+        if await confirmReachable() { return true }
+
+        guard service.status == .enabled else {
+            refreshStatus(testReachability: true)
+            return false
+        }
+
+        do {
+            // The async overload: in an async context Swift resolves to it
+            // anyway, and the completion-based teardown is the one Apple
+            // documents as safe to follow with a fresh registration.
+            try await service.unregister()
+        } catch {
+            // A record launchd can no longer resolve may refuse to leave
+            // cleanly. Registering from this bundle below rewrites it anyway.
+        }
+        do {
+            try service.register()
+        } catch {
+            // Approval may have been discarded along with the registration.
+            // That surfaces as `.requiresApproval` below — a Settings toggle,
+            // not a fault to alarm about here.
+        }
+
+        switch service.status {
+        case .enabled:
+            // launchd spawns the helper on demand, and the first ping can
+            // race that spawn. Three tries, a second apart, before giving up.
+            for attempt in 0..<3 {
+                if attempt > 0 { try? await Task.sleep(for: .seconds(1)) }
+                if await confirmReachable() { return true }
+            }
+            state = .enabled(reachable: false)
+            return false
+        case .requiresApproval:
+            state = .awaitingApproval
+            return false
+        default:
+            refreshStatus(testReachability: true)
+            return false
+        }
+    }
+
+    /// One fresh ping, with the published state updated to match the answer.
+    private func confirmReachable() async -> Bool {
+        do {
+            let reply = try await client.ping()
+            identity = HelperIdentity.parse(reply)
+            state = .enabled(reachable: true)
+            lastError = nil
+            return true
+        } catch {
+            lastError = error.localizedDescription
+            return false
+        }
+    }
 }
