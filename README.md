@@ -58,6 +58,9 @@ the right answer.
   path can see the fault, because polling the log costs CPU and Fennec's
   whole budget is under one percent of a core.
 - Restarts Core Audio through a root helper that can do exactly one thing.
+- Rebuilds the helper's registration itself when macOS reports it enabled but
+  it stops answering — the state a replaced or moved app leaves behind. No
+  password is involved; the attempt and its outcome go in the event log.
 - Verifies the repair. A restart is *provisional* until the fault has failed to
   return for a minute — Fennec does not call it fixed before then.
 - Gives up when it should. Three restarts that did not hold means restarting is

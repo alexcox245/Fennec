@@ -156,9 +156,10 @@ enum SetupChecklist {
                 title: "Repair without a password prompt",
                 detail: reachable
                     ? "The repair helper is installed and answering."
-                    : "The helper is installed but is not answering. Recheck it in Settings.",
+                    : "The helper is installed but is not answering — usually a registration left "
+                        + "pointing at a replaced build. Rebuilding it needs no password.",
                 compactDetail: reachable ? "Installed and answering." : "Installed, but not answering.",
-                actionTitle: reachable ? "Installed" : "Recheck",
+                actionTitle: reachable ? "Installed" : "Rebuild",
                 isComplete: reachable,
                 isRequired: true
             )

@@ -131,8 +131,9 @@ enum RepairCopy {
         case .awaitingApproval:
             return "macOS is waiting for you to allow Fennec under Login Items & Extensions."
         case .enabled:
-            return "The repair helper is enabled but did not answer. "
-                + "If Fennec was recently moved, re-enable the helper in Settings."
+            return "The repair helper is enabled but did not answer, and rebuilding its "
+                + "registration has not brought it back. If it stays silent, switch Fennec "
+                + "off and on under Login Items & Extensions."
         case .notConfigured:
             return "The automatic repair helper is not enabled."
         case .unavailable(let message):

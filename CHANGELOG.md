@@ -7,6 +7,19 @@ are the milestones on `main`.
 
 ### Added
 
+- **The helper registration heals itself.** An `SMAppService` registration
+  binds to the bundle path and signature that made it, so a replaced build or
+  a moved app left macOS reporting the helper *enabled* while launchd held a
+  record it could no longer spawn — and Fennec's only moves were "Enabled,
+  not responding" and a password prompt. Rebuilding the registration from the
+  running bundle needs no password, so Fennec now does it itself: shortly
+  after launch, before an automatic repair would be skipped over a silent
+  helper, and before a manual repair falls back to the administrator prompt.
+  Guarded by a pure, tested policy — only when macOS reports the daemon
+  enabled (the user's approval is on record), never when the helper answers,
+  at most once per ten minutes automatically — and every attempt lands in
+  the event log. The Settings action for that state now says what it does:
+  Rebuild, not Recheck.
 - **A second detection witness: `coreaudiod`'s own overload log.** The
   processor-overload notification fires in the process whose IO cycle missed
   its deadline, so the property listener is deaf to the commonest form of the

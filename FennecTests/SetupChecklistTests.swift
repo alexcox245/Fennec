@@ -76,7 +76,9 @@ final class SetupChecklistTests: XCTestCase {
     func testAnInstalledButUnresponsiveHelperIsNotComplete() throws {
         let steps = remaining(helper: .enabled(reachable: false))
         let helperStep = try XCTUnwrap(steps.first { $0.kind == .helper })
-        XCTAssertEqual(helperStep.actionTitle, "Recheck")
+        // The action rebuilds the registration — the fix — rather than
+        // re-pinging a daemon that cannot answer and calling it a day.
+        XCTAssertEqual(helperStep.actionTitle, "Rebuild")
         XCTAssertFalse(helperStep.isComplete)
     }
 

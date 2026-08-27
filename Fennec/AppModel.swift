@@ -79,6 +79,10 @@ final class AppModel: ObservableObject {
     private var verificationTimer: Timer?
     private var verifyingRepairID: UUID?
     private var announcedStandDownUntil: Date?
+    /// When Fennec may rebuild a helper registration that macOS reports
+    /// enabled but that is not answering. The decision lives in the pure
+    /// policy; the attempt lives in `healSilentHelper`.
+    private var helperHealPolicy = HelperHealPolicy()
 
     init() {
         settings = SettingsStore()
@@ -172,6 +176,17 @@ final class AppModel: ObservableObject {
         // against it, and a login launch lands in the middle of the same
         // renegotiation a wake does.
         beQuiet(for: .launch, log: false)
+
+        // A registration that died while Fennec was not running — a replaced
+        // build, a moved bundle — gets rebuilt at launch, not discovered by
+        // the first 2am detection. Delayed so `HelperManager.init`'s
+        // reachability probe has landed first and a helper that is merely
+        // slow to answer is never torn down.
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(8))
+            guard let self else { return }
+            _ = await self.healSilentHelper(userInitiated: false)
+        }
     }
 
     deinit {
@@ -459,7 +474,14 @@ final class AppModel: ObservableObject {
             if case .applications = installLocation { break }
             moveToApplications()
         case .helper:
-            helperManager.register()
+            if helperManager.state.isEnabled && !helperManager.state.isReachable {
+                // "Recheck" used to re-ping a registration that could not
+                // answer and call it a day. The button now does what the user
+                // would be told to do by hand: rebuild the registration.
+                Task { _ = await healSilentHelper(userInitiated: true) }
+            } else {
+                helperManager.register()
+            }
         case .helperApproval:
             helperManager.openApprovalSettings()
         case .loginItem:
@@ -595,15 +617,63 @@ final class AppModel: ObservableObject {
 
     private var isRehearsal: Bool { rehearsalRequested }
 
+    /// One attempt to bring an enabled-but-silent helper back without the
+    /// user: rebuild the registration from the running bundle, no password.
+    /// Every attempt and its outcome goes in the record — a daemon
+    /// registration being rewritten is exactly the kind of thing the event
+    /// log exists to admit to. Returns whether the helper answers now.
+    private func healSilentHelper(userInitiated: Bool) async -> Bool {
+        let state = helperManager.state
+        guard helperHealPolicy.shouldAttempt(
+            enabled: state.isEnabled,
+            reachable: state.isReachable,
+            userInitiated: userInitiated
+        ) else { return state.isReachable }
+
+        record(.init(
+            kind: .helper,
+            summary: "The repair helper is enabled but not answering; rebuilding its registration."
+        ))
+        let healed = await helperManager.rebuildRegistration()
+        if healed {
+            record(.init(kind: .helper, summary: "The repair helper is answering again."))
+        } else if case .awaitingApproval = helperManager.state {
+            record(.init(
+                kind: .helper,
+                summary: "The rebuilt registration needs approval under Login Items & Extensions."
+            ))
+        } else {
+            record(.init(
+                kind: .helper,
+                summary: "Rebuilding the registration did not bring the helper back."
+            ))
+        }
+        return healed
+    }
+
     private func beginManualRepair() async {
         if helperManager.state.isReachable {
             await performRepair(trigger: .manual, decision: nil, viaAdministratorPrompt: false)
             return
         }
+        // Before asking for a password, try the fix that needs none.
+        if await healSilentHelper(userInitiated: true) {
+            await performRepair(trigger: .manual, decision: nil, viaAdministratorPrompt: false)
+            return
+        }
+        let reason: String
+        switch helperManager.state {
+        case .enabled:
+            reason = "Fennec's repair helper is installed but is not answering — rebuilding its "
+                + "registration did not bring it back — so it cannot restart Core Audio on its own."
+        case .awaitingApproval:
+            reason = "macOS is waiting for you to allow Fennec's repair helper under "
+                + "Login Items & Extensions, so it cannot restart Core Audio on its own."
+        case .notConfigured, .unavailable:
+            reason = "Fennec's repair helper is not enabled, so it cannot restart Core Audio on its own."
+        }
         administratorRepairRequest = AdministratorRepairRequest(
-            reason: helperManager.state.isEnabled
-                ? "Fennec's repair helper is installed but is not answering, so it cannot restart Core Audio on its own."
-                : "Fennec's repair helper is not enabled, so it cannot restart Core Audio on its own.",
+            reason: reason,
             command: PrivilegedPromptRepair.command
         )
         ensureConfirmationHasAHost()
@@ -785,6 +855,14 @@ final class AppModel: ObservableObject {
             let blocker = "Fennec is not the session at the keyboard."
             recordSkipped(blocker)
             return
+        }
+
+        if helperManager.state.isEnabled && !helperManager.state.isReachable {
+            // The one blocker Fennec can remove by itself: the helper is
+            // approved but silent, and a rebuilt registration is often the
+            // difference between repairing now and posting a banner about
+            // why it could not.
+            _ = await healSilentHelper(userInitiated: false)
         }
 
         guard helperManager.state.isReachable else {
