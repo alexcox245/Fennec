@@ -7,6 +7,12 @@ are the milestones on `main`.
 
 ### Added
 
+- **A direct-download release pipeline.** `Scripts/release-developer-id.sh`
+  archives with Developer ID, notarizes, staples, zips, and finishes with the
+  exact Gatekeeper assessment a downloaded copy faces. Direct download is the
+  distribution path on purpose: the Mac App Store requires App Sandbox, which
+  the root helper's `SMAppService` registration rules out.
+
 - **The helper registration heals itself.** An `SMAppService` registration
   binds to the bundle path and signature that made it, so a replaced build or
   a moved app left macOS reporting the helper *enabled* while launchd held a
@@ -95,6 +101,19 @@ are the milestones on `main`.
 
 ### Changed
 
+- **The listening-state CPU cost dropped back under the one-percent budget.**
+  Measured at 1.08% of a core while music played. The main cause was a leak:
+  the log poll's cursor only advanced past *matching* entries, and a healthy
+  machine has none — so every poll re-scanned an ever-growing window, and
+  CPU per poll grew for as long as playback continued without a stop. The
+  cursor now advances to query time (minus a logd flush margin), bounding
+  every poll to one cadence of entries. Second find: the 1 s activity tick
+  was re-resolving the output device and re-checking its properties on every
+  tick — 1.2 ms of HAL round trips, not the 40 µs the comments claimed. The
+  tick now reads through a cached device handle (~0.15 ms), invalidated by
+  device-change events, read errors, a service restart, and a ten-tick
+  refresh cadence, so a device switch cannot paint more than a beat of false
+  gap in the activity ribbon.
 - Automatic repair defaults **on** (inert until the helper is enabled).
 - Settings lost its mascot banner: a `TabView` hoists its picker into the
   title bar, so the banner rendered between the tabs and their content.

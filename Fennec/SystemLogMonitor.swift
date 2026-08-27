@@ -67,6 +67,20 @@ final class SystemLogMonitor: @unchecked Sendable {
 
     private var currentTickInterval: TimeInterval = OverloadLogSchedule.tick
 
+    /// Cached HAL addressing for the per-tick gate. The gate used to resolve
+    /// the default device, check the property exists, and read it — three XPC
+    /// round trips measured at 1.2 ms — every single tick, which at the 1 s
+    /// playing cadence is ~0.12% of a core all day for three answers that
+    /// only change when the output device does. Cached, the steady tick is
+    /// one ~0.15 ms read. The cache re-resolves on a slow cadence, on any
+    /// read error, and on `noteOutputDeviceMayHaveChanged()` from the
+    /// listener path, so a device switch is picked up within a drain cycle
+    /// rather than waiting out the cadence.
+    private var cachedOutputDeviceID: AudioObjectID = AudioObjectID(kAudioObjectUnknown)
+    private var cachedDeviceAnswersRunning = false
+    private var ticksUntilDeviceRefresh = 0
+    private static let deviceRefreshTicks = 10
+
     var onOverloads: OverloadHandler?
     var onIOStateChanges: IOStateHandler?
     var onActivitySample: ActivityHandler?
@@ -175,6 +189,7 @@ final class SystemLogMonitor: @unchecked Sendable {
         var ioStops: [Date] = []
         var ioStarts: [Date] = []
         var newest = lastProcessedDate
+        let queryStart = Date()
         do {
             let position = store.position(date: lastProcessedDate)
             let predicate = NSPredicate(
@@ -201,7 +216,16 @@ final class SystemLogMonitor: @unchecked Sendable {
             // the next due query; it is not the permission case.
             return
         }
-        lastProcessedDate = newest
+        // Advance past everything this query enumerated, not just to the
+        // newest *matching* entry. `newest` alone was a real CPU leak: on a
+        // healthy machine nothing matches, the cursor never moved, and every
+        // poll re-enumerated an ever-growing window — CPU per poll grew
+        // linearly for as long as playback continued without a stop. The lag
+        // margin covers logd's flush delay so an entry that lands in the
+        // store late cannot be skipped; no matching entry can sit between
+        // `newest` and the margin, because matching entries advanced
+        // `newest` past themselves above.
+        lastProcessedDate = max(newest, queryStart.addingTimeInterval(-10))
         guard isRunning else { return }
 
         if !ioStops.isEmpty || !ioStarts.isEmpty {
@@ -214,25 +238,62 @@ final class SystemLogMonitor: @unchecked Sendable {
         onOverloads?(events)
     }
 
-    /// The ~40 µs gate in front of the ~1 s query: whether the default output
-    /// device is running IO for any process at all. No IO cycles, no
-    /// overloads, nothing audible — no query.
+    /// The listener path saw the default output change; drop the cached
+    /// device so the next tick reads the right one instead of waiting out
+    /// the refresh cadence — which would paint a false gap in the activity
+    /// ribbon for those seconds.
+    func noteOutputDeviceMayHaveChanged() {
+        queue.async { [weak self] in
+            self?.ticksUntilDeviceRefresh = 0
+        }
+    }
+
+    /// The cheap gate in front of the expensive query: whether the default
+    /// output device is running IO for any process at all. No IO cycles, no
+    /// overloads, nothing audible — no query. One cached ~0.15 ms property
+    /// read on the steady path; see the cache fields for why.
     private func defaultOutputIsRunningSomewhere() -> Bool {
-        guard let deviceID = try? CoreAudioReader.defaultOutputDeviceID(),
-              deviceID != kAudioObjectUnknown else { return false }
+        if ticksUntilDeviceRefresh <= 0
+            || cachedOutputDeviceID == AudioObjectID(kAudioObjectUnknown) {
+            refreshCachedDeviceLocked()
+        }
+        ticksUntilDeviceRefresh -= 1
+
+        guard cachedOutputDeviceID != AudioObjectID(kAudioObjectUnknown) else { return false }
+        // A device that cannot answer should not silence detection.
+        guard cachedDeviceAnswersRunning else { return true }
+
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
-        guard AudioObjectHasProperty(deviceID, &address) else {
-            // A device that cannot answer should not silence detection.
-            return true
-        }
         var running: UInt32 = 0
         var size = UInt32(MemoryLayout<UInt32>.size)
-        let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &running)
-        guard status == noErr else { return true }
+        let status = AudioObjectGetPropertyData(cachedOutputDeviceID, &address, 0, nil, &size, &running)
+        guard status == noErr else {
+            // The cached device likely went away; re-resolve on the next
+            // tick, and do not let a stale handle silence detection now.
+            ticksUntilDeviceRefresh = 0
+            return true
+        }
         return running != 0
+    }
+
+    private func refreshCachedDeviceLocked() {
+        ticksUntilDeviceRefresh = Self.deviceRefreshTicks
+        guard let deviceID = try? CoreAudioReader.defaultOutputDeviceID(),
+              deviceID != kAudioObjectUnknown else {
+            cachedOutputDeviceID = AudioObjectID(kAudioObjectUnknown)
+            cachedDeviceAnswersRunning = false
+            return
+        }
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        cachedOutputDeviceID = deviceID
+        cachedDeviceAnswersRunning = AudioObjectHasProperty(deviceID, &address)
     }
 }

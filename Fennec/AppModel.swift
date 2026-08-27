@@ -703,6 +703,9 @@ final class AppModel: ObservableObject {
         currentDevice = batch.device
 
         if batch.serviceRestarts > 0 {
+            // Every AudioObjectID from before the restart is invalid,
+            // including the log monitor's cached gate device.
+            logMonitor.noteOutputDeviceMayHaveChanged()
             detectionEngine.reset()
             suppressSignalsUntil = max(suppressSignalsUntil, batch.date.addingTimeInterval(12))
             record(.init(
@@ -711,6 +714,10 @@ final class AppModel: ObservableObject {
                 details: ["count": String(batch.serviceRestarts)],
                 date: batch.date
             ))
+        }
+
+        if batch.defaultOutputChanges > 0 || batch.deviceStateChanges > 0 {
+            logMonitor.noteOutputDeviceMayHaveChanged()
         }
 
         if batch.defaultOutputChanges > 0 || batch.sampleRateChanges > 0 || batch.deviceStateChanges > 0 {

@@ -17,16 +17,16 @@ import Foundation
 /// few seconds of entries costs on the order of a second of background CPU
 /// per query (measured). A product whose proudest claim is stillness cannot
 /// spend that four times a minute forever, so the schedule is gated on a
-/// property read that costs ~40 µs: whether the output device is running IO
-/// for anyone at all. No audio moving means no IO cycles, no overloads, and
-/// nothing audible to protect — so no query.
+/// property read that costs ~0.15 ms on a cached device handle: whether the
+/// output device is running IO for anyone at all. No audio moving means no
+/// IO cycles, no overloads, and nothing audible to protect — so no query.
 enum OverloadLogSchedule {
     /// The cheap wake-up: read `kAudioDevicePropertyDeviceIsRunningSomewhere`
     /// and decide whether the expensive query is due.
     static let tick: TimeInterval = 5
 
-    /// The tick while audio is (or was just) playing. Each tick is a ~40 µs
-    /// property read, and it doubles as the graph's activity trace — one
+    /// The tick while audio is (or was just) playing. Each tick is a ~0.15 ms
+    /// cached property read, and it doubles as the graph's activity trace — one
     /// sample per second is what makes a playback gap visible as a gap.
     /// Silence relaxes back to the 5 s tick, per the stillness rule.
     static let activityTick: TimeInterval = 1
