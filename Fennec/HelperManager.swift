@@ -187,6 +187,29 @@ final class HelperManager: ObservableObject {
     private let service = SMAppService.daemon(plistName: AppConstants.helperPlistName)
     private let client = HelperClient()
 
+    /// Set while a registration rebuild is between its teardown and a
+    /// resolved outcome, and persisted because that gap can outlive the
+    /// process: observed live, `register()` issued right after `unregister()`
+    /// bounced off Background Task Management's asynchronous teardown, the
+    /// status read `.notRegistered`, and the app was left holding *less* than
+    /// it started with — a helper the user had approved, now not registered
+    /// at all, with the consent guard (correctly) refusing to touch a
+    /// not-registered daemon. Completing an interrupted rebuild is finishing
+    /// the user's standing approval, not a new grant, so `refreshStatus` may
+    /// register when — and only when — this marker is set.
+    private static let rebuildInFlightKey = "helperRegistrationRebuildInFlight"
+
+    private var rebuildInFlight: Bool {
+        get { UserDefaults.standard.bool(forKey: Self.rebuildInFlightKey) }
+        set {
+            if newValue {
+                UserDefaults.standard.set(true, forKey: Self.rebuildInFlightKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.rebuildInFlightKey)
+            }
+        }
+    }
+
     init() {
         refreshStatus(testReachability: true)
     }
@@ -220,6 +243,16 @@ final class HelperManager: ObservableObject {
         case .requiresApproval:
             state = .awaitingApproval
         case .notRegistered, .notFound:
+            if rebuildInFlight {
+                try? service.register()
+                if service.status != .notRegistered && service.status != .notFound {
+                    rebuildInFlight = false
+                    // Safe from unbounded recursion: the status just left the
+                    // branch that re-enters here.
+                    refreshStatus(testReachability: testReachability)
+                    return
+                }
+            }
             state = .notConfigured
         @unknown default:
             state = .unavailable("Unknown Service Management status")
@@ -297,6 +330,7 @@ final class HelperManager: ObservableObject {
             return false
         }
 
+        rebuildInFlight = true
         do {
             // The async overload: in an async context Swift resolves to it
             // anyway, and the completion-based teardown is the one Apple
@@ -314,8 +348,29 @@ final class HelperManager: ObservableObject {
             // not a fault to alarm about here.
         }
 
+        // Registration propagates through Background Task Management and smd
+        // asynchronously. Observed live on this machine: BTM had already
+        // recorded the item `[enabled, allowed]`, yet `status` still read
+        // `.notRegistered` for a beat — and one stale read here turned a
+        // successful rebuild into "not enabled" with no daemon in launchd at
+        // all. Poll briefly instead of trusting the first answer, and issue
+        // one more `register()` mid-wait: a register that raced the previous
+        // record's teardown can leave the BTM item enabled without ever
+        // bootstrapping launchd, and a second call from a settled store
+        // completes that bootstrap.
+        var settleChecks = 0
+        while service.status == .notRegistered || service.status == .notFound {
+            settleChecks += 1
+            if settleChecks > 8 { break }
+            try? await Task.sleep(for: .milliseconds(500))
+            if settleChecks == 4 {
+                try? service.register()
+            }
+        }
+
         switch service.status {
         case .enabled:
+            rebuildInFlight = false
             // launchd spawns the helper on demand, and the first ping can
             // race that spawn. Three tries, a second apart, before giving up.
             for attempt in 0..<3 {
@@ -325,9 +380,13 @@ final class HelperManager: ObservableObject {
             state = .enabled(reachable: false)
             return false
         case .requiresApproval:
+            rebuildInFlight = false
             state = .awaitingApproval
             return false
         default:
+            // Unresolved: the marker stays set, so the next status refresh —
+            // this run or the next launch — completes the rebuild instead of
+            // stranding the user's approval.
             refreshStatus(testReachability: true)
             return false
         }
