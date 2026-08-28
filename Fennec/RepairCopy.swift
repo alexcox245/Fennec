@@ -60,8 +60,9 @@ enum RepairCopy {
 
     // MARK: Notifications
 
-    /// The heads-up posted moments before an automatic repair, so the brief
-    /// audio gap that follows is explained before it happens. Two short
+    /// The heads-up posted the moment the automatic path commits to a
+    /// repair, so the user who just heard the crackle is told Fennec is on
+    /// the case before the safety scan and the restart run. Two short
     /// clauses, nothing else: the user is mid-fault and mid-task, and the
     /// result banner that replaces this one carries the detail.
     static func repairStartingTitle() -> String {
@@ -70,6 +71,13 @@ enum RepairCopy {
 
     static func repairStartingBody() -> String {
         "Resetting speakers..."
+    }
+
+    /// The retraction, when the safety scan vetoes a repair the heads-up
+    /// already promised. The body is the blocker itself ("Skipped: the
+    /// microphone is active."), which is the one thing the user can act on.
+    static func repairCalledOffTitle() -> String {
+        "Crackle repair skipped"
     }
 
     static func notificationTitle(for record: RepairRecord) -> String {

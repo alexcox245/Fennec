@@ -108,13 +108,21 @@ final class RepairCopyTests: XCTestCase {
         )
     }
 
-    /// The heads-up posted 0.3 s before an automatic repair. Two short
+    /// The heads-up posted the moment the automatic path commits. Two short
     /// clauses and nothing else; the user is mid-fault and mid-task.
     func testRepairStartingCopyIsTerse() {
         XCTAssertEqual(RepairCopy.repairStartingTitle(), "Crackle detected")
         XCTAssertEqual(RepairCopy.repairStartingBody(), "Resetting speakers...")
         XCTAssertFalse(RepairCopy.repairStartingTitle().contains("!"))
         XCTAssertFalse(RepairCopy.repairStartingBody().contains("!"))
+    }
+
+    /// The retraction that replaces the heads-up when the safety scan says
+    /// no. It must exist, because "Resetting speakers..." followed by
+    /// silence is a promise the product broke.
+    func testRepairCalledOffCopyNamesTheSkip() {
+        XCTAssertEqual(RepairCopy.repairCalledOffTitle(), "Crackle repair skipped")
+        XCTAssertFalse(RepairCopy.repairCalledOffTitle().contains("!"))
     }
 
     func testManualSuccessDoesNotClaimCredit() {
