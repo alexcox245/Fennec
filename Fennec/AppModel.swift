@@ -915,6 +915,18 @@ final class AppModel: ObservableObject {
             return
         }
 
+        if settings.notifyOnRepair {
+            // The promise, posted the instant every cheap gate has passed:
+            // the user hearing the crackle learns Fennec is on the case
+            // while the safety scan below is still running. That scan is
+            // seconds on a starved machine (and a starved machine is the
+            // product's premise), so waiting to announce until just before
+            // the privileged call meant the banner could trail the crackle
+            // by half a minute. If the scan vetoes, the promise is taken
+            // back in place below, never left standing.
+            notificationController.postRepairStarting()
+        }
+
         let protectMicrophone = settings.protectMicrophone
         let protectApps = settings.protectCommunicationApps
         let report = await Task.detached(priority: .utility) { [safetyChecker] in
@@ -927,7 +939,14 @@ final class AppModel: ObservableObject {
         guard report.canAutoRepair else {
             let blocker = report.blockers.joined(separator: " ")
             recordSkipped(blocker)
-            notifyUnrepaired(decision, blocker: blocker)
+            if settings.notifyOnRepair {
+                // Corrects "Resetting speakers..." where it stands. Not
+                // budgeted: a stated intention that will not happen must
+                // always be retracted, however recently the last banner ran.
+                notificationController.postRepairCalledOff(blocker: blocker)
+            } else {
+                notifyUnrepaired(decision, blocker: blocker)
+            }
             return
         }
 
@@ -954,13 +973,9 @@ final class AppModel: ObservableObject {
             summary: automatic ? "Automatic Core Audio repair requested." : "Manual Core Audio repair requested."
         ))
 
-        if automatic && settings.notifyOnRepair {
-            // The heads-up lands 0.3 s ahead of the audio gap it announces,
-            // so the banner is on screen before the sound cuts out rather
-            // than after it comes back.
-            notificationController.postRepairStarting()
-            try? await Task.sleep(for: .milliseconds(300))
-        }
+        // The "Crackle detected" heads-up is posted upstream, the moment the
+        // automatic path committed, so the banner races Mac notification
+        // latency from detection time instead of from here.
 
         // Measured across the privileged call only, so it reflects the audio
         // gap the user heard rather than Fennec's own bookkeeping.

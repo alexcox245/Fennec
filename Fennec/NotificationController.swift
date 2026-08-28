@@ -94,10 +94,12 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         NSWorkspace.shared.open(url)
     }
 
-    /// The heads-up, posted 0.3 s before an automatic repair cuts the audio:
-    /// the gap the user is about to hear is announced before it happens. It
-    /// shares an identifier with the result banner, so "Crackle resolved"
-    /// replaces it in place instead of stacking under it.
+    /// The heads-up, posted the moment the automatic path commits to a
+    /// repair, before the safety scan that precedes the privileged call: the
+    /// user hears the crackle and is told Fennec is on the case in the same
+    /// breath. It shares an identifier with the result banner, so "Crackle
+    /// resolved" (or a retraction) replaces it in place instead of stacking
+    /// under it.
     func postRepairStarting() {
         let content = UNMutableNotificationContent()
         content.title = RepairCopy.repairStartingTitle()
@@ -107,6 +109,21 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         // while the audio is out. Passive would file it in Notification
         // Centre unseen, which is where field testing found it.
         content.interruptionLevel = .active
+        post(content, identifier: Identifier.repair)
+    }
+
+    /// Takes the promise back: the safety scan vetoed the repair after
+    /// "Resetting speakers..." was already on screen. Posted under the same
+    /// identifier so the retraction lands exactly where the promise was, and
+    /// with the detected category so Repair Now is offered: a user who knows
+    /// the microphone light is nothing important can overrule deliberately.
+    func postRepairCalledOff(blocker: String) {
+        let content = UNMutableNotificationContent()
+        content.title = RepairCopy.repairCalledOffTitle()
+        content.body = blocker
+        content.categoryIdentifier = Category.detected
+        content.interruptionLevel = .active
+        content.sound = .default
         post(content, identifier: Identifier.repair)
     }
 
