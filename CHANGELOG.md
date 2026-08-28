@@ -117,7 +117,11 @@ are the milestones on `main`.
   "Resetting speakers..."), and the result banner, "Crackle resolved",
   replaces it in place with the restart time as its only body. The cause
   detail stays on the menu receipt and in Activity, where it can be read at
-  leisure. Failure and unrepaired-detection banners are unchanged.
+  leisure. Failure and unrepaired-detection banners are unchanged. Both
+  banners are delivered at the active interruption level: the success banner
+  used to be passive, which on macOS means "notification list only, no
+  banner", so the one notification the product exists to deliver was landing
+  unseen. Still no sound.
 - **The listening-state CPU cost dropped back under the one-percent budget.**
   Measured at 1.08% of a core while music played. The main cause was a leak:
   the log poll's cursor only advanced past *matching* entries, and a healthy

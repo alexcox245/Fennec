@@ -103,6 +103,10 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         content.title = RepairCopy.repairStartingTitle()
         content.body = RepairCopy.repairStartingBody()
         content.categoryIdentifier = Category.repaired
+        // Explicitly active: this banner only has a job if it is on screen
+        // while the audio is out. Passive would file it in Notification
+        // Centre unseen, which is where field testing found it.
+        content.interruptionLevel = .active
         post(content, identifier: Identifier.repair)
     }
 
@@ -114,9 +118,14 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
 
         if record.succeeded {
             content.categoryIdentifier = Category.repaired
-            // No sound. Fennec just interrupted the user's audio once; it is
-            // not going to interrupt it again to take a bow.
-            content.interruptionLevel = .passive
+            // No sound: Fennec just interrupted the user's audio once and is
+            // not going to interrupt it again to take a bow. But it must be
+            // a visible banner. This was `.passive`, and on macOS passive
+            // means "notification list only, no banner", so the resolution
+            // the product exists to deliver was landing unseen; replacing
+            // the active "Resetting speakers..." banner with a passive one
+            // also withdrew that banner before anyone could read it.
+            content.interruptionLevel = .active
         } else {
             content.categoryIdentifier = Category.failed
             content.sound = .default
