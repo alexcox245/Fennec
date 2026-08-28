@@ -98,13 +98,13 @@ final class OverloadLogScheduleTests: XCTestCase {
     }
 
     /// The poll interval must never decide whether a threshold is met; only
-    /// the fault's own timing may. Two events 5 s apart satisfy Balanced's
-    /// "2 within 8 s" even when the second one is reported by a poll that
+    /// the fault's own timing may. Two events 2 s apart satisfy Balanced's
+    /// "2 within 3 s" even when the second one is reported by a poll that
     /// runs 10 s after the first, because the engine sees true event dates.
     func testSlowPollingCannotStarveADetectionWindow() {
         let engine = DetectionEngine()
         let first = epoch
-        let second = epoch.addingTimeInterval(5)
+        let second = epoch.addingTimeInterval(2)
 
         XCTAssertNil(engine.ingest(
             logBatch(eventDates: [first]),
@@ -116,7 +116,7 @@ final class OverloadLogScheduleTests: XCTestCase {
         )
         XCTAssertEqual(decision?.signal, .processorOverload)
         XCTAssertEqual(decision?.signalCount, 2)
-        XCTAssertEqual(decision?.elapsedSeconds ?? 0, 5, accuracy: 0.001)
+        XCTAssertEqual(decision?.elapsedSeconds ?? 0, 2, accuracy: 0.001)
     }
 
     /// The converse: events genuinely too far apart for the window stay

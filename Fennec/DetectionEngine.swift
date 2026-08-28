@@ -20,7 +20,7 @@ enum DetectionSensitivity: String, CaseIterable, Codable, Identifiable {
     var detail: String {
         switch self {
         case .conservative: return "Waits for 3 signals within 12 seconds. Fewest interruptions, longest crackle."
-        case .balanced: return "Waits for 2 signals within 8 seconds. You hear the fault start, then it is gone."
+        case .balanced: return "Waits for 2 signals within 3 seconds. You hear the fault start, then it is gone."
         case .immediate: return "Acts on the 1st signal. Fastest, but a harmless blip can cost you a short audio gap."
         }
     }
@@ -45,7 +45,7 @@ enum DetectionSensitivity: String, CaseIterable, Codable, Identifiable {
     var window: TimeInterval {
         switch self {
         case .conservative: return 12
-        case .balanced: return 8
+        case .balanced: return 3
         case .immediate: return 2
         }
     }
@@ -95,7 +95,7 @@ final class DetectionEngine {
         guard overloadDates.count >= sensitivity.threshold else { return nil }
         let count = overloadDates.count
         // The span the user actually experienced, not the configured window.
-        // "2 signals in 5.8 s" is a true statement; "within 8 seconds" is only
+        // "2 signals in 2.2 s" is a true statement; "within 3 seconds" is only
         // a description of the setting.
         let elapsed = (overloadDates.max() ?? batch.date)
             .timeIntervalSince(overloadDates.min() ?? batch.date)

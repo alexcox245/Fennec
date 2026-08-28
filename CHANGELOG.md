@@ -7,6 +7,13 @@ are the milestones on `main`.
 
 ### Added
 
+- **The red mark: crackle detection you can see.** From the first
+  unsuppressed crackle signal until the repair settles, the menu-bar fennec
+  turns red and wears sound waves between its ears: the user hearing the
+  fault can see that Fennec hears it too and is waiting out the detection
+  window before acting. The mark clears when the repair resolves or the
+  window lapses quietly, and never shows while Fennec is paused.
+
 - **A direct-download release pipeline.** `Scripts/release-developer-id.sh`
   archives with Developer ID, notarizes, staples, zips, and finishes with the
   exact Gatekeeper assessment a downloaded copy faces. Direct download is the
@@ -101,6 +108,16 @@ are the milestones on `main`.
 
 ### Changed
 
+- **Balanced mode intervenes in 3 seconds, not 8.** The default detection
+  window shrank: two crackle signals within three seconds now trigger the
+  repair, so the fault is cut short while it is still starting. Conservative
+  (3 in 12 s) and Immediate (first signal) are unchanged.
+- **The repair notifications got terse.** An automatic repair now announces
+  itself 0.3 seconds before the audio gap ("Crackle detected" /
+  "Resetting speakers..."), and the result banner, "Crackle resolved",
+  replaces it in place with the restart time as its only body. The cause
+  detail stays on the menu receipt and in Activity, where it can be read at
+  leisure. Failure and unrepaired-detection banners are unchanged.
 - **The listening-state CPU cost dropped back under the one-percent budget.**
   Measured at 1.08% of a core while music played. The main cause was a leak:
   the log poll's cursor only advanced past *matching* entries, and a healthy
