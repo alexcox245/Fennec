@@ -5,7 +5,7 @@ import ServiceManagement
 /// What macOS currently thinks about Fennec as a login item.
 ///
 /// `SMAppService.Status` is a raw four-case enum; this wraps it with the two
-/// things the UI needs and it does not have — a name a person recognises and
+/// things the UI needs and it does not have: a name a person recognises and
 /// a sentence saying what to do next.
 enum LoginItemState: Equatable, Sendable {
     case enabled
@@ -53,7 +53,7 @@ enum LoginItemState: Equatable, Sendable {
 
 /// Launch at login, via `SMAppService.mainApp`.
 ///
-/// The hard part is not registering — it is that the answer can change
+/// The hard part is not registering; it is that the answer can change
 /// outside the app. The user can switch Fennec off in System Settings →
 /// General → Login Items & Extensions at any time, and macOS does not tell
 /// us. So this re-reads status every time the app comes forward, and every

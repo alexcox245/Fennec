@@ -19,7 +19,7 @@ struct AdministratorRepairRequest: Identifiable, Equatable, Sendable {
 
 /// A question Fennec has to ask before doing something irreversible.
 ///
-/// This exists as a type — rather than two `.alert` modifiers — because of a
+/// This exists as a type, rather than two `.alert` modifiers, because of a
 /// specific macOS trap. An `.alert` presented from inside a
 /// `MenuBarExtra(.window)` scene attaches to the popover's panel, and that
 /// panel dismisses the instant it resigns key. Presenting the alert *is* what
@@ -60,7 +60,7 @@ enum PendingConfirmation: Identifiable, Equatable {
     }
 
     /// Shown in a monospaced register, because AGENTS.md §7 reserves that for
-    /// actual data — and because a password prompt the user cannot connect to
+    /// actual data, and because a password prompt the user cannot connect to
     /// a specific command is indistinguishable from a phishing attempt.
     var monospacedDetail: String? {
         switch self {

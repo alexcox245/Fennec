@@ -150,7 +150,7 @@ final class Uninstaller: ObservableObject {
             case .bundle:
                 // Never trash the app while the daemon is still registered.
                 // That is precisely the state ground rule 12 exists to
-                // prevent — a root LaunchDaemon pointing at a binary in the
+                // prevent: a root LaunchDaemon pointing at a binary in the
                 // Trash, and no app left to retry the removal from.
                 if results[.helper]?.succeeded == false {
                     results[.bundle] = .failed(

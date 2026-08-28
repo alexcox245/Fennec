@@ -5,10 +5,10 @@ import Foundation
 ///
 /// Why this component exists at all: `kAudioDeviceProcessorOverload` is
 /// delivered by the HAL inside the process whose IO cycle missed its
-/// deadline. When the overloading client is some other process — verified on
+/// deadline. When the overloading client is some other process (verified on
 /// a live faulting machine, where an iOS Simulator daemon's silent audio
 /// context overloaded coreaudiod's IO thread several times a second for
-/// hours — Fennec's property listener never fires, and neither does a
+/// hours), Fennec's property listener never fires, and neither does a
 /// healthy sibling IOProc show any timing artifact. The one place the fault
 /// is observable from outside the faulting process is `coreaudiod`'s own
 /// `HALS_OverloadMessage` entries in the unified log.
@@ -19,14 +19,14 @@ import Foundation
 /// spend that four times a minute forever, so the schedule is gated on a
 /// property read that costs ~0.15 ms on a cached device handle: whether the
 /// output device is running IO for anyone at all. No audio moving means no
-/// IO cycles, no overloads, and nothing audible to protect — so no query.
+/// IO cycles, no overloads, and nothing audible to protect, so no query.
 enum OverloadLogSchedule {
     /// The cheap wake-up: read `kAudioDevicePropertyDeviceIsRunningSomewhere`
     /// and decide whether the expensive query is due.
     static let tick: TimeInterval = 5
 
     /// The tick while audio is (or was just) playing. Each tick is a ~0.15 ms
-    /// cached property read, and it doubles as the graph's activity trace — one
+    /// cached property read, and it doubles as the graph's activity trace: one
     /// sample per second is what makes a playback gap visible as a gap.
     /// Silence relaxes back to the 5 s tick, per the stillness rule.
     static let activityTick: TimeInterval = 1
@@ -42,8 +42,8 @@ enum OverloadLogSchedule {
     /// steady-state cost while music plays is queryCost / watch. At 120 s
     /// that is under one percent of a core, which is the whole app's CPU
     /// budget. The price is latency: a fault that starts mid-playback is
-    /// noticed within about two minutes — acceptable, because the fault
-    /// this exists for persists until repaired.
+    /// noticed within about two minutes, which is acceptable because the
+    /// fault this exists for persists until repaired.
     static let watch: TimeInterval = 120
 
     /// Query interval once overload entries have been seen recently. The
@@ -57,7 +57,7 @@ enum OverloadLogSchedule {
     static let faultLingers: TimeInterval = 120
 
     /// How long after the device was last seen running IO the query keeps
-    /// going anyway. A playback stall *is* the device stopping — gating
+    /// going anyway. A playback stall *is* the device stopping; gating
     /// purely on "running right now" would blind the monitor to the very
     /// stop/start churn it needs to see.
     static let runningGrace: TimeInterval = 180
@@ -103,7 +103,7 @@ enum OverloadLogSchedule {
 /// into bursts, so the signal degrades to approximate instead of to zero.
 /// Turns per-second "the output device was running" samples into the merged
 /// time segments the graph paints as its activity ribbon. A gap wider than
-/// the merge window is a real gap — the moment the music cut out.
+/// the merge window is a real gap: the moment the music cut out.
 enum AudioActivitySegments {
     /// A shade over one sample interval, so adjacent samples fuse and a
     /// single missed sample does not fake a dropout.

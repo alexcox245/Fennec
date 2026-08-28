@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 /// System Settings sometimes wants the app itself rather than a button press:
 /// the Open at Login list accepts an app dropped straight into it, and so
 /// does the Applications folder in Finder. The polished version of that
-/// moment — familiar from utilities like Clicky — hands the user the icon
+/// moment (familiar from utilities like Clicky) hands the user the icon
 /// right next to the instruction, so "find the app" never involves a Finder
 /// safari through Downloads. The drag carries the real bundle URL; wherever
 /// it lands, it is the same Fennec.app.

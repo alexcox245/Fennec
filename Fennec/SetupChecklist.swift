@@ -20,7 +20,7 @@ struct SetupStep: Identifiable, Equatable, Sendable {
     /// The full explanation, for Settings and the first-run window.
     let detail: String
     /// One line, for the popover. The popover is 384 pt wide and the setup
-    /// card is the first thing a new user sees — three five-line paragraphs
+    /// card is the first thing a new user sees; three five-line paragraphs
     /// there is not onboarding, it is a wall.
     let compactDetail: String
     let actionTitle: String
@@ -129,7 +129,7 @@ enum SetupChecklist {
             return SetupStep(
                 kind: .install,
                 title: "Live in Applications",
-                detail: "Fennec is running from \(folder). macOS ties the helper and login item to the app's location, so moving it later silently breaks both. One click copies Fennec to Applications and relaunches it there — or drag the icon into Applications yourself.",
+                detail: "Fennec is running from \(folder). macOS ties the helper and login item to the app's location, so moving it later silently breaks both. One click copies Fennec to Applications and relaunches it there, or drag the icon into Applications yourself.",
                 compactDetail: "Running from \(folder); registrations will break.",
                 actionTitle: "Move to Applications",
                 isComplete: false,
@@ -156,7 +156,7 @@ enum SetupChecklist {
                 title: "Repair without a password prompt",
                 detail: reachable
                     ? "The repair helper is installed and answering."
-                    : "The helper is installed but is not answering — usually a registration left "
+                    : "The helper is installed but is not answering, usually a registration left "
                         + "pointing at a replaced build. Rebuilding it needs no password.",
                 compactDetail: reachable ? "Installed and answering." : "Installed, but not answering.",
                 actionTitle: reachable ? "Installed" : "Rebuild",
@@ -167,7 +167,7 @@ enum SetupChecklist {
             return SetupStep(
                 kind: .helper,
                 title: "Repair without a password prompt",
-                detail: "Fennec installs a small root helper that can do exactly one thing: restart Core Audio. Without it Fennec still detects crackling, but it cannot repair on its own — you press Repair Audio Now and type your password.",
+                detail: "Fennec installs a small root helper that can do exactly one thing: restart Core Audio. Without it Fennec still detects crackling, but it cannot repair on its own: you press Repair Audio Now and type your password.",
                 compactDetail: "Without it, Fennec detects but cannot repair on its own.",
                 actionTitle: "Enable Helper",
                 isComplete: false,
@@ -212,7 +212,7 @@ enum SetupChecklist {
             return SetupStep(
                 kind: .loginItem,
                 title: "Start with your Mac",
-                detail: "Crackling turns up during long builds and exports — usually while you are not watching. Fennec has to already be running to catch the first signal.",
+                detail: "Crackling turns up during long builds and exports, usually while you are not watching. Fennec has to already be running to catch the first signal.",
                 compactDetail: "Fennec has to be running to catch the first signal.",
                 actionTitle: "Turn On",
                 isComplete: false,
@@ -227,7 +227,7 @@ enum SetupChecklist {
             title: "Tell me when you fix something",
             detail: authorized
                 ? "Fennec will post a quiet banner after each repair."
-                : "Without notification permission a repair is completely silent — which is nice, right up until you wonder whether Fennec is doing anything at all.",
+                : "Without notification permission a repair is completely silent, which is nice, right up until you wonder whether Fennec is doing anything at all.",
             compactDetail: authorized
                 ? "A quiet banner after each repair."
                 : "Otherwise a repair is completely silent.",

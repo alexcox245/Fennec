@@ -69,8 +69,8 @@ final class HelperService: NSObject, FennecHelperProtocol, NSXPCListenerDelegate
                 )
 
                 // launchd should immediately replace coreaudiod. Confirm that
-                // at least one new process—not merely a still-exiting old PID—
-                // appears before reporting success.
+                // at least one new process (not merely a still-exiting old
+                // PID) appears before reporting success.
                 let deadline = Date().addingTimeInterval(3)
                 var replacementPIDs: Set<pid_t> = []
                 repeat {

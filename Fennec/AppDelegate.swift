@@ -15,7 +15,7 @@ import SwiftUI
 ///   worth waiting out.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Set by `FennecApp` once the model exists. Weak because the model
-    /// outlives nothing — it is owned by the scene.
+    /// outlives nothing; it is owned by the scene.
     @MainActor static weak var model: AppModel?
 
     /// How long `applicationShouldTerminate` will hold quit open for an
@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             //
             // `.common` is load-bearing. AppKit runs the loop in
             // `NSModalPanelRunLoopMode` while a termination is deferred, so a
-            // `Timer.scheduledTimer` — which registers in `.default` only —
+            // `Timer.scheduledTimer` (which registers in `.default` only)
             // never fires, `reply(toApplicationShouldTerminate:)` is never
             // called, and ⌘Q hangs until Force Quit.
             let timer = Timer(timeInterval: 0.25, repeats: true) { timer in
@@ -75,8 +75,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         // If the grace ran out we are almost certainly waiting
                         // on a human at an administrator password dialog.
                         // Leaving that dialog on screen owned by a process
-                        // that is about to exit is the credential-phishing
-                        // signature T-015 was written to remove.
+                        // that is about to exit is exactly the signature of
+                        // a credential-phishing prompt, so cancel it.
                         if Date() >= deadline { PrivilegedPromptRepair.cancelInFlight() }
                         NSApp.reply(toApplicationShouldTerminate: true)
                     }

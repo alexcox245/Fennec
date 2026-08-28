@@ -5,7 +5,7 @@ import UserNotifications
 /// Fennec's only outbound channel.
 ///
 /// The design rule here is proportionality. A successful automatic repair is
-/// the one notification the product exists to deliver, so it is quiet — no
+/// the one notification the product exists to deliver, so it is quiet: no
 /// sound, no badge, a banner that says what happened and gets out of the way.
 /// A *failed* repair, or a crackle Fennec was not allowed to fix, is the only
 /// case where the user has to do something, so those get a sound and an
@@ -45,7 +45,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
                 intentIdentifiers: [],
                 options: []
             ),
-            // Nothing to do — Fennec already handled it. A success banner
+            // Nothing to do: Fennec already handled it. A success banner
             // with buttons would be asking for work the user does not have.
             UNNotificationCategory(
                 identifier: Category.repaired,
@@ -113,7 +113,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         post(content, identifier: Identifier.repair)
     }
 
-    /// A crackle Fennec detected but did not repair. Always actionable —
+    /// A crackle Fennec detected but did not repair. Always actionable:
     /// something is switched off, protected, or cooling down.
     ///
     /// `alsoSuppressed` is the count the notification budget swallowed since
@@ -144,8 +144,8 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         static let stall = "fennec.stall"
     }
 
-    /// The starvation stall: informational, quiet, and free of buttons —
-    /// there is nothing Fennec can press on the user's behalf here.
+    /// The starvation stall: informational, quiet, and free of buttons,
+    /// because there is nothing Fennec can press on the user's behalf here.
     func postStallAdvisory(_ advisory: StallAdvisory) {
         let content = UNMutableNotificationContent()
         content.title = RepairCopy.stallAdvisoryTitle()
@@ -211,7 +211,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
                 self.onRepairRequested?()
             case UNNotificationDefaultActionIdentifier:
                 // Clicking the banner is what people actually do, and in an
-                // LSUIElement app it used to do literally nothing — which for
+                // LSUIElement app it used to do literally nothing, which for
                 // the success and resume banners, neither of which has any
                 // buttons, meant they were inert end to end.
                 self.onShowActivityRequested?()

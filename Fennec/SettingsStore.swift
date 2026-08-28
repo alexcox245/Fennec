@@ -21,7 +21,7 @@ final class SettingsStore: ObservableObject {
     private let defaults: UserDefaults
 
     /// Default **on**. Fennec cannot act on it until the privileged helper is
-    /// enabled, so this is not a surprise-root-access switch — it means that
+    /// enabled, so this is not a surprise-root-access switch; it means that
     /// the moment setup finishes, the product does the thing it promises
     /// without a second decision from the user.
     @Published var autoRepairEnabled: Bool {
@@ -44,7 +44,7 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(skipBluetooth, forKey: Key.skipBluetooth) }
     }
 
-    /// The "we already fixed it" banner. On by default — a silent fix is
+    /// The "we already fixed it" banner. On by default, because a silent fix is
     /// indistinguishable from a product that does nothing.
     @Published var notifyOnRepair: Bool {
         didSet { defaults.set(notifyOnRepair, forKey: Key.notifyOnRepair) }

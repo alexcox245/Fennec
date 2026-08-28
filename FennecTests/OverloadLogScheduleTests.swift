@@ -57,7 +57,7 @@ final class OverloadLogScheduleTests: XCTestCase {
         ))
     }
 
-    /// A playback stall is the device stopping — the grace window keeps
+    /// A playback stall is the device stopping; the grace window keeps
     /// queries flowing through short silences so the stop/start churn is
     /// still observed.
     func testRecentRunningExtendsQueriesThroughASilence() {
@@ -97,7 +97,7 @@ final class OverloadLogScheduleTests: XCTestCase {
         )
     }
 
-    /// The poll interval must never decide whether a threshold is met — only
+    /// The poll interval must never decide whether a threshold is met; only
     /// the fault's own timing may. Two events 5 s apart satisfy Balanced's
     /// "2 within 8 s" even when the second one is reported by a poll that
     /// runs 10 s after the first, because the engine sees true event dates.

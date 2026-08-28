@@ -7,7 +7,7 @@ import XCTest
 /// that is the thing that must not come back.
 final class ReviewRegressionTests: XCTestCase {
 
-    // MARK: Blocker — uninstall could trash the app over a live root daemon
+    // MARK: Blocker: uninstall could trash the app over a live root daemon
 
     func testAStagedHelperIsStillSomethingToRemove() {
         // `RepairHelperState.isEnabled` is false for `.awaitingApproval`, but
@@ -23,8 +23,8 @@ final class ReviewRegressionTests: XCTestCase {
     @MainActor
     func testTheBundleIsNotTrashedWhenTheDaemonSurvived() async {
         let uninstaller = Uninstaller()
-        // `.helper` will fail here — the test process has no registered daemon
-        // to unregister and no authorization to try — which is precisely the
+        // `.helper` will fail here: the test process has no registered daemon
+        // to unregister and no authorization to try, which is precisely the
         // shape of the real failure.
         await uninstaller.run(
             keepLogs: true,
@@ -63,7 +63,7 @@ final class ReviewRegressionTests: XCTestCase {
         }
     }
 
-    // MARK: Major — the UI called a repair "fixed" from `succeeded` alone
+    // MARK: Major: the UI called a repair "fixed" from `succeeded` alone
 
     func testAReturnedRepairNeverGetsAGoldSeal() {
         // A gold checkmark directly above "Restarted, but the fault came back"
@@ -94,7 +94,7 @@ final class ReviewRegressionTests: XCTestCase {
         XCTAssertEqual(RepairCopy.headlineNumber(for: summary), "1")
     }
 
-    // MARK: Major — the rehearsal was booked against the user as damage
+    // MARK: Major: the rehearsal was booked against the user as damage
 
     func testTheFirstRunTestRepairIsNotAnIncident() {
         let rehearsal = Fixture.repair(at: Fixture.epoch, trigger: .rehearsal)
@@ -126,7 +126,7 @@ final class ReviewRegressionTests: XCTestCase {
         XCTAssertEqual(RepairRecord.Trigger.rehearsal.title, "Test")
     }
 
-    // MARK: Major — the helper's own rate limiter read as a failed repair
+    // MARK: Major: the helper's own rate limiter read as a failed repair
 
     func testTheThrottleReplyIsRecognisableAsARateLimiter() {
         let message = HelperThrottle.message(remainingSeconds: 14)
@@ -142,7 +142,7 @@ final class ReviewRegressionTests: XCTestCase {
         XCTAssertFalse(shown.contains("!"))
     }
 
-    // MARK: Minor — a helper path with a space was printed as a shorter path
+    // MARK: Minor: a helper path with a space was printed as a shorter path
 
     func testAHelperPathContainingSpacesSurvivesParsing() {
         let reply = HelperIdentity.format(
@@ -156,7 +156,7 @@ final class ReviewRegressionTests: XCTestCase {
         XCTAssertEqual(identity.euid, 0)
     }
 
-    // MARK: Minor — a repair left pending by a quit never counted
+    // MARK: Minor: a repair left pending by a quit never counted
 
     @MainActor
     func testARepairLeftPendingByAQuitIsSettledOnNextLaunch() {
@@ -187,7 +187,7 @@ final class ReviewRegressionTests: XCTestCase {
         XCTAssertEqual(RepairHistoryStore(directory: directory).records.first?.outcome, .pending)
     }
 
-    // MARK: Minor — the checklist implied automatic repair without the helper
+    // MARK: Minor: the checklist implied automatic repair without the helper
 
     func testTheHelperStepSaysAutomaticRepairStopsWithoutIt() throws {
         let step = try XCTUnwrap(

@@ -86,7 +86,7 @@ final class UninstallPlanTests: XCTestCase {
 }
 
 /// After an in-place update the root process may still be the previous binary,
-/// and `ping` used to reply with prose that had no version in it — so the
+/// and `ping` used to reply with prose that had no version in it, so the
 /// app's whole vocabulary for that was "Enabled, not responding".
 final class HelperIdentityTests: XCTestCase {
 
@@ -141,7 +141,7 @@ final class HelperIdentityTests: XCTestCase {
 
     func testMalformedTokensAreIgnoredRatherThanCrashing() {
         // `path=` is deliberately the remainder, so a path containing spaces
-        // survives. That means `path=` must be last — which `format` enforces.
+        // survives. That means `path=` must be last, which `format` enforces.
         let identity = HelperIdentity.parse("ready = =0 build= euid=notanumber path=/x")
         XCTAssertNil(identity.euid)
         XCTAssertNil(identity.build.flatMap { $0.isEmpty ? nil : $0 })

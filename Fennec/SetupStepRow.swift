@@ -3,7 +3,7 @@ import SwiftUI
 /// One outstanding setup step, with the button that resolves it.
 ///
 /// Shared by the popover's compact card and the Settings form so the two can
-/// never offer different words for the same action — the popover used to say
+/// never offer different words for the same action; the popover used to say
 /// "Enable" while Settings said "Enable Helper" for the same `SMAppService`
 /// call, and only one of them knew that macOS had already staged it.
 struct SetupStepRow: View {

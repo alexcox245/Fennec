@@ -110,7 +110,7 @@ struct MenuView: View {
         }
     }
 
-    /// The running total. Small, monospaced, and unglamorous — but it is the
+    /// The running total. Small, monospaced, and unglamorous, but it is the
     /// only proof a background utility ever offers that it earned its place.
     private var repairTally: some View {
         VStack(alignment: .trailing, spacing: 1) {
@@ -149,7 +149,7 @@ struct MenuView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 8) {
-                // 25: these are session counters and the header tally is a
+                // These are session counters and the header tally is a
                 // lifetime one. Side by side with no scope they read as one
                 // population, so after any relaunch the row said
                 // "SIGNALS 0 · REPAIRS 7". The lifetime number lives in the
@@ -252,7 +252,7 @@ struct MenuView: View {
     /// The sign on the workshop wall.
     ///
     /// A background utility that works is indistinguishable from one that
-    /// does nothing. This is the honest answer to that — not a dashboard, one
+    /// does nothing. This is the honest answer to that: not a dashboard, one
     /// number that means something, kept the way a real safety sign is kept.
     /// It counts up while nothing goes wrong and reads 0 on the day something
     /// does, with no softening.
@@ -291,15 +291,15 @@ struct MenuView: View {
             }
         }
         .buttonStyle(.plain)
-        .help("Open Fennec Activity — every repair, grouped by day.")
+        .help("Open Fennec Activity: every repair, grouped by day.")
         .accessibilityLabel(record.accessibilityLabel)
         .accessibilityHint("Opens Fennec Activity.")
     }
 
     /// Fennec has stopped trying, and says why in the machine's own numbers.
     ///
-    /// This is the hardest thing the product has to say — that the fault is
-    /// probably not Core Audio's — and it says it without apologising and
+    /// This is the hardest thing the product has to say: that the fault is
+    /// probably not Core Audio's. It says it without apologising and
     /// without pretending it can be fixed by trying harder.
     private func standDownCard(_ standDown: RepairGovernor.StandDown) -> some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -388,8 +388,8 @@ struct MenuView: View {
         .accessibilityLabel(confirmation.accessibilityDescription)
     }
 
-    /// The receipt. Aviator gold is reserved in the brand for exactly this —
-    /// a repair that worked — so it appears nowhere else in the app.
+    /// The receipt. Aviator gold is reserved in the brand for exactly this,
+    /// a repair that worked, so it appears nowhere else in the app.
     private func receiptCard(_ repair: RepairRecord) -> some View {
         // Outcome, never `succeeded`. `succeeded` is fixed at repair time; a
         // gold seal above "Restarted, but the fault came back" is one card
@@ -431,7 +431,7 @@ struct MenuView: View {
     }
 
     /// Everything still standing between the user and unattended repair, with
-    /// the button that resolves it. It disappears the moment setup is done —
+    /// the button that resolves it. It disappears the moment setup is done;
     /// a checklist that lingers is just clutter.
     private var setupCard: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -524,7 +524,7 @@ struct MenuView: View {
 
     private var primaryButtonTitle: String {
         if model.isRepairing { return "Restarting Core Audio…" }
-        // Under heavy load — Fennec's own premise — the safety scan is slow
+        // Under heavy load (Fennec's own premise) the safety scan is slow
         // enough that the button used to look untouched after a click.
         if model.isPreparingRepair { return "Checking what is using audio…" }
         return "Repair Audio Now"

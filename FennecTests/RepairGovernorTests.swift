@@ -1,8 +1,8 @@
 import XCTest
 
-/// The loop this prevents: on a Mac where the restart is not the cure — a
-/// failing cable, a marginal interface, a buffer size the machine cannot meet
-/// — Fennec detects, restarts, claims success, waits out the cooldown, and
+/// The loop this prevents: on a Mac where the restart is not the cure (a
+/// failing cable, a marginal interface, a buffer size the machine cannot
+/// meet), Fennec detects, restarts, claims success, waits out the cooldown, and
 /// detects again. Forever. Every 45 seconds, silencing all audio each time.
 final class RepairGovernorTests: XCTestCase {
     private let now = Fixture.epoch
@@ -44,7 +44,7 @@ final class RepairGovernorTests: XCTestCase {
     }
 
     func testOldFailuresFallOutOfTheWindow() {
-        // Three failures, but spread over an hour — a bad afternoon, not a
+        // Three failures, but spread over an hour: a bad afternoon, not a
         // machine that cannot be fixed by a restart.
         let spread = repairs([.returned, .returned, .returned], spacing: 15 * 60)
         XCTAssertNil(RepairGovernor.standDown(records: spread, now: now))
@@ -109,7 +109,7 @@ final class RepairGovernorTests: XCTestCase {
         XCTAssertTrue(reason.contains("Fireface UCX II"), reason)
         XCTAssertTrue(
             reason.contains("not fixing this"),
-            "The user has to be told the restart is not the cure — that is the whole point."
+            "The user has to be told the restart is not the cure; that is the whole point."
         )
         XCTAssertFalse(reason.contains("!"))
         XCTAssertFalse(reason.lowercased().contains("sorry"))
@@ -133,7 +133,7 @@ final class RepairGovernorTests: XCTestCase {
 }
 
 /// A repair is provisional until the fault fails to return, and the copy has
-/// to say so — the instant a repair finishes, the only established fact is
+/// to say so: the instant a repair finishes, the only established fact is
 /// that a new `coreaudiod` process exists.
 final class RepairOutcomeCopyTests: XCTestCase {
     private func record(_ outcome: RepairOutcome, trigger: RepairRecord.Trigger = .automatic) -> RepairRecord {

@@ -46,7 +46,7 @@ final class CoreAudioMonitor: @unchecked Sendable {
     private var outputRegistrations: [ListenerRegistration] = []
     private var currentDeviceID: AudioObjectID = kAudioObjectUnknown
     private var isRunning = false
-    /// When something last arrived. Drives the drain interval — see
+    /// When something last arrived. Drives the drain interval; see
     /// `DrainSchedule` for why backing off cannot lose a signal.
     private var lastSignalDate = Date()
     private var currentDrainInterval: TimeInterval = DrainSchedule.active
@@ -100,7 +100,7 @@ final class CoreAudioMonitor: @unchecked Sendable {
     ///
     /// `rebuildListenersLocked()` deliberately removes every registration when
     /// a rebuild fails part-way, so this can be `false` while `isRunning` is
-    /// still `true` — Fennec has a timer and no ears. The app has to be able
+    /// still `true`: Fennec has a timer and no ears. The app has to be able
     /// to tell the difference, because that state used to render as
     /// "Listening" forever.
     var isAttached: Bool {

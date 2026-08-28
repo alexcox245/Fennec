@@ -4,9 +4,9 @@ import SwiftUI
 /// The popover's live strip: the last thirty seconds of speaker trouble,
 /// scrolling continuously while it is on screen.
 ///
-/// The line plots the one quantity the engine actually compares — how many
+/// The line plots the one quantity the engine actually compares (how many
 /// overload signals fall inside the configured detection window, at every
-/// instant — so the dashed threshold rule is the literal repair trigger, not
+/// instant), so the dashed threshold rule is the literal repair trigger, not
 /// an illustration of it. Playback stalls (clean IO stops, the fault Fennec
 /// cannot repair) sit along the baseline as triangles: identity carried by
 /// shape and the legend, never by color alone. Nothing here animates for
@@ -20,7 +20,7 @@ struct SignalGraphView: View {
     /// Whether the hosting window is actually on screen. `MenuBarExtra`
     /// keeps its hosting view alive after the popover closes, and a
     /// display-driven `TimelineView` in a live-but-invisible window renders
-    /// forever — measured at a third of a core, in an app whose brand is
+    /// forever, measured at a third of a core, in an app whose brand is
     /// stillness. The occlusion probe below is the ground truth the view
     /// hierarchy cannot lie about.
     @State private var isOnScreen = false
@@ -157,7 +157,7 @@ struct SignalGraphView: View {
     /// The proof-of-life strip under the time axis: painted for every second
     /// the output device was actually running IO, blank where it was not. A
     /// break in the ribbon while music was supposed to be playing *is* the
-    /// dropout — the graph agreeing with the user's ears. Drawn as its own
+    /// dropout: the graph agreeing with the user's ears. Drawn as its own
     /// strip rather than a series so the count axis stays a count axis.
     private func activityRibbon(at now: Date) -> some View {
         let start = now.addingTimeInterval(-Self.span)
@@ -229,7 +229,7 @@ struct SignalGraphView: View {
     }
 }
 
-/// Reports whether the view's window is genuinely on screen — attached,
+/// Reports whether the view's window is genuinely on screen: attached,
 /// visible, and not fully occluded. SwiftUI's own appearance callbacks are
 /// not that: `MenuBarExtra` keeps the popover's hosting view alive after it
 /// closes, so `onAppear`/`onDisappear` cannot be trusted to bracket

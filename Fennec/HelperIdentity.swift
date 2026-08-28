@@ -6,7 +6,7 @@ import Foundation
 /// can do, but it describes the helper in *this* bundle, not the one macOS
 /// has already launched. After an in-place update, the root process may still
 /// be the previous binary, and `ping` used to reply with a sentence that had
-/// no version in it — so the app's entire vocabulary for that situation was
+/// no version in it, so the app's entire vocabulary for that situation was
 /// "Enabled, not responding".
 ///
 /// The fix needs no protocol change: `ping` already returns a `String`, so it
@@ -23,7 +23,7 @@ struct HelperIdentity: Equatable, Sendable {
         var fields: [String: String] = [:]
         // `path=` is last and is taken as the remainder: the reply is not
         // quoted, so a helper under "/Volumes/Work Drive/…" used to report
-        // `path=/Volumes/Work` — a nonexistent path printed as fact in the one
+        // `path=/Volumes/Work`: a nonexistent path printed as fact in the one
         // panel whose whole purpose is telling the truth about what runs as
         // root. `euid` and `build` still parsed, so the raw fallback never
         // fired either.

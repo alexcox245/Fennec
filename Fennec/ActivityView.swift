@@ -5,7 +5,7 @@ import SwiftUI
 /// Deliberately not a sortable table with filters and a CSV export. Every
 /// version of that is a window a person opens once, on install day, to find
 /// it empty. This is a receipt book: what happened, when, on what, and
-/// whether it worked — in the same words the notification used, because they
+/// whether it worked, in the same words the notification used, because they
 /// come from the same place.
 struct ActivityView: View {
     @ObservedObject var model: AppModel

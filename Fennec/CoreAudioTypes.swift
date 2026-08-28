@@ -67,9 +67,9 @@ struct AudioProcessSnapshot: Identifiable, Equatable, Sendable {
 
 /// Where a failure signal was observed.
 ///
-/// `listener` is the in-process Core Audio property listener — it hears an
+/// `listener` is the in-process Core Audio property listener: it hears an
 /// overload only when *this* process's IO cycle misses a deadline.
-/// `systemLog` is `coreaudiod`'s own overload record in the unified log — it
+/// `systemLog` is `coreaudiod`'s own overload record in the unified log: it
 /// hears overloads from every client on the machine, at the cost of polling.
 enum AudioSignalSource: String, Codable, Sendable {
     case listener
@@ -96,7 +96,7 @@ struct AudioSignalBatch: Equatable, Sendable {
     var source: AudioSignalSource = .listener
     /// The overloads' true timestamps, when the witness knows them. The
     /// listener path drains counters every 250 ms and does not; the log path
-    /// polls tens of seconds apart and does — and without these, a detection
+    /// polls tens of seconds apart and does. Without these, a detection
     /// window narrower than the poll interval could never see two signals.
     var overloadDates: [Date]?
 

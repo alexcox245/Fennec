@@ -3,7 +3,7 @@ import Foundation
 /// The sign on the wall of the workshop.
 ///
 /// A background utility that works is indistinguishable from one that does
-/// nothing, and the honest fix for that is not a dashboard — it is a single
+/// nothing, and the honest fix for that is not a dashboard; it is a single
 /// number that means something. This is the industrial safety sign, kept the
 /// way a real one is kept: it counts up while nothing goes wrong, and on the
 /// day something does it reads **0**, with no softening and no apology.
@@ -37,7 +37,7 @@ struct DaysWithoutIncident: Equatable, Sendable {
         "\(days) \(days == 1 ? "day" : "days") without incident. \(caption)"
     }
 
-    /// An incident is a repair Fennec actually had to perform — one that held,
+    /// An incident is a repair Fennec actually had to perform: one that held,
     /// one that did not, or one that failed. A manual repair counts too: the
     /// user only pressed the button because something was wrong.
     static func make(
@@ -50,7 +50,7 @@ struct DaysWithoutIncident: Equatable, Sendable {
 
         // The rehearsal first run asks for is not an incident: nothing was
         // wrong, and this type's own justification for counting manual repairs
-        // — "the user only pressed the button because something was wrong" —
+        // ("the user only pressed the button because something was wrong")
         // is precisely untrue of it.
         let records = records.filter { $0.trigger != .rehearsal }
 

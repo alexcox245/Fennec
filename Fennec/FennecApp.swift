@@ -22,7 +22,7 @@ struct FennecApp: App {
 ///
 /// An accessory app shows no menu bar, so for most of Fennec's life none of
 /// this is on screen. It appears the moment `WindowPresenter` flips the
-/// activation policy for a real window — which is exactly when a user has
+/// activation policy for a real window, which is exactly when a user has
 /// something in front of them to type ⌘W, ⌘Q, ⌘, or ⌘R at.
 struct FennecCommands: Commands {
     @ObservedObject var model: AppModel

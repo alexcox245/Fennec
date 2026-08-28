@@ -3,7 +3,7 @@ import Foundation
 /// The helper's own rate limiter, phrased so both sides agree.
 ///
 /// `HelperService` enforces a 20-second floor between restarts, independently
-/// of anything the app asks for, and reports it as `success == false` — which
+/// of anything the app asks for, and reports it as `success == false`, which
 /// at the XPC layer is indistinguishable from a real failure. Unmarked, the
 /// most predictable thing a person does after a manual repair ("did that
 /// help? let me press it again") produced a red *Repair failed* receipt and a

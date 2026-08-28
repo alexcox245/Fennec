@@ -25,7 +25,7 @@ enum DetectionSensitivity: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    /// What the user actually hears under this setting — the honest version.
+    /// What the user actually hears under this setting: the honest version.
     var experience: String {
         switch self {
         case .conservative: return "You hear a few seconds of crackle."

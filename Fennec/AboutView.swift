@@ -10,7 +10,7 @@ import SwiftUI
 ///
 /// 1. What can it do to my Mac? (all three privileged paths, verbatim)
 /// 2. What is *actually* running as root right now? (the helper's own build
-///    and path, read back over XPC — because after an in-place update the app
+///    and path, read back over XPC, because after an in-place update the app
 ///    and the daemon can disagree)
 /// 3. Can I check the code matches the binary? (the source manifest, which is
 ///    the strongest thing this repo has and was mentioned nowhere a user
@@ -181,7 +181,7 @@ struct AboutView: View {
         VStack(alignment: .leading, spacing: 10) {
             sectionTitle("Remove Fennec", symbol: "trash")
             // Concatenated strings are not literals, so SwiftUI will not parse
-            // markdown in them — asterisks would render as asterisks.
+            // markdown in them; asterisks would render as asterisks.
             Text("Dragging Fennec to the Trash leaves the root helper registered with macOS. "
                  + "This removes it, along with everything else Fennec put on your Mac.")
                 .font(.callout)

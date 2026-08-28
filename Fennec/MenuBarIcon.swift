@@ -26,13 +26,13 @@ enum MenuBarIconState: String, CaseIterable, Sendable {
 /// The fennec, drawn small.
 ///
 /// A menu bar is a crowded place and the stock `waveform` symbol makes Fennec
-/// indistinguishable from every other audio utility on the strip — which is
+/// indistinguishable from every other audio utility on the strip, which is
 /// both a branding failure and a usability one, because the user cannot find
 /// their own app. This draws the one silhouette that is unmistakably this
 /// product: two enormous ears over a small pointed face.
 ///
 /// Everything here follows the icon's rules. Hard-edged vector, one confident
-/// shape, cropped confidently — the ears run to the very top of the box. It is
+/// shape, cropped confidently: the ears run to the very top of the box. It is
 /// a **template** image, so macOS owns the colour: it inverts correctly in a
 /// dark menu bar, in light mode, when the menu is highlighted, and under
 /// Increase Contrast. Nothing animates, because the desert does not animate.
@@ -54,7 +54,7 @@ enum MenuBarIcon {
     private static var cache: [CacheKey: NSImage] = [:]
 
     /// `size` exists so the first-run window can show the *actual* mark at a
-    /// legible size rather than a description of it — the glyph is drawn, not
+    /// legible size rather than a description of it: the glyph is drawn, not
     /// scaled, so it stays crisp at any size.
     static func image(for state: MenuBarIconState, size: NSSize = MenuBarIcon.size) -> NSImage {
         let key = CacheKey(state: state, width: size.width, height: size.height)
@@ -90,7 +90,7 @@ enum MenuBarIcon {
             case .repairing:
                 // The one moment audio actually drops out system-wide used to
                 // be pixel-identical to resting; only VoiceOver could tell.
-                // A knocked-out centre, not motion — the desert does not
+                // A knocked-out centre, not motion: the desert does not
                 // animate, but it can be missing a piece.
                 NSGraphicsContext.current?.compositingOperation = .clear
                 NSBezierPath(ovalIn: CGRect(x: 8.6, y: 4.6, width: 6.8, height: 6.8)).fill()
@@ -116,7 +116,7 @@ enum MenuBarIcon {
     /// **out** and then come back **in** to a shoulder before the ear starts.
     /// Without that pinch the ears merge into the head and the whole glyph
     /// collapses into a tulip. With it you get the silhouette everyone
-    /// recognises — shoulder, ear, notch, ear, shoulder.
+    /// recognises: shoulder, ear, notch, ear, shoulder.
     ///
     /// The proportions are the point: the ears run from y≈11 to y≈23 while the
     /// head is only 10 units tall, because a fennec's ears are oversized
@@ -154,8 +154,8 @@ enum MenuBarIcon {
     }
 
     /// The standard macOS "off" treatment: one diagonal cut through the glyph,
-    /// drawn twice — once wide in `.clear` to carve a gap, once narrow in the
-    /// template colour — so it stays legible against the silhouette.
+    /// drawn twice (once wide in `.clear` to carve a gap, once narrow in the
+    /// template colour) so it stays legible against the silhouette.
     private nonisolated static func slash(width: CGFloat) -> NSBezierPath {
         let path = NSBezierPath()
         path.move(to: CGPoint(x: 3.2, y: 3.4))
@@ -165,7 +165,7 @@ enum MenuBarIcon {
         return path
     }
 
-    /// A dot off the right cheek. Small, static, and never flashing — it says
+    /// A dot off the right cheek. Small, static, and never flashing: it says
     /// "look at me when you get a chance", not "drop everything".
     private nonisolated static let badgeRect = CGRect(x: 18.4, y: 1.0, width: 4.6, height: 4.6)
 }

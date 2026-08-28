@@ -2,7 +2,7 @@
 # Regenerates Docs/SOURCE_MANIFEST.sha256 from every file git tracks, plus any
 # new files staged for addition. Run after editing tracked sources.
 #
-# Note: never use `path` as a variable name in this repo's zsh scripts — zsh
+# Note: never use `path` as a variable name in this repo's zsh scripts; zsh
 # ties it to $PATH and every later command dies with "command not found".
 set -euo pipefail
 

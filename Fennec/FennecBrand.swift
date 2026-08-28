@@ -5,8 +5,8 @@ import SwiftUI
 /// Semantics (see AGENTS.md §7): **sky** is healthy/listening and the primary
 /// action tint, **dune** is audio/warning, **sand** and **cream** are surfaces
 /// and mascot framing only, **ink** is text and hardware chrome. **Gold** is
-/// the aviator frames — the single warm-metal note in an otherwise flat,
-/// matte palette — and is reserved for one thing: a repair that worked.
+/// the aviator frames (the single warm-metal note in an otherwise flat,
+/// matte palette) and is reserved for one thing: a repair that worked.
 enum FennecBrand {
     static let sky = Color(red: 0.18, green: 0.51, blue: 0.80)
     static let dune = Color(red: 0.96, green: 0.47, blue: 0.12)

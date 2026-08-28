@@ -47,7 +47,7 @@ There is one, and it is disclosed in the app rather than buried here. When the
 helper is **not** installed, Fennec can run the same command through a standard
 macOS administrator prompt (`osascript … with administrator privileges`). It
 always asks first and always shows the literal command before macOS asks for a
-password. It will never take this path on its own after an XPC failure — that
+password. It will never take this path on its own after an XPC failure. That
 behaviour existed, and was removed, because an unexplained admin-password
 dialog is the visual signature of credential phishing.
 

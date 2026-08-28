@@ -5,7 +5,7 @@ under heavy local load and stays broken until `coreaudiod` is restarted.
 
 Fennec watches the current output device for missed real-time deadlines. When
 the fault is confirmed and its safety checks pass, it restarts Core Audio
-through a tightly scoped root helper — leaving every application open — and
+through a tightly scoped root helper, leaving every application open, and
 tells you what it did, in numbers.
 
 <img src="Brand/Fennec-AppIcon-Master.png" width="180" alt="Fennec app icon">
@@ -36,12 +36,12 @@ the right answer.
   `kAudioDevicePropertyIOStoppedAbnormally`.
 - Watches `coreaudiod`'s own overload record in the unified log as a second,
   independent witness. The overload notification only fires in the process
-  whose IO cycle missed its deadline — when the misbehaving client is some
+  whose IO cycle missed its deadline, so when the misbehaving client is some
   other app or daemon, the listener hears nothing while the speakers crackle.
   `coreaudiod` logs every overload it detects, for every client, and Fennec
   polls that record only while audio is actually playing.
 - Tells stalling apart from crackling. Playback that keeps stopping and
-  starting on a starved Mac — heavy load, memory pressure — is not a Core
+  starting on a starved Mac (heavy load, memory pressure) is not a Core
   Audio fault, and restarting Core Audio will not fix it. When Fennec sees
   that pattern (clean IO stops while the system is busy) it says so, once,
   instead of staying silent or offering the wrong cure.
@@ -49,20 +49,20 @@ the right answer.
   of overload signals against the exact repair threshold, with playback
   stalls marked along the baseline. It costs nothing while the popover is
   closed.
-- Does **no** work in the real-time audio callback — only relaxed atomic
+- Does **no** work in the real-time audio callback: only relaxed atomic
   increments on preallocated storage. Everything else happens after a timer
   drains those counters onto a normal queue.
 - Waits for the fault to confirm itself. One overload is usually a harmless
   blip; two in a row is the failure that stays broken. You hear about a second
-  of crackle, then it is gone — up to a couple of minutes when only the log
+  of crackle, then it is gone; up to a couple of minutes when only the log
   path can see the fault, because polling the log costs CPU and Fennec's
   whole budget is under one percent of a core.
 - Restarts Core Audio through a root helper that can do exactly one thing.
 - Rebuilds the helper's registration itself when macOS reports it enabled but
-  it stops answering — the state a replaced or moved app leaves behind. No
+  it stops answering, the state a replaced or moved app leaves behind. No
   password is involved; the attempt and its outcome go in the event log.
 - Verifies the repair. A restart is *provisional* until the fault has failed to
-  return for a minute — Fennec does not call it fixed before then.
+  return for a minute; Fennec does not call it fixed before then.
 - Gives up when it should. Three restarts that did not hold means restarting is
   not the cure, so Fennec stands down for an hour and says so.
 - Stays quiet after wake, screen unlock, and fast-user-switch, because Core
@@ -78,7 +78,7 @@ the right answer.
 low-overhead system-level signal for this fault, but it is a proxy:
 
 - It cannot prove every overload was audible.
-- It cannot recognise a Mac that was already broken before Fennec started —
+- It cannot recognise a Mac that was already broken before Fennec started;
   use **Repair Audio Now** for that.
 - The log witness reads the system log store, which requires an administrator
   account and keys on message text Apple can reword in any macOS release. If
@@ -127,7 +127,7 @@ verify Fennec is free of malware."* Right-click → **Open**, or
 
 Launching Fennec opens a window that states, before asking for anything:
 
-- the complete privileged surface — both XPC methods **and** the administrator
+- the complete privileged surface: both XPC methods **and** the administrator
   prompt path;
 - what a repair costs, in seconds;
 - that there is no network code;
@@ -148,7 +148,7 @@ actually hear.
 
 The helper exposes exactly two XPC methods and runs one command, fixed at
 compile time. Both ends verify the other's Team ID and bundle identifier.
-There is a second privileged path — a standard administrator prompt, used only
+There is a second privileged path: a standard administrator prompt, used only
 when the helper is not installed and only after Fennec has shown you the
 command. See [`SECURITY.md`](SECURITY.md) for the full boundary and for how to
 report a vulnerability.
@@ -181,7 +181,7 @@ fallback.
 xcodebuild -project Fennec.xcodeproj -scheme Fennec \
   -configuration Release -destination 'platform=macOS' build
 
-# Test — 187 unit tests, standalone bundle, no app launch
+# Test: the unit suite, standalone bundle, no app launch
 xcodebuild -project Fennec.xcodeproj -scheme Fennec \
   -configuration Debug -destination 'platform=macOS' test
 
@@ -194,7 +194,7 @@ zsh Scripts/build-release.sh
 
 ## Validation status
 
-The full Debug and Release matrix builds for both targets, 187 unit tests
+The full Debug and Release matrix builds for both targets, 244 unit tests
 pass, `audit-source.sh` passes including the source-manifest check, and
 `build-release.sh` verifies the bundle layout and code signature.
 
@@ -219,7 +219,7 @@ Brand/                the master icon art and what it means
 AGENTS.md             ground rules, known traps, brand direction, task ledger
 ```
 
-`AGENTS.md` is the entry point for anyone — human or otherwise — working on
+`AGENTS.md` is the entry point for anyone, human or otherwise, working on
 this repository. Read it first.
 
 ## Apple references
