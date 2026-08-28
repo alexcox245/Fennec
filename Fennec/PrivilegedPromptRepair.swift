@@ -1,6 +1,6 @@
 import Foundation
 
-/// The user dismissed the administrator prompt. Not a failure — a decision.
+/// The user dismissed the administrator prompt. Not a failure: a decision.
 struct RepairCancelled: LocalizedError {
     var errorDescription: String? { "Administrator authorization was cancelled." }
 }
@@ -53,8 +53,8 @@ enum PrivilegedPromptRepair {
 
                         // -128 is errAEEventUserCancelled: the user pressed
                         // Cancel. Recording that as a permanent red failure
-                        // with an alarm sound — and resetting the days-without-
-                        // incident sign — punishes someone for declining.
+                        // with an alarm sound (and resetting the days-without-
+                        // incident sign) punishes someone for declining.
                         if message.contains("-128") || message.localizedCaseInsensitiveContains("User canceled") {
                             throw RepairCancelled()
                         }

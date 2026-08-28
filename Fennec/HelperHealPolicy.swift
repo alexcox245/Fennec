@@ -3,8 +3,8 @@ import Foundation
 /// Whether Fennec may rebuild the helper's registration on its own, right now.
 ///
 /// The state this exists for is the one the UI calls "Enabled, not
-/// responding": macOS still holds a registration for the daemon — the user's
-/// approval is on record — but launchd cannot produce a helper that answers.
+/// responding": macOS still holds a registration for the daemon (the user's
+/// approval is on record) but launchd cannot produce a helper that answers.
 /// A registration binds to the bundle path and signature that made it, so
 /// replacing the build or moving the app leaves launchd pointing at a bundle
 /// that is gone. Observed on a live machine as 9,736 spawn attempts and then
@@ -19,7 +19,7 @@ import Foundation
 ///   in those states would turn their decision into ours.
 /// - Never when the helper is answering. There is nothing to heal.
 /// - Automatically, at most once per `minimumInterval`. If a rebuild did not
-///   bring the helper back, rebuilding again in a loop will not either — it
+///   bring the helper back, rebuilding again in a loop will not either; it
 ///   just flaps the Background Task Management record.
 /// - Always for a user-initiated attempt. The interval exists to stop Fennec
 ///   from flapping, not to make a button do nothing.

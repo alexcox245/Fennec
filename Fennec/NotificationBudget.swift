@@ -4,14 +4,14 @@ import Foundation
 ///
 /// The failure this exists to prevent is specific and was shipping: a Mac
 /// under sustained load emits overload signals in bursts, and a Fennec that is
-/// detecting but not repairing — auto-repair off, helper not enabled yet,
-/// Bluetooth output, a live microphone — had nothing stopping it from posting
+/// detecting but not repairing (auto-repair off, helper not enabled yet,
+/// Bluetooth output, a live microphone) had nothing stopping it from posting
 /// a sound-playing, two-button banner for every one of them. An app whose
 /// whole position is desert stillness was, out of the box, the noisiest thing
 /// on the machine.
 ///
 /// So: detections are budgeted, repairs are not. A repair is rare by
-/// construction — it is rate-limited by the cooldown, by the helper's own
+/// construction: it is rate-limited by the cooldown, by the helper's own
 /// 20-second floor, and by the fact that it only happens when something
 /// actually broke. A detection Fennec declined to act on can happen every few
 /// seconds for an hour.

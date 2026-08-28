@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The confirmation card, as a sheet, for the app's real windows.
 ///
-/// The popover cannot use a sheet — or an alert — because presenting either
+/// The popover cannot use a sheet (or an alert) because presenting either
 /// from a `MenuBarExtra(.window)` scene dismisses the panel that is showing
 /// it. Windows have no such problem, so they get a sheet; both render the
 /// same `PendingConfirmation`, so the two can never say different things

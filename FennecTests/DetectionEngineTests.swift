@@ -11,7 +11,7 @@ final class DetectionEngineTests: XCTestCase {
         engine = DetectionEngine()
     }
 
-    // MARK: Balanced — "let it crackle twice, then fix it"
+    // MARK: Balanced: "let it crackle twice, then fix it"
 
     func testBalancedIgnoresASingleOverload() {
         let decision = engine.ingest(

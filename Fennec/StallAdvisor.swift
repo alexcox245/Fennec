@@ -6,7 +6,7 @@ import Foundation
 /// This is a different animal from the crackle fault. Diagnosed live: under a
 /// load average of 17–25 with swap nearly full, Spotify's process sat in
 /// uninterruptible page-in waits, its buffer drained, and `coreaudiod` logged
-/// a *clean* `StopIO` → `StartIO` pair every 30–90 seconds — zero overloads.
+/// a *clean* `StopIO` → `StartIO` pair every 30–90 seconds, with zero overloads.
 /// Nothing is wrong with Core Audio, so Fennec's one repair is the wrong
 /// tool, and the honest move is to say so once instead of staying silent
 /// while the user wonders why the fox hears nothing.
@@ -37,7 +37,7 @@ enum StallAdvisor {
     /// `kern.memorystatus_vm_pressure_level`: 1 normal, 2 warning, 4 critical.
     static let memoryPressureFloor = 2
 
-    /// The pattern alone is not enough — a person toggling pause three times
+    /// The pattern alone is not enough; a person toggling pause three times
     /// produces the same stops. The advisory requires the *cause* to be
     /// visible too: a starved machine.
     static func assess(

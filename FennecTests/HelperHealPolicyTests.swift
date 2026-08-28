@@ -1,7 +1,7 @@
 import XCTest
 
 /// The self-heal must fire exactly when a registration is broken and the user
-/// has already said yes — and never anywhere else. Getting the guard wrong in
+/// has already said yes, and never anywhere else. Getting the guard wrong in
 /// one direction re-registers a daemon the user disabled on purpose; in the
 /// other, it leaves "Enabled, not responding" as a password prompt at 2am.
 final class HelperHealPolicyTests: XCTestCase {

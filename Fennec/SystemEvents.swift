@@ -7,7 +7,7 @@ import Foundation
 /// Core Audio renegotiates the whole output path when a Mac wakes, when the
 /// screen unlocks, and when a fast-user-switch hands the console over. Every
 /// one of those reliably produces exactly the signals Fennec was built to
-/// treat as a failure — so without these windows, the first thing Fennec does
+/// treat as a failure, so without these windows, the first thing Fennec does
 /// when a laptop lid opens is restart the audio daemon. Every day. For every
 /// laptop user.
 ///
@@ -31,7 +31,7 @@ enum SystemEvent: String, CaseIterable, Sendable {
     ///
     /// Wake gets the longest window because it is the one that renegotiates
     /// sample rate, re-enumerates devices, and restarts every audio client at
-    /// once — often over several seconds.
+    /// once, often over several seconds.
     var quietSeconds: TimeInterval {
         switch self {
         case .launch: return 8
@@ -59,7 +59,7 @@ enum SystemEvent: String, CaseIterable, Sendable {
 /// Screen lock and unlock are only published on the *distributed* notification
 /// centre, under names Apple has never formally documented but has shipped
 /// unchanged for well over a decade. If they ever stop arriving, Fennec loses
-/// a quiet window and gains a false positive — it does not break.
+/// a quiet window and gains a false positive; it does not break.
 @MainActor
 final class SystemEventObserver {
     var onEvent: ((SystemEvent) -> Void)?
@@ -109,7 +109,7 @@ final class SystemEventObserver {
 /// Restarting `coreaudiod` is system-wide: it cuts audio for every logged-in
 /// user, every fast-user-switching session, and anything recording in another
 /// account. But `RecoverySafetyChecker` can only enumerate *this* user's audio
-/// processes — so on a Mac with a second account left logged in, Fennec could
+/// processes, so on a Mac with a second account left logged in, Fennec could
 /// cut someone else's call and truthfully report that the machine was clear.
 ///
 /// Automatic repair is therefore gated on being the console session. Manual

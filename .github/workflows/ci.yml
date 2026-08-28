@@ -3,7 +3,7 @@ name: CI
 # Everything on the roadmap adds logic between a signal and a root action.
 # None of it can be exercised end to end without a real Core Audio fault, so
 # the least this repository can do is guarantee that the parts which *are*
-# checkable stay checked — without anyone having to remember.
+# checkable stay checked, without anyone having to remember.
 on:
   push:
     branches: [main]

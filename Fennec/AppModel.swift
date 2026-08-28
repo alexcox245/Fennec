@@ -47,7 +47,7 @@ final class AppModel: ObservableObject {
     /// The helper's rate limiter, phrased for the user. Transient.
     @Published private(set) var throttleNotice: String?
     /// True between pressing Repair Audio Now and the safety scan returning.
-    /// Under heavy load — which is Fennec's own premise — that gap is long
+    /// Under heavy load (which is Fennec's own premise) that gap is long
     /// enough that the button looked untouched.
     @Published private(set) var isPreparingRepair = false
 
@@ -139,7 +139,7 @@ final class AppModel: ObservableObject {
         }
 
         // The delegate needs the model before any window can be opened, and
-        // the popover's onAppear is too late — it does not run until someone
+        // the popover's onAppear is too late: it does not run until someone
         // clicks the menu-bar item, which is exactly the thing a user who
         // cannot find the app has not done.
         AppDelegate.model = self
@@ -152,8 +152,8 @@ final class AppModel: ObservableObject {
         schedulePauseExpiry()
 
         // Dismissing the first-run window counts, however it is dismissed.
-        // Before this, `completeFirstRun()` had exactly one caller — the Done
-        // button — so closing it with the red button or ⌘W (the gestures macOS
+        // Before this, `completeFirstRun()` had exactly one caller, the Done
+        // button, so closing it with the red button or ⌘W (the gestures macOS
         // makes most available) meant a 620×720 window and a Dock icon shoved
         // in front of the user at every login, forever.
         WindowPresenter.shared.onWindowClosed = { [weak self] id in
@@ -177,8 +177,8 @@ final class AppModel: ObservableObject {
         // renegotiation a wake does.
         beQuiet(for: .launch, log: false)
 
-        // A registration that died while Fennec was not running — a replaced
-        // build, a moved bundle — gets rebuilt at launch, not discovered by
+        // A registration that died while Fennec was not running (a replaced
+        // build, a moved bundle) gets rebuilt at launch, not discovered by
         // the first 2am detection. Delayed so `HelperManager.init`'s
         // reachability probe has landed first and a helper that is merely
         // slow to answer is never torn down.
@@ -219,7 +219,7 @@ final class AppModel: ObservableObject {
 
     /// The menu bar is Fennec's only persistent channel. A banner auto-
     /// dismisses and a sound played through a broken audio system was never an
-    /// escalation at all — so anything that needs the user leaves a visible
+    /// escalation at all, so anything that needs the user leaves a visible
     /// mark here until they look.
     var menuBarIconState: MenuBarIconState {
         if isRepairing { return .repairing }
@@ -328,7 +328,7 @@ final class AppModel: ObservableObject {
         settings.hasCompletedFirstRun = true
     }
 
-    /// Reopens first run on demand — the disclosure it carries is the answer
+    /// Reopens first run on demand: the disclosure it carries is the answer
     /// to "what can this thing actually do", and that question does not stop
     /// being asked after day one.
     func showWelcomeWindow() {
@@ -428,7 +428,7 @@ final class AppModel: ObservableObject {
         do {
             let destination = try InstallLocation.moveToApplications()
             let configuration = NSWorkspace.OpenConfiguration()
-            // The same bundle id is already running — this process — so the
+            // The same bundle id is already running (this process), so the
             // relaunch must be allowed to be a second instance for the
             // moment the two overlap.
             configuration.createsNewApplicationInstance = true
@@ -468,7 +468,7 @@ final class AppModel: ObservableObject {
     func performSetupAction(for step: SetupStep) {
         switch step.kind {
         case .install:
-            // The button says Move to Applications, so it moves — for a
+            // The button says Move to Applications, so it moves, for a
             // development build too: the step is optional there, and a
             // developer clicking it anyway has decided.
             if case .applications = installLocation { break }
@@ -493,7 +493,7 @@ final class AppModel: ObservableObject {
         case .notifications:
             // macOS gives an app exactly one authorization prompt, ever. It
             // used to be spent by `init`, one run-loop turn ahead of the
-            // welcome window — so a user who declined in the first seconds
+            // welcome window, so a user who declined in the first seconds
             // could never be asked again. Now the button spends it.
             if notificationController.authorizationChecked && !notificationController.isAuthorized {
                 notificationController.openSystemSettings()
@@ -602,7 +602,7 @@ final class AppModel: ObservableObject {
     }
 
     /// The one place that decides *which* privileged path a manual repair
-    /// takes. If the helper can do it, it does — silently and without a
+    /// takes. If the helper can do it, it does: silently and without a
     /// password. If it cannot, Fennec asks before summoning an admin prompt.
     /// The first-run window's own test repair.
     ///
@@ -619,7 +619,7 @@ final class AppModel: ObservableObject {
 
     /// One attempt to bring an enabled-but-silent helper back without the
     /// user: rebuild the registration from the running bundle, no password.
-    /// Every attempt and its outcome goes in the record — a daemon
+    /// Every attempt and its outcome goes in the record: a daemon
     /// registration being rewritten is exactly the kind of thing the event
     /// log exists to admit to. Returns whether the helper answers now.
     private func healSilentHelper(userInitiated: Bool) async -> Bool {
@@ -664,8 +664,8 @@ final class AppModel: ObservableObject {
         let reason: String
         switch helperManager.state {
         case .enabled:
-            reason = "Fennec's repair helper is installed but is not answering — rebuilding its "
-                + "registration did not bring it back — so it cannot restart Core Audio on its own."
+            reason = "Fennec's repair helper is installed but is not answering (rebuilding its "
+                + "registration did not bring it back), so it cannot restart Core Audio on its own."
         case .awaitingApproval:
             reason = "macOS is waiting for you to allow Fennec's repair helper under "
                 + "Login Items & Extensions, so it cannot restart Core Audio on its own."
@@ -841,9 +841,9 @@ final class AppModel: ObservableObject {
 
         // The cooldown sits above every remaining gate on purpose. It used to
         // sit below the helper check and key off the last *successful* repair,
-        // which meant a machine that had never repaired had no cooldown at all
-        // — so a fresh install, helper not yet enabled, answered every signal
-        // burst with another banner.
+        // which meant a machine that had never repaired had no cooldown at
+        // all, so a fresh install, helper not yet enabled, answered every
+        // signal burst with another banner.
         if let lastRepairAttemptDate {
             let elapsed = Date().timeIntervalSince(lastRepairAttemptDate)
             if elapsed < settings.cooldownSeconds {
@@ -957,7 +957,7 @@ final class AppModel: ObservableObject {
             try? await Task.sleep(for: .milliseconds(1200))
             // Off the main actor on purpose. Rebuilding the listener graph is
             // ~25 synchronous HAL round-trips, scheduled 1.2 s after
-            // coreaudiod was killed — inside the window where the replacement
+            // coreaudiod was killed, inside the window where the replacement
             // is still publishing its object graph and HAL calls block. On the
             // main thread that is a beachball at the exact moment the user is
             // watching to see whether the repair worked.
@@ -1026,7 +1026,7 @@ final class AppModel: ObservableObject {
 
     // MARK: Verification
 
-    /// Starts the quiet window. Aviator gold is not spent here — the brand
+    /// Starts the quiet window. Aviator gold is not spent here: the brand
     /// reserves it for a repair that *worked*, and at this instant the only
     /// established fact is that a new `coreaudiod` exists.
     private func beginVerification(of repair: RepairRecord) {
@@ -1125,7 +1125,7 @@ final class AppModel: ObservableObject {
     /// Errors from the monitor's own queue.
     ///
     /// The dangerous case is a failed listener rebuild after a Core Audio
-    /// service restart — which is exactly what happens right after Fennec
+    /// service restart, which is exactly what happens right after Fennec
     /// restarts `coreaudiod`. `rebuildListenersLocked()` removes every
     /// registration on the way out, so the monitor keeps its timer and loses
     /// its ears. This used to leave the popover showing a blue dot and the
@@ -1160,8 +1160,8 @@ final class AppModel: ObservableObject {
     }
 
     /// Activity samples arrive once a second while audio plays, and every
-    /// `@Published` mutation re-evaluates two live view graphs — the closed
-    /// popover's and the menu-bar item's — which sampled at about two
+    /// `@Published` mutation re-evaluates two live view graphs (the closed
+    /// popover's and the menu-bar item's), which sampled at about two
     /// percent of a core for data nobody was looking at. Off screen, the
     /// samples pool in a plain array and publish once per pool; on screen,
     /// they publish per second, because that is when the ribbon's leading
@@ -1216,7 +1216,7 @@ final class AppModel: ObservableObject {
 
     /// Overload events that `coreaudiod` recorded in the unified log. These
     /// are the overloads the property listener cannot hear: the ones that
-    /// happened in some other process's IO cycle — which, in the field, is
+    /// happened in some other process's IO cycle, which, in the field, is
     /// where the audible fault actually lives. They enter the same pipeline
     /// as listener signals, so every suppression window, threshold, and
     /// safety gate applies to both witnesses identically.

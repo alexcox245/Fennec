@@ -163,7 +163,7 @@ struct HelperClient: Sendable {
 final class HelperManager: ObservableObject {
     @Published private(set) var state: RepairHelperState = .notConfigured
     @Published private(set) var lastError: String?
-    /// True while a `ping` is in flight. Purely cosmetic — no repair gate
+    /// True while a `ping` is in flight. Purely cosmetic: no repair gate
     /// reads it, because a probe in progress is not a reason to refuse.
     @Published private(set) var isChecking = false
     /// Who answered the last `ping`. Shown in About so the disclosure
@@ -176,7 +176,7 @@ final class HelperManager: ObservableObject {
 
     var versionMismatch: String? { identity?.mismatch(againstAppBuild: appBuild) }
 
-    /// Whether macOS holds a registration for the daemon at all — which is a
+    /// Whether macOS holds a registration for the daemon at all, which is a
     /// different question from whether it is answering, and the one that
     /// matters when deciding whether removal has anything to remove.
     /// `.requiresApproval` is registered.
@@ -192,11 +192,11 @@ final class HelperManager: ObservableObject {
     /// process: observed live, `register()` issued right after `unregister()`
     /// bounced off Background Task Management's asynchronous teardown, the
     /// status read `.notRegistered`, and the app was left holding *less* than
-    /// it started with — a helper the user had approved, now not registered
+    /// it started with: a helper the user had approved, now not registered
     /// at all, with the consent guard (correctly) refusing to touch a
     /// not-registered daemon. Completing an interrupted rebuild is finishing
     /// the user's standing approval, not a new grant, so `refreshStatus` may
-    /// register when — and only when — this marker is set.
+    /// register when, and only when, this marker is set.
     private static let rebuildInFlightKey = "helperRegistrationRebuildInFlight"
 
     private var rebuildInFlight: Bool {
@@ -219,8 +219,8 @@ final class HelperManager: ObservableObject {
         case .enabled:
             // Do NOT publish `reachable: false` here. This method is the
             // `.task` of the popover and every window, so a fully configured
-            // Fennec rendered as unconfigured — auto-repair toggle disabled,
-            // an orange "Finish setup" card inserted mid-panel — for the
+            // Fennec rendered as unconfigured (auto-repair toggle disabled,
+            // an orange "Finish setup" card inserted mid-panel) for the
             // duration of every ping. Worse, a detection landing in that gap
             // hit `guard helperManager.state.isReachable` and was skipped as
             // "the helper is not enabled" while it was answering perfectly.
@@ -309,7 +309,7 @@ final class HelperManager: ObservableObject {
     ///
     /// A registration binds to the bundle path and signature that made it, so
     /// a replaced build or a moved app leaves launchd holding a record it can
-    /// no longer spawn — the state every prior version could only describe
+    /// no longer spawn: the state every prior version could only describe
     /// ("Enabled, not responding") and never fix. Unregistering and
     /// registering again from the *running* bundle rewrites the record. No
     /// password is involved at any point: these are the same unprivileged
@@ -344,14 +344,14 @@ final class HelperManager: ObservableObject {
             try service.register()
         } catch {
             // Approval may have been discarded along with the registration.
-            // That surfaces as `.requiresApproval` below — a Settings toggle,
+            // That surfaces as `.requiresApproval` below: a Settings toggle,
             // not a fault to alarm about here.
         }
 
         // Registration propagates through Background Task Management and smd
         // asynchronously. Observed live on this machine: BTM had already
         // recorded the item `[enabled, allowed]`, yet `status` still read
-        // `.notRegistered` for a beat — and one stale read here turned a
+        // `.notRegistered` for a beat, and one stale read here turned a
         // successful rebuild into "not enabled" with no daemon in launchd at
         // all. Poll briefly instead of trusting the first answer, and issue
         // one more `register()` mid-wait: a register that raced the previous
@@ -384,8 +384,8 @@ final class HelperManager: ObservableObject {
             state = .awaitingApproval
             return false
         default:
-            // Unresolved: the marker stays set, so the next status refresh —
-            // this run or the next launch — completes the rebuild instead of
+            // Unresolved: the marker stays set, so the next status refresh
+            // (this run or the next launch) completes the rebuild instead of
             // stranding the user's approval.
             refreshStatus(testReachability: true)
             return false

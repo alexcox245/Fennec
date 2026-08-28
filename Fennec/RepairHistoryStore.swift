@@ -2,7 +2,7 @@ import Foundation
 
 /// One completed repair attempt.
 ///
-/// `EventLogger` writes the raw stream — every signal, every skip, every
+/// `EventLogger` writes the raw stream: every signal, every skip, every
 /// device change. A `RepairRecord` is the part a person actually wants to
 /// read: Fennec restarted Core Audio, here is why, on what, and how long the
 /// gap in your audio was.
@@ -13,7 +13,7 @@ struct RepairRecord: Identifiable, Codable, Equatable, Sendable {
         /// The user pressed Repair Audio Now.
         case manual
         /// The test repair the first-run window asks the user to run. Listed
-        /// in Activity, but never counted as an incident — nothing was wrong.
+        /// in Activity, but never counted as an incident: nothing was wrong.
         case rehearsal
 
         var title: String {
@@ -28,7 +28,7 @@ struct RepairRecord: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     let date: Date
     let trigger: Trigger
-    /// `nil` for a manual repair — the user did not need a reason.
+    /// `nil` for a manual repair: the user did not need a reason.
     let signal: AudioSignalKind?
     let signalCount: Int
     /// Wall-clock span between the first and last signal that triggered this
@@ -127,7 +127,7 @@ struct RepairSummary: Equatable, Sendable {
         // excludes repairs that are only *provisionally* fine, so gold is
         // never spent on an unverified one.
         //
-        // Rehearsals — the test repair first run asks for — are excluded from
+        // Rehearsals (the test repair first run asks for) are excluded from
         // both. Nothing was wrong.
         let real = records.filter { $0.trigger != .rehearsal }
         let successes = real.filter { $0.outcome == .held || $0.outcome == .pending }
@@ -143,7 +143,7 @@ struct RepairSummary: Equatable, Sendable {
             .sorted { ($0.value, $1.key) > ($1.value, $0.key) }
             .first?.key
 
-        // Attempts, not held repairs — the labels say "attempts" so the two
+        // Attempts, not held repairs: the labels say "attempts" so the two
         // numbers in the Activity header cannot be read as one population.
         func count(within interval: TimeInterval) -> Int {
             let cutoff = now.addingTimeInterval(-interval)
@@ -240,7 +240,7 @@ final class RepairHistoryStore: ObservableObject {
     /// A repair left `.pending` by a quit is settled in the machine's favour.
     ///
     /// Fennec was not running to see whether the fault came back, so it cannot
-    /// know — but leaving it `.pending` forever would mean a repair performed
+    /// know, but leaving it `.pending` forever would mean a repair performed
     /// seconds before the user quit never counted at all. The benefit of the
     /// doubt is the honest reading, and it is stated here rather than hidden.
     private func resolveStalePendingRecords() {

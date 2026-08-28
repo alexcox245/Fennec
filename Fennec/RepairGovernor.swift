@@ -22,7 +22,7 @@ enum RepairOutcome: String, Codable, Sendable {
     /// `succeeded` is fixed at repair time; `outcome` is the axis that later
     /// becomes `.held` or `.returned`. Keying the receipt's accent off
     /// `succeeded` produced a gold seal directly above the headline
-    /// "Restarted, but the fault came back" — one card asserting two opposite
+    /// "Restarted, but the fault came back": one card asserting two opposite
     /// things, on the machine where the truth matters most.
     var symbolName: String {
         switch self {
@@ -36,8 +36,8 @@ enum RepairOutcome: String, Codable, Sendable {
 
 /// When to stop trying.
 ///
-/// On a Mac where the restart is not the cure — a failing cable, a marginal
-/// interface, a buffer size the machine cannot meet — Fennec's loop is:
+/// On a Mac where the restart is not the cure (a failing cable, a marginal
+/// interface, a buffer size the machine cannot meet), Fennec's loop is:
 /// detect, restart, claim success, wait out the cooldown, detect again.
 /// Forever. Every 45 seconds, silencing all audio each time. That is the
 /// single worst thing this product can do, and it is the *default*

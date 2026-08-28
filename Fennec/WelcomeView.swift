@@ -3,15 +3,15 @@ import SwiftUI
 
 /// First run.
 ///
-/// Before this window existed, double-clicking Fennec produced nothing at all
-/// — no window, no Dock icon, just one more glyph in a crowded menu bar. The
+/// Before this window existed, double-clicking Fennec produced nothing at
+/// all: no window, no Dock icon, just one more glyph in a crowded menu bar. The
 /// people who noticed deleted it; the people who did not were approving root
 /// access on faith.
 ///
 /// So this is deliberately not a welcome tour. It is a consent record. It
 /// states the complete privileged surface before asking for any of it, it
 /// costs the repair in plain seconds, and it ends with a real repair the user
-/// runs on purpose while nothing is at stake — because nobody who cares about
+/// runs on purpose while nothing is at stake, because nobody who cares about
 /// their audio will let a background process interrupt their output device
 /// without first hearing what that interruption sounds like on their own rig.
 ///
@@ -264,7 +264,7 @@ struct WelcomeView: View {
 
     /// Only the repair this window asked for. Reopening the window from the
     /// Help menu or the stand-down card used to show the newest record of any
-    /// kind — captioned "That is what an automatic repair will cost you."
+    /// kind, captioned "That is what an automatic repair will cost you."
     private var testRepair: RepairRecord? {
         guard let id = model.lastRepairID else { return nil }
         return history.records.first { $0.id == id }

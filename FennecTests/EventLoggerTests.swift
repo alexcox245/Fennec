@@ -1,6 +1,6 @@
 import XCTest
 
-/// The event log is Fennec's audit trail — the thing a user reads when they
+/// The event log is Fennec's audit trail: the thing a user reads when they
 /// want to know what a root helper did on their machine. It has to be
 /// append-only, one JSON object per line, and it has to rotate.
 final class EventLoggerTests: XCTestCase {

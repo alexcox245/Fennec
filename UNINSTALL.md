@@ -15,7 +15,7 @@ Fennec** and the same button.
 It unregisters the root helper, removes the login item, optionally deletes the
 event log and repair history, forgets Fennec's settings, moves the app to the
 Trash, and quits. If macOS refuses any step, Fennec names the step rather than
-reporting a generic failure — because "uninstall failed" tells you nothing you
+reporting a generic failure, because "uninstall failed" tells you nothing you
 can act on.
 
 ## If Fennec is already in the Trash

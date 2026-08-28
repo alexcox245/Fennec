@@ -1,7 +1,7 @@
 import XCTest
 
 /// `SMAppService` binds its registration to the app's bundle path, so a helper
-/// enabled from `~/Downloads` breaks the moment the app is moved — and the
+/// enabled from `~/Downloads` breaks the moment the app is moved, and the
 /// only symptom Fennec can show for that is "Enabled, not responding".
 final class InstallLocationTests: XCTestCase {
     private func classify(_ path: String) -> InstallLocation {

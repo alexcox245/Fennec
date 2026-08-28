@@ -8,7 +8,7 @@ import Foundation
 /// it converts an honest gap into a false claim.
 ///
 /// The specific trap it was written to avoid: every reasonable version of an
-/// About panel enumerates the XPC surface — `ping` and `restartCoreAudio` —
+/// About panel enumerates the XPC surface (`ping` and `restartCoreAudio`)
 /// and stops there. That is a true sentence engineered to mislead, because
 /// there is a **second** privileged path. When the helper is not enabled,
 /// Fennec asks macOS for an administrator password and runs the same command

@@ -1,7 +1,7 @@
 import XCTest
 
 /// The sign on the workshop wall. It counts up while nothing goes wrong and
-/// reads 0 on the day something does, with no softening — which only works if
+/// reads 0 on the day something does, with no softening, which only works if
 /// the arithmetic is calendar days and not elapsed hours.
 final class DaysWithoutIncidentTests: XCTestCase {
     private var calendar = Calendar(identifier: .gregorian)

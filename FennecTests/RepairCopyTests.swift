@@ -89,7 +89,7 @@ final class RepairCopyTests: XCTestCase {
         XCTAssertEqual(RepairCopy.cause(for: record), "2 crackle signals in 3.0 s on the output device.")
     }
 
-    // MARK: Notifications — the headline moment
+    // MARK: Notifications (the headline moment)
 
     func testAutomaticSuccessSaysFennecFixedIt() {
         let record = Fixture.repair(
@@ -204,7 +204,7 @@ final class RepairCopyTests: XCTestCase {
     }
 
     /// A person who has just approved the helper must never be told it is
-    /// "not enabled" — the blocker names the actual obstacle per state.
+    /// "not enabled"; the blocker names the actual obstacle per state.
     func testHelperBlockerNamesTheActualObstacle() {
         XCTAssertTrue(RepairCopy.helperBlocker(for: .awaitingApproval).contains("Login Items"))
         XCTAssertTrue(RepairCopy.helperBlocker(for: .enabled(reachable: false)).contains("did not answer"))

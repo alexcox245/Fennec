@@ -5,7 +5,7 @@ import SwiftUI
 ///
 /// Fennec is `LSUIElement`, which is right: it belongs in the menu bar, not
 /// the Dock. But an accessory app has no main menu, and that quietly breaks
-/// every window it opens — ⌘W does nothing, ⌘Q does nothing, ⌘, does nothing,
+/// every window it opens: ⌘W does nothing, ⌘Q does nothing, ⌘, does nothing,
 /// and the window will not reliably come to the front. Users read that as a
 /// broken app, not as a deliberate design choice.
 ///
@@ -31,7 +31,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     ///
     /// That scene's only programmatic entry point is the undocumented
     /// `showSettingsWindow:` responder action, which reports success and then
-    /// does nothing at all in an `LSUIElement` app — verified on macOS 26.
+    /// does nothing at all in an `LSUIElement` app (verified on macOS 26).
     /// Owning the window means ⌘, , the menu item, the popover's Settings
     /// button, and a Dock reopen all take one code path that demonstrably
     /// works, instead of three that hope.
@@ -43,7 +43,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
             title: "Welcome to Fennec",
             size: CGSize(width: 620, height: 720),
             // Must not be below WelcomeView's own minHeight, or the host
-            // clips the footer — and the footer holds Done.
+            // clips the footer, and the footer holds Done.
             minSize: CGSize(width: 560, height: 640)
         ) {
             WelcomeView(model: model).tint(FennecBrand.sky)
@@ -51,7 +51,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     }
 
     /// The privilege panel. Replaces the standard About panel, which shows a
-    /// version number and a copyright line — not what anyone wants to know
+    /// version number and a copyright line, not what anyone wants to know
     /// about an app that installs a root LaunchDaemon.
     func showAbout(model: AppModel) {
         show(
@@ -90,7 +90,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     private var windows: [String: NSWindow] = [:]
     private var observers: [NSObjectProtocol] = []
     /// When a window was last asked for. Dropping back to `.accessory` inside
-    /// this grace period would undo an open that is still in flight — the
+    /// this grace period would undo an open that is still in flight; the
     /// SwiftUI `Settings` scene, in particular, materialises its window a few
     /// run-loop turns after the action is sent.
     private var lastOpenRequest = Date.distantPast
@@ -99,7 +99,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     private override init() {
         super.init()
         // The Settings scene is SwiftUI's window, not ours, but it has the
-        // same problem — so watch every window, not just the ones we made.
+        // same problem, so watch every window, not just the ones we made.
         for name in [NSWindow.didBecomeKeyNotification, NSWindow.willCloseNotification] {
             observers.append(NotificationCenter.default.addObserver(
                 forName: name, object: nil, queue: .main
@@ -216,7 +216,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
 
     /// A "real" window is one a person can focus and type into. The
     /// `MenuBarExtra` popover is borderless and cannot become main, so it
-    /// never counts — which is what keeps the Dock icon from appearing every
+    /// never counts, which is what keeps the Dock icon from appearing every
     /// time someone opens the menu.
     private func isRealWindow(_ window: NSWindow) -> Bool {
         // `isVisible` is false for a miniaturised window, so without the
@@ -231,7 +231,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     private func syncActivationPolicy() {
         // A "real" window is one a person can focus and type into. The
         // MenuBarExtra popover is borderless and cannot become main, so it
-        // never counts — which is what keeps the Dock icon from flickering
+        // never counts, which is what keeps the Dock icon from flickering
         // every time someone opens the menu.
         let desired: NSApplication.ActivationPolicy = hasVisibleWindow ? .regular : .accessory
         if desired == .accessory, Date().timeIntervalSince(lastOpenRequest) < Self.openGrace {

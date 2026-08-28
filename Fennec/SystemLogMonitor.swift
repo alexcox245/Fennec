@@ -20,8 +20,8 @@ enum SystemLogMonitorError: LocalizedError {
 /// This is the second detection path, and it exists because the first one has
 /// a blind spot the size of the actual field failure: the
 /// `kAudioDeviceProcessorOverload` notification fires in the process whose IO
-/// cycle overloaded, and when that process is someone else — a different app,
-/// or coreaudiod's IO thread serving a misbehaving client — Fennec's listener
+/// cycle overloaded, and when that process is someone else (a different app,
+/// or coreaudiod's IO thread serving a misbehaving client), Fennec's listener
 /// hears nothing while the speakers audibly crackle. `coreaudiod` logs every
 /// overload it detects, for every client, and the log store is readable by
 /// admin users without privileges. See `OverloadLogSchedule` for why queries
@@ -33,10 +33,10 @@ final class SystemLogMonitor: @unchecked Sendable {
     /// detection window math runs on when the fault happened rather than on
     /// when the poll noticed it.
     typealias OverloadHandler = @Sendable (_ eventDates: [Date]) -> Void
-    /// Clean IO stop and start timestamps from the same query — the playback
+    /// Clean IO stop and start timestamps from the same query: the playback
     /// stall signature, delivered raw for the advisor and the graph to judge.
     typealias IOStateHandler = @Sendable (_ stopDates: [Date], _ startDates: [Date]) -> Void
-    /// One per tick while audio is actually playing — the graph's activity
+    /// One per tick while audio is actually playing: the graph's activity
     /// trace. Silence delivers nothing; a gap in the trace is the gap.
     typealias ActivityHandler = @Sendable (_ date: Date) -> Void
     typealias ErrorHandler = @Sendable (Error) -> Void
@@ -68,8 +68,8 @@ final class SystemLogMonitor: @unchecked Sendable {
     private var currentTickInterval: TimeInterval = OverloadLogSchedule.tick
 
     /// Cached HAL addressing for the per-tick gate. The gate used to resolve
-    /// the default device, check the property exists, and read it — three XPC
-    /// round trips measured at 1.2 ms — every single tick, which at the 1 s
+    /// the default device, check the property exists, and read it (three XPC
+    /// round trips measured at 1.2 ms) every single tick, which at the 1 s
     /// playing cadence is ~0.12% of a core all day for three answers that
     /// only change when the output device does. Cached, the steady tick is
     /// one ~0.15 ms read. The cache re-resolves on a slow cadence, on any
@@ -117,7 +117,7 @@ final class SystemLogMonitor: @unchecked Sendable {
     }
 
     /// Runs the next due query immediately rather than waiting out the
-    /// current interval — for the moment the popover opens and the graph
+    /// current interval, for the moment the popover opens and the graph
     /// wants the freshest window it can get.
     func pollNow() {
         queue.async { [weak self] in
@@ -219,7 +219,7 @@ final class SystemLogMonitor: @unchecked Sendable {
         // Advance past everything this query enumerated, not just to the
         // newest *matching* entry. `newest` alone was a real CPU leak: on a
         // healthy machine nothing matches, the cursor never moved, and every
-        // poll re-enumerated an ever-growing window — CPU per poll grew
+        // poll re-enumerated an ever-growing window, so CPU per poll grew
         // linearly for as long as playback continued without a stop. The lag
         // margin covers logd's flush delay so an entry that lands in the
         // store late cannot be skipped; no matching entry can sit between
@@ -240,7 +240,7 @@ final class SystemLogMonitor: @unchecked Sendable {
 
     /// The listener path saw the default output change; drop the cached
     /// device so the next tick reads the right one instead of waiting out
-    /// the refresh cadence — which would paint a false gap in the activity
+    /// the refresh cadence, which would paint a false gap in the activity
     /// ribbon for those seconds.
     func noteOutputDeviceMayHaveChanged() {
         queue.async { [weak self] in
@@ -250,7 +250,7 @@ final class SystemLogMonitor: @unchecked Sendable {
 
     /// The cheap gate in front of the expensive query: whether the default
     /// output device is running IO for any process at all. No IO cycles, no
-    /// overloads, nothing audible — no query. One cached ~0.15 ms property
+    /// overloads, nothing audible, no query. One cached ~0.15 ms property
     /// read on the steady path; see the cache fields for why.
     private func defaultOutputIsRunningSomewhere() -> Bool {
         if ticksUntilDeviceRefresh <= 0

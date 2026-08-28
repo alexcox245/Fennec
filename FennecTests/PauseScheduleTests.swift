@@ -2,7 +2,7 @@ import XCTest
 
 /// Pause exists because Fennec's safety checks can only see what Core Audio
 /// tells them, and a person about to hit record knows more than that. The
-/// thing it must never do is outlive its own expiry — a pause silently left
+/// thing it must never do is outlive its own expiry: a pause silently left
 /// on is indistinguishable from a broken app.
 final class PauseScheduleTests: XCTestCase {
     private let now = Fixture.epoch

@@ -5,7 +5,7 @@ import Foundation
 /// `SMAppService` registration binds to the app's bundle path. Enabling the
 /// helper from `~/Downloads` and later moving the app to Applications leaves
 /// macOS holding a registration that points at a bundle which is no longer
-/// there — and the only symptom Fennec can show for that is "Enabled, not
+/// there, and the only symptom Fennec can show for that is "Enabled, not
 /// responding", which explains nothing.
 ///
 /// The README documented this landmine. Documenting a landmine is not the

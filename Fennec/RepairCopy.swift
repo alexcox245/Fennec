@@ -5,7 +5,7 @@ import Foundation
 /// It lives in one place for two reasons. The obvious one: the notification,
 /// the menu receipt, and the activity list must not drift apart. The real
 /// one: this copy is the product. Fennec's whole claim is that it names the
-/// mechanism instead of shrugging — "Core Audio missed its deadline twice in
+/// mechanism instead of shrugging: "Core Audio missed its deadline twice in
 /// 5.8 s", never "something went wrong". Keeping the strings pure keeps them
 /// under test.
 enum RepairCopy {
@@ -122,7 +122,7 @@ enum RepairCopy {
 
     // MARK: The helper blocker
 
-    /// Why an automatic repair could not use the helper — in terms of what
+    /// Why an automatic repair could not use the helper, in terms of what
     /// the user can actually do about it. "Not enabled" told a person who
     /// had just approved the helper that they had not, which is worse than
     /// no message at all.
@@ -163,7 +163,7 @@ enum RepairCopy {
             + count(advisory.stopCount, "time", "times")
             + " in \(count(minutes, "minute", "minutes")). "
             + pressure
-            + " This is not the fault Fennec repairs — restarting Core Audio will not help."
+            + " This is not the fault Fennec repairs; restarting Core Audio will not help."
             + " Heavy apps, backups, or sync clients are the likely cause."
     }
 

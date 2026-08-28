@@ -7,7 +7,7 @@
 #
 #   1. A "Developer ID Application" certificate for team 249X253HS3 in the
 #      login keychain. Create it in Xcode (Settings > Accounts > Manage
-#      Certificates > + > Developer ID Application) — requires the paid
+#      Certificates > + > Developer ID Application); this requires the paid
 #      Apple Developer Program.
 #   2. Stored notarization credentials:
 #        xcrun notarytool store-credentials fennec-notary \

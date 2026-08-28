@@ -69,7 +69,7 @@ struct SettingsView: View {
             Section("Automatic Repair") {
                 Toggle("Repair crackling automatically", isOn: $settings.autoRepairEnabled)
                     .disabled(!helper.state.isReachable)
-                Text("One overload is usually a harmless blip. Two in a row is the failure that stays broken until Core Audio restarts — so Fennec waits for the second one, then fixes it.")
+                Text("One overload is usually a harmless blip. Two in a row is the failure that stays broken until Core Audio restarts, so Fennec waits for the second one, then fixes it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -113,7 +113,7 @@ struct SettingsView: View {
 
                 if notifications.authorizationChecked && !notifications.isAuthorized {
                     // Without this the screen shows two switches that are on
-                    // and produce nothing — the same "promise Fennec cannot
+                    // and produce nothing: the same "promise Fennec cannot
                     // keep" the auto-repair notice forty lines up exists to
                     // prevent.
                     Label {
@@ -127,7 +127,7 @@ struct SettingsView: View {
                     Button("Open Notification Settings…") { notifications.openSystemSettings() }
                 }
 
-                Text("A repair that failed always notifies you — that is the one case where something is left for you to do.")
+                Text("A repair that failed always notifies you; that is the one case where something is left for you to do.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -215,7 +215,7 @@ struct SettingsView: View {
             }
         }
 
-        Text("The helper can only restart Core Audio — it cannot be given a command, a path, or an argument. With it enabled, repairs never show a password prompt. Without it, Fennec can still repair by asking for your administrator password, but only after showing you the command.")
+        Text("The helper can only restart Core Audio; it cannot be given a command, a path, or an argument. With it enabled, repairs never show a password prompt. Without it, Fennec can still repair by asking for your administrator password, but only after showing you the command.")
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -245,8 +245,8 @@ struct SettingsView: View {
                     Button("Resume Listening") { model.resume() }
                 } else {
                     // Not "Status": General has a Status row driven by the
-                    // monitor, and two rows with the same label in one window
-                    // — one of them false — is worse than no row.
+                    // monitor, and two rows with the same label in one window,
+                    // one of them false, is worse than no row.
                     LabeledContent("Automatic repair", value: model.isArmed ? "Armed" : "Not armed")
                     Menu("Pause Automatic Repair") {
                         ForEach(PauseSchedule.Option.allCases) { option in
@@ -275,7 +275,7 @@ struct SettingsView: View {
                             .frame(width: 42, alignment: .trailing)
                     }
                 }
-                Text("After any repair attempt — successful or not — Fennec will not try again until this has passed.")
+                Text("After any repair attempt, successful or not, Fennec will not try again until this has passed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

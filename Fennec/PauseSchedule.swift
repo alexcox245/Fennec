@@ -30,7 +30,7 @@ enum PauseSchedule {
             }
         }
 
-        /// `nil` means indefinite — it only ends when the user says so.
+        /// `nil` means indefinite: it only ends when the user says so.
         var duration: TimeInterval? {
             switch self {
             case .fifteenMinutes: return 15 * 60
@@ -89,7 +89,7 @@ struct PauseState: Equatable, Sendable {
     }
 
     /// Menu-bar and popover status text. Deliberately states the deadline
-    /// rather than a countdown — nothing in this app ticks for attention.
+    /// rather than a countdown; nothing in this app ticks for attention.
     func statusText(at now: Date = Date()) -> String? {
         guard isPaused(at: now) else { return nil }
         if isIndefinite { return "Paused" }
