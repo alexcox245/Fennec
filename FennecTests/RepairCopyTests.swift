@@ -91,7 +91,7 @@ final class RepairCopyTests: XCTestCase {
 
     // MARK: Notifications (the headline moment)
 
-    func testAutomaticSuccessSaysFennecFixedIt() {
+    func testAutomaticSuccessSaysCrackleResolved() {
         let record = Fixture.repair(
             at: Fixture.epoch,
             trigger: .automatic,
@@ -100,11 +100,21 @@ final class RepairCopyTests: XCTestCase {
             elapsed: 5.8,
             duration: 0.84
         )
-        XCTAssertEqual(RepairCopy.notificationTitle(for: record), "Fennec fixed your audio")
+        XCTAssertEqual(RepairCopy.notificationTitle(for: record), "Crackle resolved")
         XCTAssertEqual(
             RepairCopy.notificationBody(for: record),
-            "2 crackle signals in 5.8 s on MacBook Pro Speakers. Core Audio restarted in 0.84 s."
+            "Core Audio restarted in 0.84 s.",
+            "One clause. The cause lives on the receipt; the banner must not restate it."
         )
+    }
+
+    /// The heads-up posted 0.3 s before an automatic repair. Two short
+    /// clauses and nothing else; the user is mid-fault and mid-task.
+    func testRepairStartingCopyIsTerse() {
+        XCTAssertEqual(RepairCopy.repairStartingTitle(), "Crackle detected")
+        XCTAssertEqual(RepairCopy.repairStartingBody(), "Resetting speakers...")
+        XCTAssertFalse(RepairCopy.repairStartingTitle().contains("!"))
+        XCTAssertFalse(RepairCopy.repairStartingBody().contains("!"))
     }
 
     func testManualSuccessDoesNotClaimCredit() {

@@ -25,25 +25,25 @@ final class DetectionEngineTests: XCTestCase {
         XCTAssertNil(engine.ingest(Fixture.batch(at: Fixture.epoch, overloads: 1), sensitivity: .balanced))
 
         let decision = engine.ingest(
-            Fixture.batch(at: Fixture.epoch.addingTimeInterval(5), overloads: 1),
+            Fixture.batch(at: Fixture.epoch.addingTimeInterval(2), overloads: 1),
             sensitivity: .balanced
         )
 
         XCTAssertNotNil(decision)
         XCTAssertEqual(decision?.signal, .processorOverload)
         XCTAssertEqual(decision?.signalCount, 2)
-        XCTAssertEqual(decision?.reason, "Core Audio missed its real-time output deadline 2 times within 8 seconds.")
+        XCTAssertEqual(decision?.reason, "Core Audio missed its real-time output deadline 2 times within 3 seconds.")
     }
 
     func testBalancedDoesNotFireWhenTheSecondOverloadFallsOutsideTheWindow() {
         XCTAssertNil(engine.ingest(Fixture.batch(at: Fixture.epoch, overloads: 1), sensitivity: .balanced))
 
         let decision = engine.ingest(
-            Fixture.batch(at: Fixture.epoch.addingTimeInterval(9), overloads: 1),
+            Fixture.batch(at: Fixture.epoch.addingTimeInterval(4), overloads: 1),
             sensitivity: .balanced
         )
 
-        XCTAssertNil(decision, "Two overloads nine seconds apart are not the same failure.")
+        XCTAssertNil(decision, "Two overloads four seconds apart are not the same failure.")
     }
 
     func testTwoOverloadsInOneDrainBatchStillCount() {
@@ -68,14 +68,14 @@ final class DetectionEngineTests: XCTestCase {
     func testDecisionReportsTheRealElapsedSpanNotTheConfiguredWindow() {
         _ = engine.ingest(Fixture.batch(at: Fixture.epoch, overloads: 1), sensitivity: .balanced)
         let decision = engine.ingest(
-            Fixture.batch(at: Fixture.epoch.addingTimeInterval(5.8), overloads: 1),
+            Fixture.batch(at: Fixture.epoch.addingTimeInterval(2.2), overloads: 1),
             sensitivity: .balanced
         )
 
-        // "2 signals in 5.8 s" is a fact about the user's machine.
-        // "within 8 seconds" is only a fact about their settings.
-        XCTAssertEqual(decision?.elapsedSeconds ?? 0, 5.8, accuracy: 0.001)
-        XCTAssertEqual(decision?.windowSeconds, 8)
+        // "2 signals in 2.2 s" is a fact about the user's machine.
+        // "within 3 seconds" is only a fact about their settings.
+        XCTAssertEqual(decision?.elapsedSeconds ?? 0, 2.2, accuracy: 0.001)
+        XCTAssertEqual(decision?.windowSeconds, 3)
     }
 
     func testSignalsFromOneDrainReportZeroElapsed() {
@@ -86,7 +86,7 @@ final class DetectionEngineTests: XCTestCase {
     func testAbnormalStopReportsNoSpan() {
         let decision = engine.ingest(Fixture.batch(at: Fixture.epoch, abnormalStops: 1), sensitivity: .balanced)
         XCTAssertEqual(decision?.elapsedSeconds, 0)
-        XCTAssertEqual(decision?.windowSeconds, 8)
+        XCTAssertEqual(decision?.windowSeconds, 3)
     }
 
     // MARK: Conservative and Immediate
@@ -161,7 +161,7 @@ final class DetectionEngineTests: XCTestCase {
         XCTAssertEqual(DetectionSensitivity.conservative.threshold, 3)
         XCTAssertEqual(DetectionSensitivity.conservative.window, 12)
         XCTAssertEqual(DetectionSensitivity.balanced.threshold, 2)
-        XCTAssertEqual(DetectionSensitivity.balanced.window, 8)
+        XCTAssertEqual(DetectionSensitivity.balanced.window, 3)
         XCTAssertEqual(DetectionSensitivity.immediate.threshold, 1)
 
         for sensitivity in DetectionSensitivity.allCases {

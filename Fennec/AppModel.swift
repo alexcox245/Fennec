@@ -223,6 +223,10 @@ final class AppModel: ObservableObject {
     /// mark here until they look.
     var menuBarIconState: MenuBarIconState {
         if isRepairing { return .repairing }
+        // The red mark: crackle signals are arriving and Fennec is on the
+        // case. Above attention because it describes right now; below the
+        // pause, because a paused Fennec promising action would be a lie.
+        if isCrackleWatchActive && !isPaused { return .detected }
         // An unanswered question is a reason to look at Fennec, and the
         // popover it was asked in may already have dismissed itself.
         if needsAttention || pendingConfirmation != nil { return .attention }
@@ -240,6 +244,32 @@ final class AppModel: ObservableObject {
 
     func acknowledgeAttention() {
         needsAttention = false
+    }
+
+    /// True from the first unsuppressed crackle signal until a repair settles
+    /// it or the detection window lapses with nothing further. Drives the
+    /// menu-bar mark's red "on the case" state, so the user hearing the fault
+    /// can see that Fennec hears it too.
+    @Published private(set) var isCrackleWatchActive = false
+    private var crackleWatchTimer: Timer?
+
+    private func noteCrackleSignal() {
+        isCrackleWatchActive = true
+        crackleWatchTimer?.invalidate()
+        // Linger one window past the last signal: exactly how long a fresh
+        // signal could still combine with this one into a detection.
+        let linger = settings.sensitivity.window + 2
+        crackleWatchTimer = Timer.scheduledTimer(withTimeInterval: linger, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.clearCrackleWatch()
+            }
+        }
+    }
+
+    private func clearCrackleWatch() {
+        crackleWatchTimer?.invalidate()
+        crackleWatchTimer = nil
+        isCrackleWatchActive = false
     }
 
     // MARK: Standing down
@@ -769,6 +799,12 @@ final class AppModel: ObservableObject {
 
         guard batch.serviceRestarts == 0 else { return }
         guard batch.containsFailureSignal, batch.date >= suppressSignalsUntil else { return }
+
+        // A real failure signal, past every suppression window: the menu-bar
+        // mark goes red now, threshold met or not, because this is the moment
+        // the user is actually hearing something wrong.
+        noteCrackleSignal()
+
         guard let decision = detectionEngine.ingest(batch, sensitivity: settings.sensitivity) else { return }
 
         // A fresh detection inside the verification window is the fault
@@ -918,6 +954,14 @@ final class AppModel: ObservableObject {
             summary: automatic ? "Automatic Core Audio repair requested." : "Manual Core Audio repair requested."
         ))
 
+        if automatic && settings.notifyOnRepair {
+            // The heads-up lands 0.3 s ahead of the audio gap it announces,
+            // so the banner is on screen before the sound cuts out rather
+            // than after it comes back.
+            notificationController.postRepairStarting()
+            try? await Task.sleep(for: .milliseconds(300))
+        }
+
         // Measured across the privileged call only, so it reflects the audio
         // gap the user heard rather than Fennec's own bookkeeping.
         let started = Date()
@@ -984,6 +1028,7 @@ final class AppModel: ObservableObject {
             // decision, not a fault: no red receipt, no alarm, no attention
             // mark, and no reset of the days-without-incident sign.
             record(.init(kind: .repairSkipped, summary: "Administrator authorization was cancelled."))
+            clearCrackleWatch()
             isRepairing = false
             return
         } catch let error as HelperCallError where error.isThrottled {
@@ -994,6 +1039,7 @@ final class AppModel: ObservableObject {
             lastError = nil
             record(.init(kind: .repairSkipped, summary: error.message))
             throttleNotice = error.message
+            clearCrackleWatch()
             isRepairing = false
             return
         } catch {
@@ -1021,6 +1067,9 @@ final class AppModel: ObservableObject {
         }
 
         rehearsalRequested = false
+        // The waiting is over either way: success is announced as resolved,
+        // and failure raises the attention mark, which takes the icon anyway.
+        clearCrackleWatch()
         isRepairing = false
     }
 

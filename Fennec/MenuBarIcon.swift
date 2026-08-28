@@ -5,6 +5,11 @@ enum MenuBarIconState: String, CaseIterable, Sendable {
     /// Attached, hearing nothing wrong. The resting state, and the one the
     /// user sees 99.9% of the time.
     case listening
+    /// Crackle signals are arriving and Fennec is waiting out the detection
+    /// window before it acts. A few seconds, and the one state drawn in
+    /// colour: the user is hearing the fault right now, and the mark says
+    /// Fennec hears it too.
+    case detected
     /// A repair is in flight. Roughly one second, once in a while.
     case repairing
     /// The user switched Fennec off for a while.
@@ -16,6 +21,7 @@ enum MenuBarIconState: String, CaseIterable, Sendable {
     var accessibilityLabel: String {
         switch self {
         case .listening: return "Fennec, listening"
+        case .detected: return "Fennec, crackling detected"
         case .repairing: return "Fennec, restarting Core Audio"
         case .paused: return "Fennec, paused"
         case .attention: return "Fennec, needs attention"
@@ -35,7 +41,10 @@ enum MenuBarIconState: String, CaseIterable, Sendable {
 /// shape, cropped confidently: the ears run to the very top of the box. It is
 /// a **template** image, so macOS owns the colour: it inverts correctly in a
 /// dark menu bar, in light mode, when the menu is highlighted, and under
-/// Increase Contrast. Nothing animates, because the desert does not animate.
+/// Increase Contrast. The one exception is the `detected` state, drawn in
+/// system red for the few seconds the user can hear the fault, because there
+/// the colour is the message. Nothing animates, because the desert does not
+/// animate.
 @MainActor
 enum MenuBarIcon {
     /// Apple's guidance for menu-bar extras. The glyph is drawn to fill it.
@@ -66,8 +75,12 @@ enum MenuBarIcon {
             transform.scaleX(by: scale, yBy: scale)
             transform.concat()
 
-            NSColor.black.setFill()
-            NSColor.black.setStroke()
+            // Every state is a template except `detected`, where the colour
+            // *is* the message: the mark goes red for the few seconds the
+            // user can actually hear the fault.
+            let ink: NSColor = state == .detected ? .systemRed : .black
+            ink.setFill()
+            ink.setStroke()
             fennec().fill()
 
             switch state {
@@ -95,13 +108,18 @@ enum MenuBarIcon {
                 NSGraphicsContext.current?.compositingOperation = .clear
                 NSBezierPath(ovalIn: CGRect(x: 8.6, y: 4.6, width: 6.8, height: 6.8)).fill()
                 NSGraphicsContext.current?.compositingOperation = .sourceOver
+            case .detected:
+                // Sound waves in the V between the ears: the listening animal
+                // hearing the one signal that matters. Static, not animated;
+                // the red and the arcs carry the urgency.
+                for wave in soundWaves() { wave.stroke() }
             case .listening:
                 break
             }
             return true
         }
 
-        image.isTemplate = true
+        image.isTemplate = state != .detected
         image.accessibilityDescription = state.accessibilityLabel
         cache[key] = image
         return image
@@ -168,4 +186,18 @@ enum MenuBarIcon {
     /// A dot off the right cheek. Small, static, and never flashing: it says
     /// "look at me when you get a chance", not "drop everything".
     private nonisolated static let badgeRect = CGRect(x: 18.4, y: 1.0, width: 4.6, height: 4.6)
+
+    /// Two concentric arcs fanned upward from the notch, filling the empty V
+    /// between the ears. The angles stop short of the inner ear edges so the
+    /// waves float in the negative space instead of touching the silhouette.
+    private nonisolated static func soundWaves() -> [NSBezierPath] {
+        let center = CGPoint(x: 12.0, y: 10.6)
+        return [4.4, 7.2].map { radius in
+            let path = NSBezierPath()
+            path.appendArc(withCenter: center, radius: radius, startAngle: 66, endAngle: 114)
+            path.lineWidth = 1.7
+            path.lineCapStyle = .round
+            return path
+        }
+    }
 }

@@ -60,19 +60,30 @@ enum RepairCopy {
 
     // MARK: Notifications
 
+    /// The heads-up posted moments before an automatic repair, so the brief
+    /// audio gap that follows is explained before it happens. Two short
+    /// clauses, nothing else: the user is mid-fault and mid-task, and the
+    /// result banner that replaces this one carries the detail.
+    static func repairStartingTitle() -> String {
+        "Crackle detected"
+    }
+
+    static func repairStartingBody() -> String {
+        "Resetting speakers..."
+    }
+
     static func notificationTitle(for record: RepairRecord) -> String {
         guard record.succeeded else { return "Fennec could not repair audio" }
-        return record.trigger == .automatic ? "Fennec fixed your audio" : "Core Audio restarted"
+        return record.trigger == .automatic ? "Crackle resolved" : "Core Audio restarted"
     }
 
     static func notificationBody(for record: RepairRecord) -> String {
         guard record.succeeded else {
             return "\(cause(for: record)) \(record.message)"
         }
-        if record.trigger == .manual {
-            return outcome(for: record)
-        }
-        return "\(cause(for: record)) \(outcome(for: record))"
+        // One clause. The cause is on the receipt and in Activity; a banner
+        // that restates it is a banner nobody finishes reading.
+        return outcome(for: record)
     }
 
     // MARK: The menu receipt

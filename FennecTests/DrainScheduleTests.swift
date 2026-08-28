@@ -51,7 +51,16 @@ final class DrainScheduleTests: XCTestCase {
         )
     }
 
-    func testTheSlowestTierIsSmallComparedToTheBalancedWindow() {
-        XCTAssertLessThan(DrainSchedule.deepIdle, DetectionSensitivity.balanced.window / 3)
+    func testOneActiveDrainIsSmallComparedToTheBalancedWindow() {
+        // The first non-empty drain snaps the schedule back to the active
+        // tier, so a slow tier can only delay stamping the *first* signal of
+        // a detection, which shrinks the apparent span. The only widening a
+        // drain can add is one active-tier interval plus its leeway on the
+        // signals that follow, and that widening must stay small against the
+        // Balanced window or a real two-signal fault could be missed.
+        XCTAssertLessThanOrEqual(
+            DrainSchedule.active + DrainSchedule.leeway(for: DrainSchedule.active),
+            DetectionSensitivity.balanced.window / 10
+        )
     }
 }

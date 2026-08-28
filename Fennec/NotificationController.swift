@@ -94,6 +94,18 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         NSWorkspace.shared.open(url)
     }
 
+    /// The heads-up, posted 0.3 s before an automatic repair cuts the audio:
+    /// the gap the user is about to hear is announced before it happens. It
+    /// shares an identifier with the result banner, so "Crackle resolved"
+    /// replaces it in place instead of stacking under it.
+    func postRepairStarting() {
+        let content = UNMutableNotificationContent()
+        content.title = RepairCopy.repairStartingTitle()
+        content.body = RepairCopy.repairStartingBody()
+        content.categoryIdentifier = Category.repaired
+        post(content, identifier: Identifier.repair)
+    }
+
     /// The headline moment: Fennec already fixed it, here is what it fixed.
     func postRepairResult(_ record: RepairRecord) {
         let content = UNMutableNotificationContent()
