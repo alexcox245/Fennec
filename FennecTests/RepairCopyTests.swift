@@ -102,7 +102,7 @@ final class RepairCopyTests: XCTestCase {
             elapsed: 5.8,
             duration: 0.84
         )
-        XCTAssertEqual(RepairCopy.notificationTitle(for: record), "Crackle repaired")
+        XCTAssertEqual(RepairCopy.notificationTitle(for: record), "Audio repaired")
         XCTAssertEqual(
             RepairCopy.notificationBody(for: record),
             "",
@@ -132,8 +132,8 @@ final class RepairCopyTests: XCTestCase {
     func testEverySuccessfulRepairGetsTheSameLine() {
         let manual = Fixture.repair(at: Fixture.epoch, trigger: .manual, signal: nil, signalCount: 0, duration: 1.1)
         let automatic = Fixture.repair(at: Fixture.epoch, trigger: .automatic, signal: .processorOverload, signalCount: 2, duration: 0.4)
-        XCTAssertEqual(RepairCopy.notificationTitle(for: manual), "Crackle repaired")
-        XCTAssertEqual(RepairCopy.notificationTitle(for: automatic), "Crackle repaired")
+        XCTAssertEqual(RepairCopy.notificationTitle(for: manual), "Audio repaired")
+        XCTAssertEqual(RepairCopy.notificationTitle(for: automatic), "Audio repaired")
         XCTAssertEqual(RepairCopy.notificationBody(for: manual), "")
         XCTAssertEqual(RepairCopy.notificationBody(for: automatic), "")
     }
@@ -187,6 +187,21 @@ final class RepairCopyTests: XCTestCase {
                 XCTAssertFalse(RepairCopy.notificationBody(for: record).isEmpty)
             }
         }
+    }
+
+    // MARK: One sentence for one outcome (T-044)
+
+    /// The banner, the button, and the manual receipt can all report the
+    /// same repair within seconds of each other: the notification arrives
+    /// while the button the user just pressed is still on screen, and
+    /// Activity has a row for it. Three phrasings for one event reads as
+    /// three events, so they share a single string.
+    func testEverySurfaceReportsASuccessInTheSameWords() {
+        let manual = Fixture.repair(at: Fixture.epoch, trigger: .manual, duration: 0.84, outcome: .held)
+        XCTAssertEqual(RepairCopy.notificationTitle(for: manual), RepairCopy.repairedTitle)
+        XCTAssertEqual(RepairCopy.primaryButtonTitle(for: .repaired), RepairCopy.repairedTitle)
+        XCTAssertEqual(RepairCopy.receiptHeadline(for: manual), RepairCopy.repairedTitle)
+        XCTAssertEqual(RepairCopy.repairedTitle, "Audio repaired")
     }
 
     // MARK: The plain-language rule (T-043)
@@ -284,7 +299,7 @@ final class RepairCopyTests: XCTestCase {
 
     func testManualReceiptIsWordedDifferently() {
         let record = Fixture.repair(at: Fixture.epoch, trigger: .manual, duration: 1.5)
-        XCTAssertEqual(RepairCopy.receiptHeadline(for: record), "Crackle repaired")
+        XCTAssertEqual(RepairCopy.receiptHeadline(for: record), "Audio repaired")
     }
 
     func testFailedReceiptShowsTheError() {

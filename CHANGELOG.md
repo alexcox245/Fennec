@@ -10,7 +10,7 @@ are the milestones on `main`.
 - **Fennec speaks plainly now.** Nobody installs this because they know
   what Core Audio is; they heard a crackle and want it gone. So the words
   are the words they would use. A successful repair posts one line,
-  "Crackle repaired", and nothing else. Causes read "Repeated crackling on
+  "Audio repaired", and nothing else. Causes read "Repeated crackling on
   MacBook Pro Speakers" instead of counting signals and seconds. Receipts,
   the stand-down notice, and the stall advisory all dropped their timings,
   load averages, and memory-pressure levels.
@@ -96,7 +96,7 @@ are the milestones on `main`.
   the Trash. Plus `UNINSTALL.md`, `SECURITY.md`, and `LICENSE`.
 - **Setup checklist** driving every setup CTA from one model, so the popover,
   Settings, and first run cannot disagree.
-- **265 unit tests** in a standalone XCTest bundle, and CI that runs them.
+- **266 unit tests** in a standalone XCTest bundle, and CI that runs them.
 
 ### Changed
 
@@ -120,7 +120,8 @@ are the milestones on `main`.
 
 - **The button says what it is doing.** "Repair Audio Now" becomes
   "Repairing…" on press and "Audio repaired" with a check mark when the
-  restart lands, then returns to the offer. It stays out of service through
+  repair lands, then returns to the offer. The banner and the Activity
+  row say the same two words, from the same string. It stays out of service through
   the confirmation so a second restart cannot be triggered by clicking the
   result. Whether the fault stays gone is still decided a minute later, on
   the receipt and in the Activity window.
