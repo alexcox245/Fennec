@@ -16,7 +16,7 @@ Two independent witnesses feed one pipeline.
 **Shared from there:**
 
 5. `DetectionEngine` applies a time-window threshold. Log-sourced batches carry the events' own timestamps (`AudioSignalBatch.overloadDates`), so the poll interval bounds only reporting latency and can never decide whether a window's threshold is met.
-6. `AppModel` checks output transport, cooldown, active microphone input, protected audio applications, and helper reachability. Suppression windows apply to both witnesses identically.
+6. `AppModel` checks output transport, cooldown, active microphone input, protected audio applications, and helper reachability. Suppression windows apply to both witnesses identically. "Active microphone input" means a process a person could actually be talking into: always-on speech daemons hold an input stream permanently whether or not anything is recording, so `RecoverySafetyChecker` excludes them by bundle identifier (see T-038).
 7. The app asks the helper to restart Core Audio.
 8. The app waits for launchd to relaunch `coreaudiod`, then rebuilds all listeners. A spontaneous Core Audio service restart also triggers a full listener rebuild because Apple documents that service-reset state must be re-established.
 
