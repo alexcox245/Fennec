@@ -81,9 +81,19 @@ are the milestones on `main`.
   the Trash. Plus `UNINSTALL.md`, `SECURITY.md`, and `LICENSE`.
 - **Setup checklist** driving every setup CTA from one model, so the popover,
   Settings, and first run cannot disagree.
-- **244 unit tests** in a standalone XCTest bundle, and CI that runs them.
+- **259 unit tests** in a standalone XCTest bundle, and CI that runs them.
 
 ### Fixed
+
+- **The microphone guard that never let a repair through.** `corespeechd`,
+  Apple's wake-word daemon, opens a Core Audio input stream at login when
+  "Hey Siri" or dictation is enabled and never closes it. Fennec asked Core
+  Audio "is any process running input", got a permanent yes, and refused
+  every automatic repair while telling the user a microphone was live: the
+  orange privacy indicator was off, nothing was recording, and the guard was
+  wrong every single time. Always-on speech daemons are now excluded by
+  bundle identifier. Conferencing and continuity daemons still block, because
+  those open input only when something real is happening.
 
 - **The notification cannon.** The repair cooldown was keyed on the last
   *successful* repair and sat below the helper-reachable gate, so a fresh
