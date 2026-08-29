@@ -23,6 +23,7 @@ struct MenuView: View {
             deviceCard
             SignalGraphView(model: model, settings: settings)
             repairControls
+            repairButton
             footer
         }
         .padding(16)
@@ -169,28 +170,6 @@ struct MenuView: View {
 
     private var repairControls: some View {
         VStack(alignment: .leading, spacing: 11) {
-            if let confirmation = model.pendingConfirmation {
-                confirmationCard(confirmation)
-            } else {
-                Button {
-                    model.requestManualRepair()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                        Text(primaryButtonTitle)
-                            .fontWeight(.semibold)
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(FennecBrand.sky)
-                .disabled(model.isRepairing || model.isPreparingRepair)
-                .keyboardShortcut(.defaultAction)
-                .help("Restart Core Audio now. Playback and recording stop for about a second.")
-            }
-
             Toggle(isOn: $settings.autoRepairEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Repair crackling automatically")
@@ -233,12 +212,6 @@ struct MenuView: View {
                 setupCard
             }
 
-            if let repair = history.records.first {
-                receiptCard(repair)
-            }
-
-            daysWithoutIncidentSign
-
             if let throttle = model.throttleNotice {
                 Label(HelperThrottle.userFacing(throttle), systemImage: "clock")
                     .font(.caption)
@@ -249,51 +222,38 @@ struct MenuView: View {
         }
     }
 
-    /// The sign on the workshop wall.
+    /// The primary action, and the last thing in the popover's content: a
+    /// person who opened this while their audio is crackling should find the
+    /// button at the end of the reading order, under the state that explains
+    /// whether pressing it is a good idea.
     ///
-    /// A background utility that works is indistinguishable from one that
-    /// does nothing. This is the honest answer to that: not a dashboard, one
-    /// number that means something, kept the way a real safety sign is kept.
-    /// It counts up while nothing goes wrong and reads 0 on the day something
-    /// does, with no softening.
-    ///
-    /// It is sand and ink in both appearances on purpose: a sign is a
-    /// physical object, and physical objects do not invert at dusk. Sand is a
-    /// surface here and ink is the number, which is exactly what the palette
-    /// reserves them for.
-    private var daysWithoutIncidentSign: some View {
-        let record = model.daysWithoutIncident
-        return Button {
-            model.showActivityWindow()
-        } label: {
-            HStack(alignment: .center, spacing: 14) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("DAYS WITHOUT INCIDENT")
-                        .font(.system(size: 9, weight: .bold))
-                        .tracking(0.9)
-                    Text(record.caption)
-                        .font(.caption2)
-                        .opacity(0.7)
+    /// The inline confirmation takes its place rather than sitting beside it,
+    /// so the surface that asks the question is the surface that was going to
+    /// act. See rule 7: this popover can never present an alert.
+    private var repairButton: some View {
+        Group {
+            if let confirmation = model.pendingConfirmation {
+                confirmationCard(confirmation)
+            } else {
+                Button {
+                    model.requestManualRepair()
+                } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text(primaryButtonTitle)
+                            .font(.system(size: 14, weight: .semibold))
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 14)
                 }
-                Spacer(minLength: 8)
-                Text("\(record.days)")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
-                    .monospacedDigit()
-            }
-            .foregroundStyle(FennecBrand.ink)
-            .padding(.horizontal, 13)
-            .padding(.vertical, 9)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(FennecBrand.sand, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(FennecBrand.ink.opacity(0.28), lineWidth: 1)
+                .buttonStyle(PrimaryRepairButtonStyle())
+                .disabled(model.isRepairing || model.isPreparingRepair)
+                .keyboardShortcut(.defaultAction)
+                .help("Restart Core Audio now. Playback and recording stop for about a second.")
             }
         }
-        .buttonStyle(.plain)
-        .help("Open Fennec Activity: every repair, grouped by day.")
-        .accessibilityLabel(record.accessibilityLabel)
-        .accessibilityHint("Opens Fennec Activity.")
     }
 
     /// Fennec has stopped trying, and says why in the machine's own numbers.
@@ -386,48 +346,6 @@ struct MenuView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(confirmation.accessibilityDescription)
-    }
-
-    /// The receipt. Aviator gold is reserved in the brand for exactly this,
-    /// a repair that worked, so it appears nowhere else in the app.
-    private func receiptCard(_ repair: RepairRecord) -> some View {
-        // Outcome, never `succeeded`. `succeeded` is fixed at repair time; a
-        // gold seal above "Restarted, but the fault came back" is one card
-        // asserting two opposite things.
-        let accent = FennecBrand.accent(for: repair.outcome)
-
-        return HStack(alignment: .top, spacing: 10) {
-            Image(systemName: repair.outcome.symbolName)
-                .font(.system(size: 15))
-                .foregroundStyle(accent)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(RepairCopy.receiptHeadline(for: repair))
-                        .font(.caption.weight(.semibold))
-                    Spacer(minLength: 4)
-                    Text(repair.date, style: .relative)
-                        .font(.caption2)
-                        .monospacedDigit()
-                        .foregroundStyle(.tertiary)
-                        .layoutPriority(-1)
-                }
-                Text(RepairCopy.receiptDetail(for: repair))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(accent.opacity(0.28), lineWidth: 1)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(RepairCopy.receiptHeadline(for: repair)). \(RepairCopy.receiptDetail(for: repair))")
     }
 
     /// Everything still standing between the user and unattended repair, with
@@ -582,5 +500,36 @@ struct MenuView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// The look of the one button in this app that restarts the audio system.
+///
+/// Not `.borderedProminent`. The system style owns its corner radius, and
+/// the brief here is a 5 pt corner on a control twice the standard height:
+/// a hard, deliberate rectangle rather than a pill, which is the punk half
+/// of the brand doing its job in the one place the user actually commits to
+/// something. Pressed and disabled states are drawn here because a plain
+/// button style provides neither for free.
+private struct PrimaryRepairButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    /// Twice the 28 pt height of the `.large` bordered button this replaces.
+    static let height: CGFloat = 56
+    static let cornerRadius: CGFloat = 5
+
+    func makeBody(configuration: Configuration) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+        return configuration.label
+            .foregroundStyle(Color.white.opacity(isEnabled ? 1 : 0.55))
+            .frame(maxWidth: .infinity, minHeight: Self.height)
+            .background(shape.fill(fill(pressed: configuration.isPressed)))
+            .contentShape(shape)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+
+    private func fill(pressed: Bool) -> Color {
+        guard isEnabled else { return FennecBrand.sky.opacity(0.32) }
+        return pressed ? FennecBrand.sky.opacity(0.78) : FennecBrand.sky
     }
 }
