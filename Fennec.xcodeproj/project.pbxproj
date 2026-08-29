@@ -29,6 +29,7 @@
 		8F13B399321BB51CCECAE615 /* CoreAudioMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3913E3A4C84114EFA828C0BA /* CoreAudioMonitor.swift */; };
 		941CAE5A49209FACDF0BF9D7 /* RTSignalCounters.c in Sources */ = {isa = PBXBuildFile; fileRef = 4C9729E62FDDFA9005541FED /* RTSignalCounters.c */; };
 		96B21F651B3C5BA1933BAD09 /* CoreAudioProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = D28391C38692AFD0EEB9408B /* CoreAudioProperty.swift */; };
+		7A11C0FFEE00000000000021 /* PrimaryRepairButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A11C0FFEE00000000000020 /* PrimaryRepairButtonStyle.swift */; };
 		9CCEC2E73B999823A8A60339 /* NotificationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFE7DDE900B5D730A3ED404 /* NotificationController.swift */; };
 		A00BDA13044DE88036ADC1FF /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02297A3860F35CFFEA8E0570 /* AppKit.framework */; };
 		AAF71FD4D6B45773DA9248E8 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7622B11D2604FBF82BADF3F5 /* Foundation.framework */; };
@@ -194,6 +195,7 @@
 		CFF096055C39F19938215420 /* RecoverySafetyChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoverySafetyChecker.swift; sourceTree = "<group>"; };
 		D0B5ADFE8B3F9D96BD4B623E /* FennecHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = FennecHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		D28391C38692AFD0EEB9408B /* CoreAudioProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioProperty.swift; sourceTree = "<group>"; };
+		7A11C0FFEE00000000000020 /* PrimaryRepairButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryRepairButtonStyle.swift; sourceTree = "<group>"; };
 		D829C0EC13A8BD0AE0098EE4 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		E0116E5ECF5DE3FE4F88F894 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EBEADEBA0C7EC8CC2E619169 /* Fennec-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Fennec-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -360,6 +362,7 @@
 				1FEDF8CEF7192028FA01B0BB /* AppModel.swift */,
 				3913E3A4C84114EFA828C0BA /* CoreAudioMonitor.swift */,
 				D28391C38692AFD0EEB9408B /* CoreAudioProperty.swift */,
+				7A11C0FFEE00000000000020 /* PrimaryRepairButtonStyle.swift */,
 				973809A098DA43BC5681C812 /* CoreAudioTypes.swift */,
 				BF62FD06C836551278EF2A5F /* FennecApp.swift */,
 				F1E81B922C1C991B91B9DC0C /* DetectionEngine.swift */,
@@ -609,6 +612,7 @@
 				E0E8FBA798201B7929ED4789 /* AppModel.swift in Sources */,
 				8F13B399321BB51CCECAE615 /* CoreAudioMonitor.swift in Sources */,
 				96B21F651B3C5BA1933BAD09 /* CoreAudioProperty.swift in Sources */,
+				7A11C0FFEE00000000000021 /* PrimaryRepairButtonStyle.swift in Sources */,
 				EEFF32BBAAE2C1FBA6C67168 /* CoreAudioTypes.swift in Sources */,
 				43F5E29056FBFB2B050829B4 /* FennecApp.swift in Sources */,
 				4AA33EB12F5BE962B056A3C2 /* DetectionEngine.swift in Sources */,

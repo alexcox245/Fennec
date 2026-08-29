@@ -81,17 +81,34 @@ are the milestones on `main`.
   the Trash. Plus `UNINSTALL.md`, `SECURITY.md`, and `LICENSE`.
 - **Setup checklist** driving every setup CTA from one model, so the popover,
   Settings, and first run cannot disagree.
-- **259 unit tests** in a standalone XCTest bundle, and CI that runs them.
+- **264 unit tests** in a standalone XCTest bundle, and CI that runs them.
 
 ### Changed
 
 - **The popover ends with the button.** "Repair Audio Now" moved from the
-  top of the controls to the bottom of the content, at twice the height and
-  with a 5 pt corner: last in the reading order, directly under the state
+  top of the controls to the bottom of the content, at twice the height:
+  last in the reading order, directly under the state
   that says whether pressing it is a good idea, and still above the
   Settings and Quit strip. The repair receipt and the days-without-incident
   sign came out with it; the running tally is still in the header and the
   footer, and every repair is still in the Activity window.
+
+- **The repair button behaves like a physical key.** A wrench and
+  screwdriver instead of refresh arrows, because circular arrows promise a
+  reload and this restarts the audio system. A 10 pt corner, a drop shadow
+  and lit top edge at rest, and a press that travels the whole control down
+  by exactly the resting shadow offset while the shadow collapses, so it
+  bottoms out the way a key does. A haptic tap fires on press-down, and a
+  second one when the work lands, so the press and the outcome are
+  bracketed by the same click. Reduce Motion keeps the state change and
+  drops the travel.
+
+- **The button says what it is doing.** "Repair Audio Now" becomes
+  "Repairing…" on press and "Audio repaired" with a check mark when the
+  restart lands, then returns to the offer. It stays out of service through
+  the confirmation so a second restart cannot be triggered by clicking the
+  result. Whether the fault stays gone is still decided a minute later, on
+  the receipt and in the Activity window.
 
 ### Fixed
 
