@@ -83,6 +83,16 @@ are the milestones on `main`.
   Settings, and first run cannot disagree.
 - **259 unit tests** in a standalone XCTest bundle, and CI that runs them.
 
+### Changed
+
+- **The popover ends with the button.** "Repair Audio Now" moved from the
+  top of the controls to the bottom of the content, at twice the height and
+  with a 5 pt corner: last in the reading order, directly under the state
+  that says whether pressing it is a good idea, and still above the
+  Settings and Quit strip. The repair receipt and the days-without-incident
+  sign came out with it; the running tally is still in the header and the
+  footer, and every repair is still in the Activity window.
+
 ### Fixed
 
 - **The microphone guard that never let a repair through.** `corespeechd`,
