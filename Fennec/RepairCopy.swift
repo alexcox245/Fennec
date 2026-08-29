@@ -91,7 +91,7 @@ enum RepairCopy {
         switch phase {
         case .idle: return "Repair Audio Now"
         case .working: return "Repairing…"
-        case .repaired: return "Audio repaired"
+        case .repaired: return repairedTitle
         }
     }
 
@@ -127,11 +127,22 @@ enum RepairCopy {
     }
 
     /// One line, and the same line whether Fennec caught it or the user
-    /// pressed the button: "Crackle repaired" (owner directive, T-043).
-    /// Whether the repair was automatic is Fennec's business, not news.
+    /// pressed the button. Whether the repair was automatic is Fennec's
+    /// business, not news.
+    ///
+    /// The exact words are shared with the button's result phase and with
+    /// the manual receipt (T-044). Three surfaces can report the same event
+    /// within seconds of each other: the banner, the button the user is
+    /// still looking at, and the row in Activity. Three different phrasings
+    /// for one outcome reads as three outcomes.
     static func notificationTitle(for record: RepairRecord) -> String {
-        record.succeeded ? "Crackle repaired" : "Fennec could not fix the crackle"
+        record.succeeded ? repairedTitle : "Fennec could not fix the crackle"
     }
+
+    /// The one sentence for "it worked", used everywhere it is said.
+    /// Changing it here changes the banner, the button, and the receipt
+    /// together, which is the point.
+    static let repairedTitle = "Audio repaired"
 
     /// A successful repair has an empty body on purpose. The title already
     /// says the only thing the user wanted to know, and a second line
@@ -160,7 +171,7 @@ enum RepairCopy {
         case .returned:
             return "Repaired, but the crackle came back"
         case .held:
-            return record.trigger == .automatic ? "Caught and fixed" : "Crackle repaired"
+            return record.trigger == .automatic ? "Caught and fixed" : repairedTitle
         }
     }
 
