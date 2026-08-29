@@ -53,7 +53,13 @@ enum DetectionSensitivity: String, CaseIterable, Codable, Identifiable {
 
 struct DetectionDecision: Equatable, Sendable {
     let signal: AudioSignalKind
+    /// For the event log: exactly what the engine saw, in the engine's own
+    /// terms. This is a diagnostic artifact with a technical reader, so it
+    /// keeps the counts, the window, and the mechanism.
     let reason: String
+    /// For a banner: what the person at the keyboard would say happened.
+    /// Never "Core Audio", never a timing (T-043).
+    let plainReason: String
     let signalCount: Int
     /// Wall-clock span between the first and last signal in the window.
     /// Zero when they all landed inside one 250 ms drain.
@@ -71,6 +77,7 @@ final class DetectionEngine {
             return DetectionDecision(
                 signal: .ioStoppedAbnormally,
                 reason: "Core Audio reported that device I/O stopped abnormally.",
+                plainReason: "Your sound cut out.",
                 signalCount: Int(batch.abnormalStops),
                 elapsedSeconds: 0,
                 windowSeconds: sensitivity.window
@@ -103,6 +110,7 @@ final class DetectionEngine {
         return DetectionDecision(
             signal: .processorOverload,
             reason: "Core Audio missed its real-time output deadline \(count) time\(count == 1 ? "" : "s") within \(Int(sensitivity.window)) seconds.",
+            plainReason: "Fennec heard crackling.",
             signalCount: count,
             elapsedSeconds: elapsed,
             windowSeconds: sensitivity.window

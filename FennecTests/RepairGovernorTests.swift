@@ -105,7 +105,7 @@ final class RepairGovernorTests: XCTestCase {
             now: now
         ))
         let reason = standDown.reason
-        XCTAssertTrue(reason.hasPrefix("3 restarts in "), reason)
+        XCTAssertTrue(reason.hasPrefix("3 repairs on "), reason)
         XCTAssertTrue(reason.contains("Fireface UCX II"), reason)
         XCTAssertTrue(
             reason.contains("not fixing this"),
@@ -115,13 +115,17 @@ final class RepairGovernorTests: XCTestCase {
         XCTAssertFalse(reason.lowercased().contains("sorry"))
     }
 
-    func testTheReasonReportsTheRealSpan() throws {
+    /// The span is still measured and still recorded; it is just not read
+    /// aloud to the user any more (T-043). How fast Fennec gave up is not
+    /// the point; that it gave up, and why, is.
+    func testTheSpanIsStillMeasuredButNotSpoken() throws {
         let standDown = try XCTUnwrap(RepairGovernor.standDown(
             records: repairs([.returned, .returned, .returned], spacing: 120),
             now: now
         ))
         XCTAssertEqual(standDown.elapsedSeconds, 240, accuracy: 0.001)
-        XCTAssertTrue(standDown.reason.contains("240 s"), standDown.reason)
+        XCTAssertFalse(standDown.reason.contains("240 s"), standDown.reason)
+        XCTAssertFalse(standDown.reason.contains(" s."), standDown.reason)
     }
 
     // MARK: Verification window
@@ -134,7 +138,7 @@ final class RepairGovernorTests: XCTestCase {
 
 /// A repair is provisional until the fault fails to return, and the copy has
 /// to say so: the instant a repair finishes, the only established fact is
-/// that a new `coreaudiod` process exists.
+/// that the reset went through, not that the crackle is gone for good.
 final class RepairOutcomeCopyTests: XCTestCase {
     private func record(_ outcome: RepairOutcome, trigger: RepairRecord.Trigger = .automatic) -> RepairRecord {
         Fixture.repair(
@@ -148,28 +152,31 @@ final class RepairOutcomeCopyTests: XCTestCase {
 
     func testAPendingRepairDoesNotClaimVictory() {
         let headline = RepairCopy.receiptHeadline(for: record(.pending))
-        XCTAssertEqual(headline, "Restarted in 0.84 s · watching")
+        XCTAssertEqual(headline, "Repaired · listening for it to come back")
         XCTAssertFalse(headline.contains("fixed"))
     }
 
     func testOnlyAHeldRepairIsCalledFixed() {
-        XCTAssertEqual(RepairCopy.receiptHeadline(for: record(.held)), "Caught and fixed in 0.84 s")
+        XCTAssertEqual(RepairCopy.receiptHeadline(for: record(.held)), "Caught and fixed")
     }
 
     func testAReturnedFaultSaysSoPlainly() {
-        XCTAssertEqual(RepairCopy.receiptHeadline(for: record(.returned)), "Restarted, but the fault came back")
-        XCTAssertTrue(RepairCopy.receiptDetail(for: record(.returned)).contains("did not clear it"))
+        XCTAssertEqual(RepairCopy.receiptHeadline(for: record(.returned)), "Repaired, but the crackle came back")
+        XCTAssertTrue(RepairCopy.receiptDetail(for: record(.returned)).contains("did not make it stay gone"))
     }
 
     func testTheCorrectionBannerNamesTheDeviceAndTheImplication() {
         let body = RepairCopy.faultReturnedBody(for: record(.returned))
         XCTAssertTrue(body.contains("MacBook Pro Speakers"))
-        XCTAssertTrue(body.contains("not the cure"))
+        XCTAssertTrue(
+            body.contains("Something else is causing it"),
+            "The user has to be told repairing is not the cure; that is the whole point."
+        )
         XCTAssertFalse(body.contains("!"))
     }
 
     func testAManualRepairThatHeldIsNotCreditedToFennec() {
-        XCTAssertEqual(RepairCopy.receiptHeadline(for: record(.held, trigger: .manual)), "Restarted in 0.84 s")
+        XCTAssertEqual(RepairCopy.receiptHeadline(for: record(.held, trigger: .manual)), "Crackle repaired")
     }
 
     func testNoOutcomeProducesEmptyOrShoutingCopy() {

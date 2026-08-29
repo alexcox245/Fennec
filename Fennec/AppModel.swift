@@ -381,7 +381,7 @@ final class AppModel: ObservableObject {
         }
         switch monitoringState {
         case .starting:
-            return "Attaching to the current Core Audio output device…"
+            return "Getting ready to listen…"
         case .monitoring:
             return "Watching \(currentDevice.name) for missed real-time deadlines."
         case .stopped:
@@ -615,7 +615,7 @@ final class AppModel: ObservableObject {
             } else {
                 manualRepairWarning = ManualRepairWarning(
                     message: report.blockers.joined(separator: "\n\n")
-                        + "\n\nRestarting Core Audio briefly disconnects playback and recording."
+                        + "\n\nRepairing stops your sound for a moment."
                 )
                 ensureConfirmationHasAHost()
             }
@@ -695,12 +695,12 @@ final class AppModel: ObservableObject {
         switch helperManager.state {
         case .enabled:
             reason = "Fennec's repair helper is installed but is not answering (rebuilding its "
-                + "registration did not bring it back), so it cannot restart Core Audio on its own."
+                + "registration did not bring it back), so it cannot fix crackling on its own."
         case .awaitingApproval:
             reason = "macOS is waiting for you to allow Fennec's repair helper under "
-                + "Login Items & Extensions, so it cannot restart Core Audio on its own."
+                + "Login Items & Extensions, so it cannot fix crackling on its own."
         case .notConfigured, .unavailable:
-            reason = "Fennec's repair helper is not enabled, so it cannot restart Core Audio on its own."
+            reason = "Fennec's repair helper is not enabled, so it cannot fix crackling on its own."
         }
         administratorRepairRequest = AdministratorRepairRequest(
             reason: reason,
@@ -1307,7 +1307,7 @@ final class AppModel: ObservableObject {
 
         guard !monitor.isAttached else { return }
 
-        monitoringState = .failed("Fennec lost its Core Audio listeners: \(error.localizedDescription)")
+        monitoringState = .failed("Fennec stopped listening: \(error.localizedDescription)")
         needsAttention = true
 
         guard !monitorRecoveryInFlight else { return }
@@ -1331,7 +1331,9 @@ final class AppModel: ObservableObject {
         let suppressed = detectionNotificationBudget.suppressedSinceLastPost()
         detectionNotificationBudget.clearSuppressed()
         notificationController.postUnrepairedDetection(
-            reason: decision.reason,
+            // The banner gets the plain sentence; `reason` stays technical
+            // for the event log, which is where precision belongs (T-043).
+            reason: decision.plainReason,
             blocker: blocker,
             alsoSuppressed: suppressed
         )

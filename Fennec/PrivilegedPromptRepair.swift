@@ -45,7 +45,7 @@ enum PrivilegedPromptRepair {
                     try process.run()
                     process.waitUntilExit()
                     if process.terminationStatus == 0 {
-                        continuation.resume(returning: "Core Audio restarted using administrator authorization.")
+                        continuation.resume(returning: "Repaired using your administrator password.")
                     } else {
                         let data = errorPipe.fileHandleForReading.readDataToEndOfFile()
                         let message = String(data: data, encoding: .utf8)?

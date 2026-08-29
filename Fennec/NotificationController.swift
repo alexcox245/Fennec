@@ -216,7 +216,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
     /// where the machine stays broken and the user has to decide what next.
     func postStandDown(reason: String) {
         let content = UNMutableNotificationContent()
-        content.title = "Fennec has stopped restarting Core Audio"
+        content.title = "Fennec has stopped repairing"
         content.body = reason
         content.categoryIdentifier = Category.failed
         content.sound = .default

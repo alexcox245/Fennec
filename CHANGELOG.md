@@ -5,6 +5,21 @@ are the milestones on `main`.
 
 ## Unreleased
 
+### Changed
+
+- **Fennec speaks plainly now.** Nobody installs this because they know
+  what Core Audio is; they heard a crackle and want it gone. So the words
+  are the words they would use. A successful repair posts one line,
+  "Crackle repaired", and nothing else. Causes read "Repeated crackling on
+  MacBook Pro Speakers" instead of counting signals and seconds. Receipts,
+  the stand-down notice, and the stall advisory all dropped their timings,
+  load averages, and memory-pressure levels.
+
+  None of it is lost: the event log still records every count, span, and
+  code exactly as before, and the About panel still names the literal
+  command that runs as root, because a privilege disclosure that goes vague
+  is not being friendly.
+
 ### Added
 
 - **The red mark: crackle detection you can see.** From the first
@@ -81,7 +96,7 @@ are the milestones on `main`.
   the Trash. Plus `UNINSTALL.md`, `SECURITY.md`, and `LICENSE`.
 - **Setup checklist** driving every setup CTA from one model, so the popover,
   Settings, and first run cannot disagree.
-- **264 unit tests** in a standalone XCTest bundle, and CI that runs them.
+- **265 unit tests** in a standalone XCTest bundle, and CI that runs them.
 
 ### Changed
 

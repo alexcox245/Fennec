@@ -194,7 +194,7 @@ zsh Scripts/build-release.sh
 
 ## Validation status
 
-The full Debug and Release matrix builds for both targets, 264 unit tests
+The full Debug and Release matrix builds for both targets, 265 unit tests
 pass, `audit-source.sh` passes including the source-manifest check, and
 `build-release.sh` verifies the bundle layout and code signature.
 

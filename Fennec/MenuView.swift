@@ -205,7 +205,7 @@ struct MenuView: View {
                     if case .failed = model.monitoringState {
                         Button("Restart Monitor") { model.restartMonitoring() }
                             .controlSize(.small)
-                            .help("Tear down and rebuild Fennec's Core Audio listeners.")
+                            .help("Tear down and rebuild the listeners Fennec uses to hear crackling.")
                     }
                 }
             }
@@ -273,7 +273,7 @@ struct MenuView: View {
                 // by clicking what they are already reading.
                 .disabled(primaryPhase != .idle)
                 .keyboardShortcut(.defaultAction)
-                .help("Restart Core Audio now. Playback and recording stop for about a second.")
+                .help("Fix crackling now. Sound stops for a moment.")
             }
         }
         // On the Group, not the button. The confirmation card replaces the
@@ -298,7 +298,7 @@ struct MenuView: View {
                     .font(.caption)
                     .foregroundStyle(.red)
                     .accessibilityHidden(true)
-                Text("Stopped restarting Core Audio")
+                Text("Stopped repairing")
                     .font(.caption.weight(.bold))
                 Spacer()
             }
@@ -324,7 +324,7 @@ struct MenuView: View {
                 .stroke(Color.red.opacity(0.30), lineWidth: 1)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Fennec stopped restarting Core Audio. \(standDown.reason)")
+        .accessibilityLabel("Fennec stopped repairing. \(standDown.reason)")
     }
 
     /// Asked inline, never as an alert.
@@ -467,7 +467,7 @@ struct MenuView: View {
         }
         return loginItem.isEnabled
             ? "Running in the background since login"
-            : "Listening for Core Audio trouble"
+            : "Listening for crackling"
     }
 
     /// The button's phase, derived from the model rather than stored, except

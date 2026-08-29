@@ -22,7 +22,7 @@ enum MenuBarIconState: String, CaseIterable, Sendable {
         switch self {
         case .listening: return "Fennec, listening"
         case .detected: return "Fennec, crackling detected"
-        case .repairing: return "Fennec, restarting Core Audio"
+        case .repairing: return "Fennec, repairing"
         case .paused: return "Fennec, paused"
         case .attention: return "Fennec, needs attention"
         }

@@ -72,7 +72,7 @@ struct WelcomeView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Fennec")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
-                    Text("Catches Core Audio crackling and restarts it before you have to.")
+                    Text("Catches crackling and fixes it before you have to.")
                         .font(.title3)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -257,7 +257,7 @@ struct WelcomeView: View {
     }
 
     private var testButtonTitle: String {
-        if model.isRepairing { return "Restarting Core Audio…" }
+        if model.isRepairing { return "Repairing…" }
         if model.isPreparingRepair { return "Checking what is using audio…" }
         return "Run a Test Repair"
     }

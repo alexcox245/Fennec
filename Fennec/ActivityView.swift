@@ -38,12 +38,10 @@ struct ActivityView: View {
             HStack(alignment: .top, spacing: 20) {
                 statistic(RepairCopy.headlineNumber(for: history.summary), "repairs that held", accent: FennecBrand.gold)
                 statistic("\(history.summary.last7Days)", "attempts in 7 days")
-                if let typical = history.summary.typicalSeconds {
-                    statistic(RepairCopy.duration(typical), "typical gap")
-                }
-                if let fastest = history.summary.fastestSeconds {
-                    statistic(RepairCopy.duration(fastest), "fastest")
-                }
+                // "typical gap 0.9 s" and "fastest 0.4 s" were here. They
+                // answered a question nobody asked and spoke in seconds, which
+                // this window no longer does (T-043). Both are still on every
+                // repair in the event log.
                 Spacer(minLength: 0)
             }
 
@@ -89,7 +87,7 @@ struct ActivityView: View {
                 .accessibilityHidden(true)
             Text("Nothing to report")
                 .font(.title3.weight(.medium))
-            Text("Fennec has not had to restart Core Audio. This page fills in when it does.")
+            Text("Fennec has not had to repair anything yet. This page fills in when it does.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

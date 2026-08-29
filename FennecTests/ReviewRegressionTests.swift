@@ -195,7 +195,7 @@ final class ReviewRegressionTests: XCTestCase {
                 .first { $0.kind == .helper }
         )
         XCTAssertTrue(
-            step.detail.contains("cannot repair on its own"),
+            step.detail.contains("cannot fix it on its own"),
             "\"every repair asks for your password\" reads as if automatic repair merely prompts."
         )
         XCTAssertTrue(step.compactDetail.contains("cannot repair on its own"))
