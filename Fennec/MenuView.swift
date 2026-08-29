@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct MenuView: View {
@@ -7,6 +8,12 @@ struct MenuView: View {
     @ObservedObject private var history: RepairHistoryStore
     @ObservedObject private var loginItem: LoginItemManager
     @ObservedObject private var notifications: NotificationController
+
+    /// The result flash after a manual repair. Deliberately view state and
+    /// not model state: it is a two-and-a-half-second acknowledgement of a
+    /// click, meaningless to anything that was not on screen to see it.
+    @State private var showingRepairConfirmation = false
+    @State private var confirmationDismissal: Task<Void, Never>?
 
     init(model: AppModel) {
         self.model = model
@@ -239,20 +246,43 @@ struct MenuView: View {
                     model.requestManualRepair()
                 } label: {
                     HStack(spacing: 9) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
+                        // A tool, not a refresh arrow. The circular arrows
+                        // read as "reload this thing", which is the wrong
+                        // promise: Fennec is not refreshing the popover, it
+                        // is going in and fixing the audio system. Wrench and
+                        // screwdriver over a hammer because a hammer is
+                        // Xcode's Build symbol to anyone who has seen one,
+                        // and this is a repair, not a build.
+                        Image(systemName: RepairCopy.primaryButtonSymbol(for: primaryPhase))
                             .font(.system(size: 15, weight: .semibold))
-                        Text(primaryButtonTitle)
+                            .contentTransition(.symbolEffect(.replace))
+                        Text(RepairCopy.primaryButtonTitle(for: primaryPhase))
                             .font(.system(size: 14, weight: .semibold))
                             .lineLimit(1)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 14)
+                    .animation(.easeInOut(duration: 0.18), value: primaryPhase)
                 }
-                .buttonStyle(PrimaryRepairButtonStyle())
-                .disabled(model.isRepairing || model.isPreparingRepair)
+                .buttonStyle(PrimaryRepairButtonStyle(
+                    readsAtFullStrengthWhileDisabled: primaryPhase == .repaired
+                ))
+                // Held through the confirmation too: "Audio repaired" is a
+                // result, not an offer, and a second restart is the last
+                // thing a user who just got their audio back wants to trigger
+                // by clicking what they are already reading.
+                .disabled(primaryPhase != .idle)
                 .keyboardShortcut(.defaultAction)
                 .help("Restart Core Audio now. Playback and recording stop for about a second.")
             }
+        }
+        // On the Group, not the button. The confirmation card replaces the
+        // button while a repair is being agreed to, and a hook that lives on
+        // the button would be torn down and rebuilt across exactly the
+        // transition it exists to watch.
+        .onChange(of: model.isRepairing) { wasRepairing, isRepairing in
+            guard wasRepairing, !isRepairing else { return }
+            confirmRepairIfItSucceeded()
         }
     }
 
@@ -440,12 +470,37 @@ struct MenuView: View {
             : "Listening for Core Audio trouble"
     }
 
-    private var primaryButtonTitle: String {
-        if model.isRepairing { return "Restarting Core Audio…" }
-        // Under heavy load (Fennec's own premise) the safety scan is slow
-        // enough that the button used to look untouched after a click.
-        if model.isPreparingRepair { return "Checking what is using audio…" }
-        return "Repair Audio Now"
+    /// The button's phase, derived from the model rather than stored, except
+    /// for the confirmation, which is a timed flash with no model state
+    /// behind it.
+    private var primaryPhase: RepairCopy.PrimaryPhase {
+        if model.isRepairing || model.isPreparingRepair { return .working }
+        return showingRepairConfirmation ? .repaired : .idle
+    }
+
+    /// The second haptic: the tap that says the work landed, fired at the
+    /// same instant the button turns into its own result, so the press and
+    /// the outcome are bracketed by the same click.
+    ///
+    /// Only for a repair that actually succeeded. A failure has `lastError`
+    /// to speak for it, and a confirming tap on a repair that did not happen
+    /// is the machine lying with its hardware.
+    ///
+    /// Note the claim this makes and does not make: it says the restart
+    /// completed, which is established. Whether the *fault* is gone takes a
+    /// minute of quiet to know, which is what `RepairRecord.outcome` and the
+    /// Activity window are for (rule 9). Nothing here spends aviator gold.
+    private func confirmRepairIfItSucceeded() {
+        guard history.records.first?.succeeded == true else { return }
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+        showingRepairConfirmation = true
+
+        confirmationDismissal?.cancel()
+        confirmationDismissal = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2.5))
+            guard !Task.isCancelled else { return }
+            showingRepairConfirmation = false
+        }
     }
 
     private var autoRepairDetail: String {
@@ -500,36 +555,5 @@ struct MenuView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// The look of the one button in this app that restarts the audio system.
-///
-/// Not `.borderedProminent`. The system style owns its corner radius, and
-/// the brief here is a 5 pt corner on a control twice the standard height:
-/// a hard, deliberate rectangle rather than a pill, which is the punk half
-/// of the brand doing its job in the one place the user actually commits to
-/// something. Pressed and disabled states are drawn here because a plain
-/// button style provides neither for free.
-private struct PrimaryRepairButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    /// Twice the 28 pt height of the `.large` bordered button this replaces.
-    static let height: CGFloat = 56
-    static let cornerRadius: CGFloat = 5
-
-    func makeBody(configuration: Configuration) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-        return configuration.label
-            .foregroundStyle(Color.white.opacity(isEnabled ? 1 : 0.55))
-            .frame(maxWidth: .infinity, minHeight: Self.height)
-            .background(shape.fill(fill(pressed: configuration.isPressed)))
-            .contentShape(shape)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-
-    private func fill(pressed: Bool) -> Color {
-        guard isEnabled else { return FennecBrand.sky.opacity(0.32) }
-        return pressed ? FennecBrand.sky.opacity(0.78) : FennecBrand.sky
     }
 }

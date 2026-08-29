@@ -58,6 +58,39 @@ enum RepairCopy {
             : record.message
     }
 
+    // MARK: The primary button
+
+    /// What the popover's one big button is doing right now.
+    ///
+    /// `working` deliberately covers both halves of a manual repair, the
+    /// safety scan and the restart itself. They used to read as two separate
+    /// sentences, because before the button changed shape on press there was
+    /// nothing else to prove the click had landed. The pressed state and the
+    /// haptic do that job now, so the button can say the one thing the user
+    /// cares about instead of narrating its own internals.
+    enum PrimaryPhase: String, CaseIterable, Sendable {
+        case idle
+        case working
+        case repaired
+    }
+
+    static func primaryButtonTitle(for phase: PrimaryPhase) -> String {
+        switch phase {
+        case .idle: return "Repair Audio Now"
+        case .working: return "Repairing…"
+        case .repaired: return "Audio repaired"
+        }
+    }
+
+    /// Kept beside the title so the two can never drift: a check mark next to
+    /// "Repairing…" would be a lie for as long as it was on screen.
+    static func primaryButtonSymbol(for phase: PrimaryPhase) -> String {
+        switch phase {
+        case .idle, .working: return "wrench.and.screwdriver.fill"
+        case .repaired: return "checkmark.circle.fill"
+        }
+    }
+
     // MARK: Notifications
 
     /// The heads-up posted the moment the automatic path commits to a

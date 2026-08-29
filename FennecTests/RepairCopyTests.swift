@@ -172,6 +172,47 @@ final class RepairCopyTests: XCTestCase {
         }
     }
 
+    // MARK: The primary button
+
+    func testTheButtonOffersTheActionBeforeItIsPressed() {
+        XCTAssertEqual(RepairCopy.primaryButtonTitle(for: .idle), "Repair Audio Now")
+        XCTAssertEqual(RepairCopy.primaryButtonSymbol(for: .idle), "wrench.and.screwdriver.fill")
+    }
+
+    /// One sentence for both halves of the work. The safety scan and the
+    /// restart are Fennec's internals, not the user's problem.
+    func testTheButtonSaysOneThingWhileItWorks() {
+        XCTAssertEqual(RepairCopy.primaryButtonTitle(for: .working), "Repairing\u{2026}")
+        XCTAssertEqual(RepairCopy.primaryButtonSymbol(for: .working), "wrench.and.screwdriver.fill")
+    }
+
+    func testTheButtonConfirmsWithACheckMark() {
+        XCTAssertEqual(RepairCopy.primaryButtonTitle(for: .repaired), "Audio repaired")
+        XCTAssertEqual(RepairCopy.primaryButtonSymbol(for: .repaired), "checkmark.circle.fill")
+    }
+
+    /// The check mark belongs to exactly one phase. A tick beside
+    /// "Repairing\u{2026}" would be a lie for as long as it was on screen.
+    func testOnlyTheResultPhaseWearsTheCheckMark() {
+        let ticked = RepairCopy.PrimaryPhase.allCases.filter {
+            RepairCopy.primaryButtonSymbol(for: $0).hasPrefix("checkmark")
+        }
+        XCTAssertEqual(ticked, [.repaired])
+    }
+
+    func testEveryButtonPhaseHasDistinctNonEmptyCopy() {
+        let titles = RepairCopy.PrimaryPhase.allCases.map { RepairCopy.primaryButtonTitle(for: $0) }
+        XCTAssertEqual(Set(titles).count, titles.count, "Two phases share a title: \(titles)")
+        for title in titles {
+            XCTAssertFalse(title.isEmpty)
+            XCTAssertFalse(title.contains("!"), "Fennec does not exclaim: \(title)")
+            XCTAssertFalse(
+                title.unicodeScalars.contains { $0.properties.isEmoji && $0.value > 0x238C },
+                "Fennec does not use emoji in product UI: \(title)"
+            )
+        }
+    }
+
     // MARK: Receipts and totals
 
     func testReceiptLeadsWithTheTimeToRecover() {
