@@ -137,7 +137,7 @@ struct HelperClient: Sendable {
                 }
 
                 DispatchQueue.global().asyncAfter(deadline: .now() + 10) {
-                    gate.finish(.failure(HelperCallError(message: "The Core Audio repair timed out.")))
+                    gate.finish(.failure(HelperCallError(message: "The repair timed out.")))
                     connection.invalidate()
                 }
             } catch {

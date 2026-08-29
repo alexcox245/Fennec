@@ -81,9 +81,13 @@ final class StallAdvisorTests: XCTestCase {
         )
         let body = RepairCopy.stallAdvisoryBody(for: advisory)
         XCTAssertTrue(body.contains("4 times in 3 minutes"))
-        XCTAssertTrue(body.contains("load 1.5 per core"))
-        XCTAssertTrue(body.contains("memory pressure warning"))
-        XCTAssertTrue(body.contains("restarting Core Audio will not help"))
+        // The load average and the memory-pressure level moved to the event
+        // log (T-043). The banner says the consequence, not the metric.
+        XCTAssertFalse(body.lowercased().contains("per core"), body)
+        XCTAssertFalse(body.lowercased().contains("memory pressure"), body)
+        XCTAssertFalse(body.lowercased().contains("core audio"), body)
+        XCTAssertTrue(body.contains("working too hard"), body)
+        XCTAssertTrue(body.contains("repairing will not help"), body)
     }
 
     func testAdvisoryCopyOmitsNormalMemoryPressure() {

@@ -167,7 +167,7 @@ enum SetupChecklist {
             return SetupStep(
                 kind: .helper,
                 title: "Repair without a password prompt",
-                detail: "Fennec installs a small root helper that can do exactly one thing: restart Core Audio. Without it Fennec still detects crackling, but it cannot repair on its own: you press Repair Audio Now and type your password.",
+                detail: "Fennec installs a small helper that can do exactly one thing: reset your sound. Without it Fennec still hears crackling, but it cannot fix it on its own: you press Repair Audio Now and type your password.",
                 compactDetail: "Without it, Fennec detects but cannot repair on its own.",
                 actionTitle: "Enable Helper",
                 isComplete: false,

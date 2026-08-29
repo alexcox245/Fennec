@@ -69,11 +69,14 @@ enum RepairGovernor {
         let deviceName: String
 
         /// Deadpan, specific, and it names the possibility the user needs to
-        /// consider: the problem may not be Core Audio.
+        /// consider: repairing is not what fixes this.
+        ///
+        /// No timing here (T-043). "3 repairs in 12 minutes" told the user
+        /// how fast Fennec gave up, which is not the point; that it gave up,
+        /// and why, is.
         var reason: String {
-            let span = RepairCopy.duration(elapsedSeconds)
-            return "\(attempts) restarts in \(span) did not hold on \(deviceName). "
-                + "Restarting Core Audio is not fixing this. Fennec has stood down for an hour."
+            return "\(attempts) repairs on \(deviceName) did not hold. "
+                + "Repairing is not fixing this, so Fennec has stood down for an hour."
         }
 
         func remaining(at now: Date) -> TimeInterval? {

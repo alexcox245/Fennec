@@ -58,7 +58,7 @@ These are load-bearing. Violating one produces a build that looks fine and fails
 
 11. **Every window goes through `WindowPresenter`, including Settings.** Fennec is `LSUIElement`, so it has no main menu, which silently breaks ⌘W, ⌘Q and ⌘, in any window it opens. `WindowPresenter` is `.accessory` while only the popover shows and `.regular` for exactly as long as a real window is open, so the standard shortcuts work whenever there is something to type them at. Do **not** reintroduce SwiftUI's `Settings` scene: its only programmatic entry point is the undocumented `showSettingsWindow:` responder action, which reports success and then does nothing in an accessory app (verified on macOS 26). Never decide activation policy by counting `NSApp.windows` without filtering; the `MenuBarExtra` popover is an `NSStatusBarWindow`, and counting it strands the app in `.regular` forever.
 
-12. **User-facing repair copy lives in `RepairCopy.swift`, and it is under test.** The notification, the menu receipt, and the activity list must say the same thing in the same voice. `FennecTests/RepairCopyTests.swift` pins the exact strings, including a check that nothing shouts or uses emoji. If you need new copy, add it there rather than inlining a string in a view.
+12. **User-facing repair copy lives in `RepairCopy.swift`, and it is under test.** The notification, the menu receipt, and the activity list must say the same thing in the same voice. `FennecTests/RepairCopyTests.swift` pins the exact strings, including checks that nothing shouts, uses emoji, says "Core Audio", or states a timing. If you need new copy, add it there rather than inlining a string in a view. See §7 for the register and for the three places precision still wins.
 
 ---
 
@@ -258,16 +258,28 @@ Composite: **a calm, oversized listener in a silent place, wearing gear that mea
 
 ### Voice
 
-Deadpan, specific, technically literal. Confident without selling. The fox is not grinning and neither is the copy.
+Deadpan, specific, plain. Confident without selling. The fox is not grinning and neither is the copy.
+
+**Two hard rules, set by the owner in T-043 and enforced by `RepairCopyTests`:**
+
+1. **Never say "Core Audio" in anything a user reads.** Nobody installs Fennec because they know what Core Audio is. They heard a crackle and want it gone. Say crackle, sound, speakers, repair.
+2. **Never state a timing in user-facing copy.** "Fixed in 0.54 s" answers a question nobody asked. Counts, spans, load averages and memory pressure all belong in the event log, not in a banner.
 
 | Do | Don't |
 |---|---|
-| "Core Audio overloaded twice in 3 seconds." | "Uh oh! Something went wrong 😬" |
+| "Crackle repaired" | "Core Audio restarted in 0.84 s." |
+| "Repeated crackling on MacBook Pro Speakers." | "2 crackle signals in 5.8 s on MacBook Pro Speakers." |
 | "Repair Audio Now" | "Fix My Sound!" |
 | "Skipped: microphone is active." | "We couldn't do that right now." |
-| "Detects the failure signal, not the sound." | "AI-powered audio healing." |
+| "This Mac is working too hard to keep up." | "load 1.47 per core, memory pressure warning" |
 
-State the mechanism. Name the threshold. Admit the limitation; the README already does this well ("Fennec detects the Core Audio failure signal, not the acoustic sound"). Keep that register. No exclamation marks, no emoji in product UI, no anthropomorphising the fox in copy.
+Plain is not vague. Still name the thing that happened and admit the limitation: Fennec hears the failure signal, not the sound itself, and it says so. No exclamation marks, no emoji in product UI, no anthropomorphising the fox in copy.
+
+**Where precision still wins, and must not be plainened:**
+
+- **The event log** (`EventLogger`, `events.jsonl`). A diagnostic artifact with a technical reader. Counts, spans, OSStatus codes, `coreaudiod`, all of it stays. `DetectionDecision` carries both: `reason` for the log, `plainReason` for the banner.
+- **`PrivilegeDisclosure.swift` and the About panel** (rule 10). This is the disclosure of what runs as root. Vagueness here is not friendliness, it is concealment. It names `coreaudiod` and the literal command on purpose, and `FirstRunTests` checks the disclosed command against the executed one.
+- **Internal error strings** carrying an OSStatus or an XPC failure. They surface rarely, and when they do the reader needs the code.
 
 ### Palette
 
@@ -330,7 +342,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-043**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-044**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -351,6 +363,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 
 | ID | Task | Completed | Commit | Notes |
 |---|---|---|---|---|
+| T-043 | Plain language: no "Core Audio", no timings | 2026-08-30 | `1945971` | Owner directive, and a deliberate reversal of the register §7 used to prescribe. "Never say Core Audio, no user knows what that means. They hear a crackle and want it resolved." The repair notification is now the title "Crackle repaired" and **an empty body**, identical for automatic and manual, because which one it was is Fennec's business. Causes lost their counts and spans ("Repeated crackling on MacBook Pro Speakers."), receipts lost their durations, the stand-down reason lost its span, and the stall advisory lost the load average and memory-pressure level. The two timing tiles came out of the Activity header. `RepairCopy.duration` survives, unused by any product surface and documented as log-and-diagnostics only. `DetectionDecision` now carries two strings: `reason` stays technical for the event log, `plainReason` ("Fennec heard crackling.") goes to the banner. 33 strings rewritten across 12 files. §7 was rewritten to state the new rules and, importantly, the three places precision still wins: the event log, `PrivilegeDisclosure` and the About panel (rule 10 disclosure of what runs as root, which must stay literal), and internal errors carrying an OSStatus. Rule 12 updated to match. 25 pinned-string tests were rewritten rather than deleted, and a new `testNoUserFacingCopyNamesCoreAudioOrATiming` sweeps every banner and receipt string across four record shapes so the directive is enforced and not just applied once. **Left inconsistent, owner's call:** the button still says "Audio repaired" (T-042, explicitly requested) while the notification says "Crackle repaired"; unifying is a one-line change in `RepairCopy.primaryButtonTitle`. |
 | T-042 | The button reports its own outcome | 2026-08-30 | `368b266` | Owner-directed, second half of the button pass. The primary control becomes a three-phase machine: "Repair Audio Now", "Repairing…", "Audio repaired" with a check mark, plus a second haptic tap at completion so the press and the outcome are bracketed by the same click. `working` deliberately collapses the old two-sentence narration ("Checking what is using audio…" then "Restarting Core Audio…"); those existed because a click used to leave the button looking untouched, and T-041's pressed state and haptic now do that job. Copy and symbol both moved into `RepairCopy` under rule 12, pinned by 5 new cases including one asserting the check mark belongs to exactly one phase. The confirmation is view state, not model state: a 2.5 s flash means nothing to anything that was not on screen. Disabled through the flash so a click cannot start a second restart, but drawn at full strength via the style's `readsAtFullStrengthWhileDisabled`, because a result should be readable. The completion hook sits on the Group, not the button, or the confirmation card swapping in would tear it down across the transition it watches. **Rule 9 tension, owner's call, flagged not resolved:** "Audio repaired" is a claim from `succeeded` alone, which rule 9 reserves. What is established at that instant is that the restart completed; whether the fault is gone takes a minute. Narrowed as far as the wording allows: the flash only fires on a succeeded record, and no aviator gold is spent, so the held/returned accounting is untouched. "Core Audio restarted" is a one-line swap in `RepairCopy.primaryButtonTitle` if the rule should win. |
 | T-041 | The repair button becomes a physical control | 2026-08-30 | `368b266` | Owner-directed. The refresh arrows read as "reload this thing", the wrong promise for a control that restarts the audio system, so the symbol is now `wrench.and.screwdriver.fill`; a hammer was asked about and declined because it is Xcode's Build symbol to anyone who has seen one. Corner radius 5 to 10 pt. The button is drawn as a raised key: a downward drop shadow and a lit top edge at rest, and a press that travels the whole control down by exactly the resting shadow offset while the shadow collapses, so it reads as bottoming out. `offset` does not participate in layout, so nothing around it moves. A haptic tap fires on press-down via `NSHapticFeedbackManager`, which is already a no-op without a Force Touch trackpad and already honours the system haptic setting, so Fennec adds no setting of its own. Reduce Motion drops the travel animation and keeps the state change. Style extracted from `MenuView` into `PrimaryRepairButtonStyle.swift` so it can be compiled into a throwaway harness and pressed for real with a no-op action: rest, held, and disabled were captured that way, and the haptic call site was proved reached by temporary instrumentation rather than assumed. Never pressed in the real app (rule 4). |
 | T-040 | The popover ends with the button | 2026-08-29 | `d09d6e5` | Owner-directed layout pass, decided from a screenshot. The repair receipt card and the days-without-incident sign both come out of the popover: the header tally, the footer line, and the Activity window already carry that information, and the popover was ending on two read-only blocks instead of the action. "Repair Audio Now" moves from the top of `repairControls` to the bottom of the content, above the Settings/status/More/Quit strip, so the button is last in the reading order and sits under the state that says whether pressing it is a good idea. The inline confirmation moves with it, keeping rule 7 intact: the surface that asks is the surface that was going to act. New `PrimaryRepairButtonStyle` at 56 pt (twice the `.large` bordered height) with a 5 pt corner, because `.borderedProminent` owns its radius; pressed and disabled fills are drawn by hand since a custom style gets neither free. `RepairCopy` untouched, so rule 12 and `RepairCopyTests` still pin every string. Left behind deliberately: `DaysWithoutIncident`, its 9 tests, and `AppModel.daysWithoutIncident` are now unreferenced by any view. Kept rather than deleted because the sign is named in §7 as a brand element and the model is pure, tested logic; if it is not coming back, remove all three together. |

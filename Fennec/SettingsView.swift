@@ -57,19 +57,19 @@ struct SettingsView: View {
 
                 HStack {
                     Button("Restart Monitor") { model.restartMonitoring() }
-                        .help("Tear down and rebuild Fennec's Core Audio listeners. Does not touch your audio.")
+                        .help("Tear down and rebuild the listeners Fennec uses to hear crackling. Does not touch your sound.")
                     Button("Repair Audio Now") { model.requestManualRepair() }
                         .buttonStyle(.borderedProminent)
                         .tint(FennecBrand.sky)
                         .disabled(model.isRepairing || model.isPreparingRepair)
-                        .help("Restart Core Audio now. Playback and recording stop for about a second.")
+                        .help("Fix crackling now. Sound stops for a moment.")
                 }
             }
 
             Section("Automatic Repair") {
                 Toggle("Repair crackling automatically", isOn: $settings.autoRepairEnabled)
                     .disabled(!helper.state.isReachable)
-                Text("One overload is usually a harmless blip. Two in a row is the failure that stays broken until Core Audio restarts, so Fennec waits for the second one, then fixes it.")
+                Text("One blip is usually nothing. Two in a row is the fault that stays broken until Fennec steps in, so it waits for the second one, then fixes it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -284,7 +284,7 @@ struct SettingsView: View {
 
             Section {
                 Label {
-                    Text("Restarting coreaudiod briefly disconnects Core Audio playback and recording. Fennec's safety checks reduce the chance of interrupting a call or recording; manual repair always remains available.")
+                    Text("A repair stops all sound on this Mac for a moment. Fennec's safety checks reduce the chance of interrupting a call or a recording; repairing by hand is always available.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } icon: {

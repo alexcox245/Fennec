@@ -4,16 +4,30 @@ import Foundation
 ///
 /// It lives in one place for two reasons. The obvious one: the notification,
 /// the menu receipt, and the activity list must not drift apart. The real
-/// one: this copy is the product. Fennec's whole claim is that it names the
-/// mechanism instead of shrugging: "Core Audio missed its deadline twice in
-/// 5.8 s", never "something went wrong". Keeping the strings pure keeps them
-/// under test.
+/// one: this copy is the product.
+///
+/// The register is plain, not technical (owner directive, T-043). Nobody
+/// installs this because they know what Core Audio is; they install it
+/// because they hear crackling and want it to stop. So the words the user
+/// reads are the words they would use: a crackle, heard, fixed. The
+/// mechanism is still recorded exactly, in the event log and in the About
+/// panel's privilege disclosure, where precision is the point and an
+/// audience that wants it is the one reading.
+///
+/// Two rules follow, and the tests enforce both: no "Core Audio" in
+/// anything a banner or a popover shows, and no timings. "Fixed in 0.54 s"
+/// answers a question nobody asked.
 enum RepairCopy {
 
     // MARK: Numbers
 
     /// Durations the way an engineer reads them: precise when small, coarse
     /// when large. `0.84 s`, `1.2 s`, `12 s`.
+    ///
+    /// No product surface calls this any more (T-043): banners, receipts and
+    /// the Activity window do not speak in seconds. It is kept, and kept
+    /// tested, for the event log and for anything diagnostic that wants a
+    /// consistent format. Do not put it back into user-facing copy.
     static func duration(_ value: Double) -> String {
         guard value.isFinite, value >= 0 else { return "—" }
         if value < 1 { return String(format: "%.2f s", value) }
@@ -27,24 +41,25 @@ enum RepairCopy {
 
     // MARK: What happened
 
-    /// The cause clause: what Fennec saw, on which device. Always a complete
-    /// sentence so it can lead a notification body.
+    /// The cause clause: what Fennec heard, on which speakers. Always a
+    /// complete sentence so it can lead a notification body.
+    ///
+    /// Named from the user's side of the glass. They did not observe an
+    /// overload count inside a real-time thread, they heard their music go
+    /// wrong, and the device name is the only technical noun here because it
+    /// is the one they chose themselves in Sound settings.
     static func cause(for record: RepairRecord) -> String {
-        let device = record.deviceName.isEmpty ? "the output device" : record.deviceName
+        let device = record.deviceName.isEmpty ? "your speakers" : record.deviceName
 
         switch record.signal {
         case .ioStoppedAbnormally:
-            return "Core Audio I/O stopped abnormally on \(device)."
+            return "Sound cut out on \(device)."
 
         case .processorOverload:
-            let signals = count(record.signalCount, "crackle signal", "crackle signals")
             if record.signalCount <= 1 {
-                return "One crackle signal on \(device)."
+                return "Crackling on \(device)."
             }
-            if record.elapsedSeconds < 0.5 {
-                return "\(signals) back to back on \(device)."
-            }
-            return "\(signals) in \(duration(record.elapsedSeconds)) on \(device)."
+            return "Repeated crackling on \(device)."
 
         case nil:
             return "You asked for a reset on \(device)."
@@ -53,9 +68,7 @@ enum RepairCopy {
 
     /// The result clause: what Fennec did about it.
     static func outcome(for record: RepairRecord) -> String {
-        record.succeeded
-            ? "Core Audio restarted in \(duration(record.durationSeconds))."
-            : record.message
+        record.succeeded ? "Fennec fixed it." : record.message
     }
 
     // MARK: The primary button
@@ -113,39 +126,41 @@ enum RepairCopy {
         "Crackle repair skipped"
     }
 
+    /// One line, and the same line whether Fennec caught it or the user
+    /// pressed the button: "Crackle repaired" (owner directive, T-043).
+    /// Whether the repair was automatic is Fennec's business, not news.
     static func notificationTitle(for record: RepairRecord) -> String {
-        guard record.succeeded else { return "Fennec could not repair audio" }
-        return record.trigger == .automatic ? "Crackle resolved" : "Core Audio restarted"
+        record.succeeded ? "Crackle repaired" : "Fennec could not fix the crackle"
     }
 
+    /// A successful repair has an empty body on purpose. The title already
+    /// says the only thing the user wanted to know, and a second line
+    /// restating it in longer words is a banner nobody finishes reading.
+    ///
+    /// A failure still gets a body, because that is the case where there is
+    /// something left for the user to do.
     static func notificationBody(for record: RepairRecord) -> String {
-        guard record.succeeded else {
-            return "\(cause(for: record)) \(record.message)"
-        }
-        // One clause. The cause is on the receipt and in Activity; a banner
-        // that restates it is a banner nobody finishes reading.
-        return outcome(for: record)
+        record.succeeded ? "" : record.message
     }
 
     // MARK: The menu receipt
 
     /// Short enough for a 384 pt popover row.
     ///
-    /// The wording tracks the *outcome*, not the call's return value. The
-    /// instant a repair finishes, the only established fact is that a new
-    /// Core Audio process exists; "fixed" is a claim about the next minute.
+    /// The wording still tracks the *outcome*, not the call's return value
+    /// (rule 9). The instant a repair finishes, the only established fact is
+    /// that the reset went through; "fixed" is a claim about the next minute,
+    /// and `pending` says so without pretending otherwise.
     static func receiptHeadline(for record: RepairRecord) -> String {
         switch record.outcome {
         case .failed:
             return "Repair failed"
         case .pending:
-            return "Restarted in \(duration(record.durationSeconds)) · watching"
+            return "Repaired · listening for it to come back"
         case .returned:
-            return "Restarted, but the fault came back"
+            return "Repaired, but the crackle came back"
         case .held:
-            return record.trigger == .automatic
-                ? "Caught and fixed in \(duration(record.durationSeconds))"
-                : "Restarted in \(duration(record.durationSeconds))"
+            return record.trigger == .automatic ? "Caught and fixed" : "Crackle repaired"
         }
     }
 
@@ -154,7 +169,7 @@ enum RepairCopy {
         case .failed:
             return record.message
         case .returned:
-            return "\(cause(for: record)) Restarting Core Audio did not clear it."
+            return "\(cause(for: record)) The repair did not make it stay gone."
         case .pending, .held:
             return cause(for: record)
         }
@@ -164,12 +179,12 @@ enum RepairCopy {
     /// not to have. Same notification identifier, so it corrects itself in
     /// place rather than stacking a contradiction underneath.
     static func faultReturnedTitle(for record: RepairRecord) -> String {
-        "Core Audio is still crackling"
+        "The crackle came back"
     }
 
     static func faultReturnedBody(for record: RepairRecord) -> String {
-        "The fault came back after Fennec restarted \(record.deviceName.isEmpty ? "the output device" : record.deviceName). "
-            + "That usually means the restart is not the cure."
+        "Fennec repaired \(record.deviceName.isEmpty ? "your speakers" : record.deviceName) "
+            + "and the crackling returned. Something else is causing it."
     }
 
     // MARK: The helper blocker
@@ -202,21 +217,19 @@ enum RepairCopy {
         "Audio is stalling, not crackling"
     }
 
+    /// The load average and the memory-pressure level are gone from the
+    /// banner (T-043): "load 1.47 per core" is a number the reader either
+    /// already knows how to get or cannot use. Both are still recorded in
+    /// the event log alongside this advisory, where a technical reader will
+    /// look for them.
     static func stallAdvisoryBody(for advisory: StallAdvisory) -> String {
         let minutes = max(1, Int(advisory.windowSeconds / 60))
-        var pressure = "This Mac is under heavy load"
-        + String(format: " (load %.1f per core", advisory.loadPerCore)
-        if advisory.memoryPressureLevel >= StallAdvisor.memoryPressureFloor {
-            pressure += ", memory pressure \(advisory.memoryPressureLabel))."
-        } else {
-            pressure += ")."
-        }
-        return "Playback stopped and restarted "
+        return "Your sound stopped and started "
             + count(advisory.stopCount, "time", "times")
             + " in \(count(minutes, "minute", "minutes")). "
-            + pressure
-            + " This is not the fault Fennec repairs; restarting Core Audio will not help."
-            + " Heavy apps, backups, or sync clients are the likely cause."
+            + "This Mac is working too hard to keep up. "
+            + "That is not the fault Fennec repairs, and repairing will not help. "
+            + "Heavy apps, backups, or sync clients are the likely cause."
     }
 
     // MARK: Running totals
