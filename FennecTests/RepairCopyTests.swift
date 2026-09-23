@@ -222,7 +222,9 @@ final class RepairCopyTests: XCTestCase {
             RepairCopy.repairStartingTitle(),
             RepairCopy.repairStartingBody(),
             RepairCopy.repairCalledOffTitle(),
-            RepairCopy.stallAdvisoryTitle()
+            RepairCopy.stallAdvisoryTitle(),
+            RepairCopy.foxSection, RepairCopy.foxSetting, RepairCopy.foxPreview, RepairCopy.foxPreviewHelp,
+            RepairCopy.foxDetail, RepairCopy.foxReducedMotion
         ]
         for record in samples {
             strings += [

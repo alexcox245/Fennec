@@ -126,6 +126,14 @@
 		F8BCDB47852765D3F18F8EBE /* ReviewRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */; };
 		F68A3F6E9FF3639D44AFDF2B /* FennecBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0070FC9E50061BEA041F870 /* FennecBrand.swift */; };
 		DA6931C86D5F83496EB9AF62 /* FennecBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0070FC9E50061BEA041F870 /* FennecBrand.swift */; };
+		AA02EEB2A127AAA0EE37042F /* FoxRunMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F481C5228C65CF8FAF837DAB /* FoxRunMotion.swift */; };
+		D5CADE165E515EDBD6DE3043 /* FoxRunAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE27046A3669191A40F751 /* FoxRunAsset.swift */; };
+		6FE799749C51F4717259F9C9 /* RepairFoxController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F4AB87A496D03E7D6FE0DC /* RepairFoxController.swift */; };
+		09F3936A640CD119806CD6C7 /* fennec-run.gif in Resources */ = {isa = PBXBuildFile; fileRef = DCDD3680989676D1294EECE4 /* fennec-run.gif */; };
+		ABA13A28F63D4F2F99627B6F /* FoxRunMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F481C5228C65CF8FAF837DAB /* FoxRunMotion.swift */; };
+		8A4E65E771CA9B75F5F75F68 /* FoxRunAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE27046A3669191A40F751 /* FoxRunAsset.swift */; };
+		3D7654123D0CE9C5225A8739 /* FoxRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B2EF3114F43AF346DC8788 /* FoxRunTests.swift */; };
+		8CDF9470B1012B3822C9FB50 /* fennec-run.gif in Resources */ = {isa = PBXBuildFile; fileRef = DCDD3680989676D1294EECE4 /* fennec-run.gif */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -252,6 +260,11 @@
 		DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperThrottle.swift; sourceTree = "<group>"; };
 		C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewRegressionTests.swift; sourceTree = "<group>"; };
 		C0070FC9E50061BEA041F870 /* FennecBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FennecBrand.swift; sourceTree = "<group>"; };
+		F481C5228C65CF8FAF837DAB /* FoxRunMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxRunMotion.swift; sourceTree = "<group>"; };
+		76FE27046A3669191A40F751 /* FoxRunAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxRunAsset.swift; sourceTree = "<group>"; };
+		67F4AB87A496D03E7D6FE0DC /* RepairFoxController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairFoxController.swift; sourceTree = "<group>"; };
+		E8B2EF3114F43AF346DC8788 /* FoxRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxRunTests.swift; sourceTree = "<group>"; };
+		DCDD3680989676D1294EECE4 /* fennec-run.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Resources/fennec-run.gif; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -330,6 +343,10 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				F481C5228C65CF8FAF837DAB /* FoxRunMotion.swift */,
+				76FE27046A3669191A40F751 /* FoxRunAsset.swift */,
+				67F4AB87A496D03E7D6FE0DC /* RepairFoxController.swift */,
+				DCDD3680989676D1294EECE4 /* fennec-run.gif */,
 				C0070FC9E50061BEA041F870 /* FennecBrand.swift */,
 				60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */,
 				A1B7F005E2D34C5B6A7890F5 /* OverloadLogSchedule.swift */,
@@ -415,6 +432,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				E8B2EF3114F43AF346DC8788 /* FoxRunTests.swift */,
 				C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */,
 				B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */,
 				A1B7F007E2D34C5B6A7890F7 /* OverloadLogScheduleTests.swift */,
@@ -540,6 +558,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				09F3936A640CD119806CD6C7 /* fennec-run.gif in Resources */,
 				31CBF21E7A33A03A50BD5350 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -555,6 +574,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8CDF9470B1012B3822C9FB50 /* fennec-run.gif in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -579,6 +599,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA02EEB2A127AAA0EE37042F /* FoxRunMotion.swift in Sources */,
+				D5CADE165E515EDBD6DE3043 /* FoxRunAsset.swift in Sources */,
+				6FE799749C51F4717259F9C9 /* RepairFoxController.swift in Sources */,
 				F68A3F6E9FF3639D44AFDF2B /* FennecBrand.swift in Sources */,
 				37F12AD758BF162F2F0E866A /* HelperThrottle.swift in Sources */,
 				BD41497897092C7F0B59F685 /* DrainSchedule.swift in Sources */,
@@ -636,6 +659,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ABA13A28F63D4F2F99627B6F /* FoxRunMotion.swift in Sources */,
+				8A4E65E771CA9B75F5F75F68 /* FoxRunAsset.swift in Sources */,
+				3D7654123D0CE9C5225A8739 /* FoxRunTests.swift in Sources */,
 				DA6931C86D5F83496EB9AF62 /* FennecBrand.swift in Sources */,
 				F8BCDB47852765D3F18F8EBE /* ReviewRegressionTests.swift in Sources */,
 				FAE57F84B5E7241F17F937CC /* HelperThrottle.swift in Sources */,

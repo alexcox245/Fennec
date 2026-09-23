@@ -11,6 +11,7 @@ final class SettingsStore: ObservableObject {
         static let skipBluetooth = "skipBluetooth"
         static let notifyOnRepair = "notifyOnRepair"
         static let notifyOnDetection = "notifyOnDetection"
+        static let showRepairFox = "showRepairFox"
         static let cooldownSeconds = "cooldownSeconds"
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
         static let pausedUntil = "pausedUntil"
@@ -53,6 +54,10 @@ final class SettingsStore: ObservableObject {
     /// The "we saw it but were not allowed to fix it" banner.
     @Published var notifyOnDetection: Bool {
         didSet { defaults.set(notifyOnDetection, forKey: Key.notifyOnDetection) }
+    }
+
+    @Published var showRepairFox: Bool {
+        didSet { defaults.set(showRepairFox, forKey: Key.showRepairFox) }
     }
 
     @Published var cooldownSeconds: Double {
@@ -104,6 +109,7 @@ final class SettingsStore: ObservableObject {
         skipBluetooth = defaults.object(forKey: Key.skipBluetooth) as? Bool ?? true
         notifyOnRepair = defaults.object(forKey: Key.notifyOnRepair) as? Bool ?? true
         notifyOnDetection = defaults.object(forKey: Key.notifyOnDetection) as? Bool ?? true
+        showRepairFox = defaults.object(forKey: Key.showRepairFox) as? Bool ?? true
         cooldownSeconds = defaults.object(forKey: Key.cooldownSeconds) as? Double ?? 45
         hasCompletedFirstRun = defaults.object(forKey: Key.hasCompletedFirstRun) as? Bool ?? false
         pausedUntil = defaults.object(forKey: Key.pausedUntil) as? Date

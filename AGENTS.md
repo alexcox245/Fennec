@@ -96,6 +96,10 @@ Fennec/                        app target (Swift + 1 C file)
   PendingConfirmation.swift    the inline confirmation card's model  ← see rule 7
   MenuBarIcon.swift            the fennec silhouette, drawn as a template NSImage
   WindowPresenter.swift        every window + activation-policy switching  ← see rule 11
+  RepairFoxController.swift    passive, click-through repair crossing, owned by WindowPresenter
+  FoxRunMotion.swift           stride timing, screen geometry, and one-crossing lifecycle
+  FoxRunAsset.swift            off-main GIF decoding with the original frame delays
+  Resources/fennec-run.gif     approved run cycle, mirrored at display time
   AppDelegate.swift            reopen and quit-during-repair handling
   SetupStepRow.swift           one setup step, shared by the popover and Settings
   WelcomeView.swift            first run: a consent record, not a tour
@@ -327,7 +331,7 @@ Blue and orange are complementary and near-maximum contrast at full strength. Do
 - **Centred, symmetrical, frontal** for anything mascot-adjacent. The fox looks straight at you.
 - **Crop confidently.** The ears run off the frame. Do not shrink art to fit a box.
 - **System typography.** SF, native weights. The audiophile signal comes from precision and alignment, not a display face. If a monospace register is ever needed, reserve it for actual data (device names, PIDs, timestamps, counters), never prose.
-- **Motion:** short, linear, unfussy. Nothing bounces. Nothing pulses for attention. The desert does not animate.
+- **Motion:** short, linear, unfussy. Nothing pulses for attention. The owner-approved exception (T-045) is one left-to-right fox crossing during a repair: the approved GIF's own gait and hop, linear travel near the bottom of the pointer's display, no extra bounce or celebration. Respect Reduce Motion and the user's animation preference. This is activity, not evidence that the repair held.
 
 ### Anti-patterns
 
@@ -342,7 +346,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-045**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-046**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -358,6 +362,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-008 | P2 | Fix 2 non-`Sendable` capture warnings in `HelperManager.swift:96` and `:141` | Open | · | `NSXPCConnection` captured in `@Sendable` closures. Will become an error under Swift 6 language mode; project is currently `SWIFT_VERSION = 5.0`. |
 | T-039 | P2 | Budget the promise/retraction pair, not just the unrepaired banner | Open | · | Found while fixing T-038. `postRepairStarting` and `postRepairCalledOff` are both outside `NotificationBudget`: T-037 exempted the retraction on purpose (a stated intention that will not happen must always be retracted), and the promise was never budgeted either. That is right for one episode and wrong for a persistent blocker: a long call that crackles repeatedly produces an unbudgeted "Resetting speakers..." plus an unbudgeted "Crackle repair skipped", with sound, per detection. The false positive that made this visible is gone, so this is no longer urgent, but the shape is still there. Likely fix: budget the *pair* as one unit, or hold the promise until the safety scan clears when the last scan vetoed recently. Do not simply mute the retraction; T-037's reasoning stands. |
 | T-009 | P2 | Reconcile brand tokens against the master art | Open | · | See the drift table in §7. Decide per-role whether the art or the shipped token wins, then align `Brand/README.md` and `FennecBrand` in `FennecApp.swift`. Consider adding aviator gold `#DA963E` and lens void `#23190E` as tokens. **Owner's design call; propose, don't unilaterally apply.** |
+| T-045 | P1 | Run the approved fox across the screen when a repair starts | In progress | Codex / 01a0ce48 | Owner-approved plan: one mirrored, click-through crossing near the bottom of the display containing the pointer; finish the crossing after success, cancel on failure, respect Reduce Motion, and provide an animation-only preview. |
 
 ### Done
 

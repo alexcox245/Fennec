@@ -90,6 +90,7 @@ final class AppModel: ObservableObject {
         loginItemManager = LoginItemManager()
         repairHistory = RepairHistoryStore()
         notificationController = NotificationController()
+        WindowPresenter.shared.configureRepairFox(settings: settings)
 
         notificationController.onRepairRequested = { [weak self] in
             self?.requestManualRepair()
@@ -977,8 +978,11 @@ final class AppModel: ObservableObject {
         // automatic path committed, so the banner races Mac notification
         // latency from detection time instead of from here.
 
-        // Measured across the privileged call only, so it reflects the audio
-        // gap the user heard rather than Fennec's own bookkeeping.
+        let foxAttemptID = UUID()
+        if !viaAdministratorPrompt {
+            WindowPresenter.shared.showRepairFox(for: foxAttemptID)
+        }
+        // Measured across the privileged call only, excluding presentation.
         let started = Date()
 
         do {
@@ -990,12 +994,20 @@ final class AppModel: ObservableObject {
             let message = viaAdministratorPrompt
                 ? try await PrivilegedPromptRepair.restartCoreAudio()
                 : try await helperManager.restartCoreAudio()
+            let repairDuration = Date().timeIntervalSince(started)
+
+            // The password API has no separate authorization callback. A
+            // cancelled dialog must never launch a fox or queue one for later.
+            // Once shown, success leaves the crossing free to finish.
+            if viaAdministratorPrompt {
+                WindowPresenter.shared.showRepairFox(for: foxAttemptID)
+            }
 
             let repair = makeRecord(
                 trigger: trigger,
                 decision: decision,
                 device: device,
-                duration: Date().timeIntervalSince(started),
+                duration: repairDuration,
                 succeeded: true,
                 message: message
             )
@@ -1039,6 +1051,7 @@ final class AppModel: ObservableObject {
                 refreshCurrentDevice()
             }
         } catch is RepairCancelled {
+            WindowPresenter.shared.cancelRepairFox(for: foxAttemptID)
             // The user pressed Cancel on the password prompt. That is a
             // decision, not a fault: no red receipt, no alarm, no attention
             // mark, and no reset of the days-without-incident sign.
@@ -1047,6 +1060,7 @@ final class AppModel: ObservableObject {
             isRepairing = false
             return
         } catch let error as HelperCallError where error.isThrottled {
+            WindowPresenter.shared.cancelRepairFox(for: foxAttemptID)
             // The helper enforces its own 20-second floor. "Did that help? Let
             // me press it again" is the most predictable thing a person does
             // after a manual repair, and reporting the rate limiter as a
@@ -1058,6 +1072,7 @@ final class AppModel: ObservableObject {
             isRepairing = false
             return
         } catch {
+            WindowPresenter.shared.cancelRepairFox(for: foxAttemptID)
             let repair = makeRecord(
                 trigger: trigger,
                 decision: decision,

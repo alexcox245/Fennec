@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// Windows for an app that does not really have any.
@@ -88,6 +89,8 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     }
 
     private var windows: [String: NSWindow] = [:]
+    private let repairFox = RepairFoxController(assetURL: Bundle.main.url(forResource: "fennec-run", withExtension: "gif"))
+    private var foxPreference: AnyCancellable?
     private var observers: [NSObjectProtocol] = []
     /// When a window was last asked for. Dropping back to `.accessory` inside
     /// this grace period would undo an open that is still in flight; the
@@ -112,6 +115,18 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     }
 
     // MARK: Presenting
+
+    /// A decorative panel never goes through bringForward: that path takes
+    /// focus and changes activation policy for an ordinary, usable window.
+    func configureRepairFox(settings: SettingsStore) {
+        foxPreference = settings.$showRepairFox.sink { [weak self] enabled in
+            self?.repairFox.setEnabled(enabled)
+        }
+    }
+
+    func showRepairFox(for attemptID: UUID) { repairFox.show(for: attemptID) }
+    func cancelRepairFox(for attemptID: UUID) { repairFox.cancel(for: attemptID) }
+    func previewRepairFox() { repairFox.show(for: UUID()) }
 
     /// Shows the window for `id`, creating it the first time. Calling it again
     /// brings the existing window forward instead of opening a second copy.
@@ -181,6 +196,13 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     /// never counts.
     var hasVisibleWindow: Bool {
         NSApp.windows.contains(where: isRealWindow)
+    }
+
+    /// Reopen is different from activation policy: a minimized window keeps
+    /// the app in the Dock, but must not prevent reopening it. Decorative
+    /// panels count for neither decision.
+    var hasInteractiveWindowOnScreen: Bool {
+        NSApp.windows.contains { $0.isVisible && isRealWindow($0) }
     }
 
     private func bringForward(_ window: NSWindow) {

@@ -36,7 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         MainActor.assumeIsolated {
-            guard !flag else { return true }
+            // AppKit's flag also counts the click-through fox panel. Only
+            // a window someone can use should suppress a Dock reopen.
+            guard !WindowPresenter.shared.hasInteractiveWindowOnScreen else { return true }
             guard let model = Self.model else { return true }
             // Show the thing they were looking for: setup if it is unfinished,
             // Settings if it is not.

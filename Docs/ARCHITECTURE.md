@@ -46,6 +46,44 @@ Notification behaviour is proportional to what the user must do:
 | Repair failed | default | Try Again | The only case where the user has to act. |
 | Crackle detected, not repaired | default | Repair Now / Ignore | Something is off, protected, or cooling down. |
 
+## The repair crossing
+
+`WindowPresenter` owns `RepairFoxController` separately from its interactive
+windows. The controller presents a borderless, nonactivating `NSPanel` with
+mouse events ignored and no key/main-window eligibility. The panel spans a
+thin strip above the Dock on the display containing the pointer at trigger
+time. Full display bounds determine entry and exit; `visibleFrame` determines
+the foot baseline. Moving the pointer does not redirect an in-flight fox.
+The panel is excluded from activation-policy and Dock-reopen decisions.
+
+The approved GIF is decoded on a utility task once, at Retina size, using
+ImageIO's unclamped frame delays. A discrete contents animation and linear
+position animation live in the same finite Core Animation group. A horizontal
+layer transform mirrors the artwork. `FoxRunMotion` derives travel from a
+measured paw stride, displayed scale, and loop duration, rather than choosing
+a duration per display. No display link or per-frame application timer runs.
+
+After the safety gates pass, `performRepair` requests a crossing immediately
+before the helper call. Success lets the crossing finish independently of
+`isRepairing`; failure, cancellation, and helper throttling cancel that attempt's
+ticket. The administrator-prompt path starts its crossing only after a successful
+return, since that API has no separate authorization callback. A fox reports
+activity, never a verified outcome, and it does not alter repair governance.
+
+At most one ticket is active, including while decoding. Duplicate and overlapping
+requests are discarded, not queued. A cancelled ticket cannot be revived by a
+late decode, and an old completion cannot dismiss a newer crossing. A decode
+that misses the trigger by more than two seconds is discarded. Disablement,
+Reduce Motion, screen reconfiguration, sleep, session resignation, screen lock,
+app hiding, and termination tear down the panel and its animations. Lock
+notifications are best-effort, as in `SystemEventObserver`; workspace sleep and
+session notifications provide independent cleanup. Wake never replays a crossing.
+
+Settings' **Preview Fox** calls only the presenter: it cannot start a repair,
+install a helper, or modify repair history. The `showRepairFox` preference defaults
+on and lives in the existing preference domain removed by the uninstaller. The
+GIF ships inside the bundle; this feature adds nothing else persistent outside it.
+
 ## Privilege boundary
 
 The app itself runs as the signed-in user. The root helper is installed and managed through `SMAppService.daemon(plistName:)` and is demand-launched through its Mach service.

@@ -84,3 +84,42 @@ Also unverified because it needs root and a real registration:
   version-mismatch warning are untested against a live daemon.
 - Whether `applicationShouldTerminate`'s grace actually releases quit during a
   real privileged repair.
+
+## Repair fox validation (T-045, 2026-09-23)
+
+The animation was exercised in an isolated AppKit harness compiled from
+`FoxRunMotion`, `FoxRunAsset`, and `RepairFoxController`. The harness contains
+no `AppModel`, Core Audio monitor, helper manager, or privileged repair code.
+It did not install or run the helper or restart audio.
+
+Verified:
+
+- All 278 unit tests pass, including 12 fox cases covering original GIF delays
+  and alpha, Retina decoding, stride scaling, complete entry/exit, Dock clearance,
+  negative and vertically arranged display coordinates, invalid inputs,
+  duplicate requests, late cancellation, and preference persistence.
+- App and helper build in both Debug and Release with the four known compiler
+  warnings only. Xcode also emits its existing App Intents metadata warning.
+- Source audit and manifest verification pass. Release signature verification
+  passes against the normal trust store, with Team ID `249X253HS3`.
+- A native crossing on the pointer's external display, with a negative X origin,
+  visibly faces right and advances left to right. Presentation-layer snapshots
+  confirm that the drawing changes pose and stays transparent.
+- During the crossing, the preview remains an inactive accessory application
+  with no key or main window; the foreground app stays unchanged. WindowServer
+  mouse hit testing passes through the sprite's position to the window below.
+- The panel disappears on completion and on disabling the preference. It leaves
+  no animation timer or visible window behind.
+
+Environment notes: sandboxed signing/trust checks could not see the normal
+keychain, and `xctest` could not open a test bundle built inside Documents.
+The standard §5 commands, using Xcode's normal DerivedData location with access
+to its build/test services, pass. No project signing settings were weakened.
+Local logs and the disposable preview harness are in gitignored
+`build/FoxRunValidation/`.
+
+Still unverified: the overlay during a real privileged repair or administrator
+prompt, full-screen/Stage Manager/Spaces transitions, physical display removal,
+sleep/lock/wake, live changes to the system Reduce Motion setting, and the
+Settings preview button in the running production app. These were not simulated
+by changing the user's system settings or launching the audio-monitoring app.

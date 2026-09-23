@@ -19,6 +19,15 @@ import Foundation
 /// answers a question nobody asked.
 enum RepairCopy {
 
+    // MARK: The repair fox
+
+    static let foxSection = "Repair Animation"
+    static let foxSetting = "Show fox during repairs"
+    static let foxPreview = "Preview Fox"
+    static let foxPreviewHelp = "Preview the animation. Your sound stays on."
+    static let foxDetail = "The fox crosses the display where your pointer is when a repair starts."
+    static let foxReducedMotion = "The fox stays off while Reduce Motion is enabled in macOS."
+
     // MARK: Numbers
 
     /// Durations the way an engineer reads them: precise when small, coarse

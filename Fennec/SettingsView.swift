@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject var model: AppModel
     @ObservedObject private var settings: SettingsStore
     @ObservedObject private var helper: HelperManager
@@ -131,6 +132,17 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section(RepairCopy.foxSection) {
+                Toggle(RepairCopy.foxSetting, isOn: $settings.showRepairFox)
+                Text(reduceMotion ? RepairCopy.foxReducedMotion : RepairCopy.foxDetail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button(RepairCopy.foxPreview) { WindowPresenter.shared.previewRepairFox() }
+                    .disabled(!settings.showRepairFox || reduceMotion)
+                    .help(RepairCopy.foxPreviewHelp)
             }
 
             Section("Startup") {
