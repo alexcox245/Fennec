@@ -65,3 +65,62 @@ extension View {
         }
     }
 }
+
+/// The foreground choice shown for a detected fault in Ask me first mode, or
+/// when automatic repair has to fall back to administrator authorization.
+struct RepairPromptView: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        Group {
+            if let prompt = model.promptedRepair {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .center, spacing: 13) {
+                        Image("FennecMascot")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 54, height: 54)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .accessibilityHidden(true)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(RepairCopy.promptTitle)
+                                .font(.system(size: 19, weight: .semibold, design: .default))
+                                .accessibilityAddTraits(.isHeader)
+                            Text(prompt.deviceName)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                                .textSelection(.enabled)
+                        }
+                        Spacer(minLength: 0)
+                    }
+
+                    Text(RepairCopy.promptConsequence)
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(13)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+                    HStack(spacing: 10) {
+                        Spacer()
+                        Button(RepairCopy.promptDismissTitle) {
+                            model.dismissDetectedRepairPrompt(episodeID: prompt.episodeID)
+                        }
+                        .keyboardShortcut(.cancelAction)
+                        Button(model.isRepairing || model.isPreparingRepair ? "Repairing…" : RepairCopy.promptRepairTitle) {
+                            model.requestPromptedRepair(prompt)
+                        }
+                        .keyboardShortcut(.defaultAction)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(model.isRepairing || model.isPreparingRepair)
+                    }
+                }
+                .padding(24)
+            }
+        }
+        .frame(width: 460, height: 330)
+        .fennecConfirmation(model)
+    }
+}

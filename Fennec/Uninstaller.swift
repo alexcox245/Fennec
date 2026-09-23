@@ -2,6 +2,18 @@ import AppKit
 import Foundation
 import ServiceManagement
 
+enum FennecUpdateCache {
+    static var directory: URL {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(AppConstants.appBundleIdentifier, isDirectory: true)
+            .appendingPathComponent("org.sparkle-project.Sparkle", isDirectory: true)
+    }
+
+    static var exists: Bool {
+        FileManager.default.fileExists(atPath: directory.path)
+    }
+}
+
 /// Removing Fennec, completely.
 ///
 /// The failure this exists to prevent is the one a Mac forum reviewer can
@@ -18,6 +30,7 @@ enum UninstallPlan {
             case helper
             case loginItem
             case supportFiles
+            case updateCache
             case preferences
             case bundle
         }
@@ -39,7 +52,8 @@ enum UninstallPlan {
         helperInstalled: Bool,
         loginItemEnabled: Bool,
         keepLogs: Bool,
-        canRemoveBundle: Bool
+        canRemoveBundle: Bool,
+        hasUpdateCache: Bool = false
     ) -> [Step] {
         var steps: [Step] = []
 
@@ -56,6 +70,13 @@ enum UninstallPlan {
                 kind: .loginItem,
                 title: "Remove the login item",
                 detail: "Fennec stops starting with your Mac."
+            ))
+        }
+        if hasUpdateCache {
+            steps.append(Step(
+                kind: .updateCache,
+                title: "Delete downloaded updates",
+                detail: "~/Library/Caches/com.ludicrousdesigns.Fennec/org.sparkle-project.Sparkle"
             ))
         }
         if !keepLogs {
@@ -81,10 +102,11 @@ enum UninstallPlan {
     }
 
     /// The sentence above the button. Names the consequence, not the process.
-    static func summary(keepLogs: Bool) -> String {
-        keepLogs
-            ? "Fennec will unregister its root helper, remove its login item, forget its settings, and move itself to the Trash. Your event log and repair history stay where they are."
-            : "Fennec will unregister its root helper, remove its login item, delete its log and repair history, forget its settings, and move itself to the Trash."
+    static func summary(keepLogs: Bool, hasUpdateCache: Bool = false) -> String {
+        let updateClause = hasUpdateCache ? " delete downloaded updates," : ""
+        return keepLogs
+            ? "Fennec will unregister its root helper, remove its login item,\(updateClause) forget its settings, and move itself to the Trash. Your event log and repair history stay where they are."
+            : "Fennec will unregister its root helper, remove its login item,\(updateClause) delete its log and repair history, forget its settings, and move itself to the Trash."
     }
 
     static let manualFallback = """
@@ -92,6 +114,7 @@ enum UninstallPlan {
 
         sudo launchctl bootout system/com.ludicrousdesigns.Fennec.helper
         rm -rf ~/Library/Application\\ Support/Fennec
+        rm -rf ~/Library/Caches/com.ludicrousdesigns.Fennec/org.sparkle-project.Sparkle
         defaults delete com.ludicrousdesigns.Fennec
         """
 }
@@ -144,6 +167,13 @@ final class Uninstaller: ObservableObject {
                         try FileManager.default.removeItem(at: directory)
                     }
                 }
+            case .updateCache:
+                results[.updateCache] = perform {
+                    let cache = FennecUpdateCache.directory
+                    if FileManager.default.fileExists(atPath: cache.path) {
+                        try FileManager.default.removeItem(at: cache)
+                    }
+                }
             case .preferences:
                 UserDefaults.standard.removePersistentDomain(forName: AppConstants.appBundleIdentifier)
                 results[.preferences] = .done
@@ -192,6 +222,7 @@ final class Uninstaller: ObservableObject {
         case .helper: return "Root helper"
         case .loginItem: return "Login item"
         case .supportFiles: return "Log and repair history"
+        case .updateCache: return "Downloaded updates"
         case .preferences: return "Settings"
         case .bundle: return "Move to Trash"
         }

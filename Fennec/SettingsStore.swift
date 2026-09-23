@@ -1,9 +1,32 @@
 import Combine
 import Foundation
 
+enum RepairMode: String, CaseIterable, Identifiable, Sendable {
+    case automatic
+    case askFirst
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .automatic: return "Automatically"
+        case .askFirst: return "Ask me first"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .automatic: return "Repair crackling when the safety checks allow it."
+        case .askFirst: return "Show a repair window when crackling is detected."
+        }
+    }
+}
+
 @MainActor
 final class SettingsStore: ObservableObject {
     private enum Key {
+        static let repairMode = "repairMode"
+        /// Read only for migration from versions that exposed a boolean.
         static let autoRepairEnabled = "autoRepairEnabled"
         static let sensitivity = "sensitivity"
         static let protectMicrophone = "protectMicrophone"
@@ -21,12 +44,18 @@ final class SettingsStore: ObservableObject {
 
     private let defaults: UserDefaults
 
-    /// Default **on**. Fennec cannot act on it until the privileged helper is
-    /// enabled, so this is not a surprise-root-access switch; it means that
-    /// the moment setup finishes, the product does the thing it promises
-    /// without a second decision from the user.
-    @Published var autoRepairEnabled: Bool {
-        didSet { defaults.set(autoRepairEnabled, forKey: Key.autoRepairEnabled) }
+    @Published var repairMode: RepairMode {
+        didSet {
+            defaults.set(repairMode.rawValue, forKey: Key.repairMode)
+            defaults.set(repairMode == .automatic, forKey: Key.autoRepairEnabled)
+        }
+    }
+
+    /// Source compatibility for the existing switch while the UI moves to
+    /// an explicit two-choice picker. Assigning it also persists the new mode.
+    var autoRepairEnabled: Bool {
+        get { repairMode == .automatic }
+        set { repairMode = newValue ? .automatic : .askFirst }
     }
 
     @Published var sensitivity: DetectionSensitivity {
@@ -100,7 +129,18 @@ final class SettingsStore: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
 
-        autoRepairEnabled = defaults.object(forKey: Key.autoRepairEnabled) as? Bool ?? true
+        let storedMode = defaults.string(forKey: Key.repairMode).flatMap(RepairMode.init(rawValue:))
+        let explicitLegacyMode = (defaults.object(forKey: Key.autoRepairEnabled) as? Bool)
+            .map { $0 ? RepairMode.automatic : .askFirst }
+        // Older releases defaulted this boolean to true without persisting it.
+        // A completed first run with no stored value therefore means the same
+        // thing as the old default; a fresh install still starts in Ask me first.
+        let legacyMode = explicitLegacyMode
+            ?? ((defaults.object(forKey: Key.hasCompletedFirstRun) as? Bool == true) ? .automatic : nil)
+        let initialRepairMode = storedMode ?? legacyMode ?? .askFirst
+        repairMode = initialRepairMode
+        defaults.set(initialRepairMode.rawValue, forKey: Key.repairMode)
+        defaults.set(initialRepairMode == .automatic, forKey: Key.autoRepairEnabled)
         sensitivity = DetectionSensitivity(
             rawValue: defaults.string(forKey: Key.sensitivity) ?? "balanced"
         ) ?? .balanced

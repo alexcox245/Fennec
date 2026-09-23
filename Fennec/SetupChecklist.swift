@@ -44,11 +44,12 @@ enum SetupChecklist {
         helper: RepairHelperState,
         loginItem: LoginItemState,
         notificationsAuthorized: Bool,
+        repairMode: RepairMode = .automatic,
         location: InstallLocation = .applications
     ) -> [SetupStep] {
         [
-            installStep(for: location),
-            helperStep(for: helper),
+            installStep(for: location, required: repairMode == .automatic),
+            helperStep(for: helper, required: repairMode == .automatic),
             loginItemStep(for: loginItem),
             notificationStep(authorized: notificationsAuthorized)
         ]
@@ -59,23 +60,34 @@ enum SetupChecklist {
         helper: RepairHelperState,
         loginItem: LoginItemState,
         notificationsAuthorized: Bool,
+        repairMode: RepairMode = .automatic,
         location: InstallLocation = .applications
     ) -> [SetupStep] {
         steps(
             helper: helper,
             loginItem: loginItem,
             notificationsAuthorized: notificationsAuthorized,
+            repairMode: repairMode,
             location: location
         )
-            .filter { !$0.isComplete }
+            .filter { !$0.isComplete && $0.isRequired }
             .sorted { lhs, rhs in
                 lhs.isRequired == rhs.isRequired ? false : lhs.isRequired
             }
     }
 
     /// True when Fennec can do its whole job without asking for anything.
-    static func isReady(helper: RepairHelperState, loginItem: LoginItemState) -> Bool {
-        helper.isReachable && loginItem.isEnabled
+    static func isReady(
+        helper: RepairHelperState,
+        loginItem: LoginItemState,
+        repairMode: RepairMode = .automatic,
+        location: InstallLocation = .applications
+    ) -> Bool {
+        switch repairMode {
+        case .automatic:
+            return helper.isReachable && installStep(for: location, required: true).isComplete
+        case .askFirst: return true
+        }
     }
 
     /// The single line the popover shows when setup is not finished.
@@ -83,27 +95,28 @@ enum SetupChecklist {
         helper: RepairHelperState,
         loginItem: LoginItemState,
         notificationsAuthorized: Bool,
+        repairMode: RepairMode = .automatic,
         location: InstallLocation = .applications
     ) -> String {
         let outstanding = remaining(
             helper: helper,
             loginItem: loginItem,
             notificationsAuthorized: notificationsAuthorized,
+            repairMode: repairMode,
             location: location
         )
         guard !outstanding.isEmpty else {
-            return "Fennec is set up. It starts with your Mac and repairs without asking."
+            return repairMode == .automatic
+                ? "Automatic repair is ready."
+                : "Ask me first is ready."
         }
-        let required = outstanding.filter(\.isRequired).count
-        if required == 0 {
-            return "Fennec will repair automatically. \(outstanding.count) optional step\(outstanding.count == 1 ? "" : "s") left."
-        }
-        return "\(required) step\(required == 1 ? "" : "s") left before Fennec can repair on its own."
+        let required = outstanding.count
+        return "\(required) step\(required == 1 ? "" : "s") before automatic repair is ready."
     }
 
     // MARK: Individual steps
 
-    private static func installStep(for location: InstallLocation) -> SetupStep {
+    private static func installStep(for location: InstallLocation, required: Bool) -> SetupStep {
         switch location {
         case .applications:
             return SetupStep(
@@ -113,7 +126,7 @@ enum SetupChecklist {
                 compactDetail: "Installed in Applications.",
                 actionTitle: "Installed",
                 isComplete: true,
-                isRequired: true
+                isRequired: required
             )
         case .developmentBuild:
             return SetupStep(
@@ -133,55 +146,54 @@ enum SetupChecklist {
                 compactDetail: "Running from \(folder); registrations will break.",
                 actionTitle: "Move to Applications",
                 isComplete: false,
-                isRequired: true
+                isRequired: required
             )
         }
     }
 
-    private static func helperStep(for helper: RepairHelperState) -> SetupStep {
+    private static func helperStep(for helper: RepairHelperState, required: Bool) -> SetupStep {
         switch helper {
         case .awaitingApproval:
             return SetupStep(
                 kind: .helperApproval,
-                title: "Allow Fennec in the background",
-                detail: "macOS staged Fennec's repair helper and is waiting for you to switch it on under Login Items & Extensions.",
-                compactDetail: "macOS is waiting for you to allow it.",
+                title: "Allow the repair helper",
+                detail: "macOS is waiting for you to allow Fennec under Login Items & Extensions.",
+                compactDetail: "macOS is waiting for approval.",
                 actionTitle: "Open Login Items…",
                 isComplete: false,
-                isRequired: true
+                isRequired: required
             )
         case .enabled(let reachable):
             return SetupStep(
                 kind: .helper,
-                title: "Repair without a password prompt",
+                title: "Repair helper",
                 detail: reachable
-                    ? "The repair helper is installed and answering."
-                    : "The helper is installed but is not answering, usually a registration left "
-                        + "pointing at a replaced build. Rebuilding it needs no password.",
-                compactDetail: reachable ? "Installed and answering." : "Installed, but not answering.",
-                actionTitle: reachable ? "Installed" : "Rebuild",
+                    ? "The approved helper is ready."
+                    : "The approved helper is not answering. Rebuild its registration to reconnect it.",
+                compactDetail: reachable ? "Approved and ready." : "Approved, but not answering.",
+                actionTitle: reachable ? "Ready" : "Reconnect",
                 isComplete: reachable,
-                isRequired: true
+                isRequired: required
             )
         case .notConfigured:
             return SetupStep(
                 kind: .helper,
-                title: "Repair without a password prompt",
-                detail: "Fennec installs a small helper that can do exactly one thing: reset your sound. Without it Fennec still hears crackling, but it cannot fix it on its own: you press Repair Audio Now and type your password.",
-                compactDetail: "Without it, Fennec detects but cannot repair on its own.",
+                title: "Allow the repair helper",
+                detail: "Automatic repair uses a small helper that needs your approval. Without it, Fennec asks before each repair.",
+                compactDetail: "Fennec will ask before repairing.",
                 actionTitle: "Enable Helper",
                 isComplete: false,
-                isRequired: true
+                isRequired: required
             )
         case .unavailable(let message):
             return SetupStep(
                 kind: .helper,
-                title: "Repair without a password prompt",
+                title: "Repair helper",
                 detail: message,
                 compactDetail: message,
                 actionTitle: "Try Again",
                 isComplete: false,
-                isRequired: true
+                isRequired: required
             )
         }
     }
@@ -196,7 +208,7 @@ enum SetupChecklist {
                 compactDetail: "Fennec starts with your Mac.",
                 actionTitle: "On",
                 isComplete: true,
-                isRequired: true
+                isRequired: false
             )
         case .requiresApproval:
             return SetupStep(
@@ -206,7 +218,7 @@ enum SetupChecklist {
                 compactDetail: "macOS is waiting for you to allow it.",
                 actionTitle: "Open Login Items…",
                 isComplete: false,
-                isRequired: true
+                isRequired: false
             )
         case .notRegistered, .notFound, .unknown:
             return SetupStep(
@@ -216,7 +228,7 @@ enum SetupChecklist {
                 compactDetail: "Fennec has to be running to catch the first signal.",
                 actionTitle: "Turn On",
                 isComplete: false,
-                isRequired: true
+                isRequired: false
             )
         }
     }
@@ -227,13 +239,122 @@ enum SetupChecklist {
             title: "Tell me when you fix something",
             detail: authorized
                 ? "Fennec will post a quiet banner after each repair."
-                : "Without notification permission a repair is completely silent, which is nice, right up until you wonder whether Fennec is doing anything at all.",
+                : "Without notifications, automatic repairs still work. Fennec records each result in Activity.",
             compactDetail: authorized
                 ? "A quiet banner after each repair."
-                : "Otherwise a repair is completely silent.",
+                : "Repair results stay in Activity.",
             actionTitle: authorized ? "Allowed" : "Open Notifications…",
             isComplete: authorized,
             isRequired: false
         )
+    }
+}
+
+/// Coalesces detections into one user-visible fault episode. A dismissal is
+/// persisted until successful log coverage confirms a full quiet minute while
+/// output has recently been active; a timer or a failed poll cannot re-arm it.
+struct FaultEpisodePolicy {
+    static let quietInterval: TimeInterval = 60
+
+    private enum Key {
+        static let episodeID = "faultEpisodeID"
+        static let lastSignalAt = "faultEpisodeLastSignalAt"
+        static let suppressedEpisodeID = "faultEpisodeSuppressedID"
+    }
+
+    private let defaults: UserDefaults
+    private(set) var episodeID: UUID?
+    private(set) var lastSignalAt: Date?
+    private(set) var suppressedEpisodeID: UUID?
+    private var quietCoverageStart: Date?
+    private var lastCoverageThrough: Date?
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        episodeID = defaults.string(forKey: Key.episodeID).flatMap(UUID.init(uuidString:))
+        lastSignalAt = defaults.object(forKey: Key.lastSignalAt) as? Date
+        suppressedEpisodeID = defaults.string(forKey: Key.suppressedEpisodeID).flatMap(UUID.init(uuidString:))
+        if episodeID == nil {
+            defaults.removeObject(forKey: Key.lastSignalAt)
+            defaults.removeObject(forKey: Key.suppressedEpisodeID)
+        }
+    }
+
+    @discardableResult
+    mutating func noteSignal(at date: Date) -> UUID {
+        let id = episodeID ?? UUID()
+        episodeID = id
+        if lastSignalAt.map({ date > $0 }) ?? true {
+            lastSignalAt = date
+        }
+        if let lastCoverageThrough, date >= lastCoverageThrough {
+            quietCoverageStart = date
+        }
+        persist()
+        return id
+    }
+
+    func isCurrent(_ id: UUID) -> Bool { episodeID == id }
+
+    func mayPrompt(for id: UUID) -> Bool {
+        episodeID == id && suppressedEpisodeID != id
+    }
+
+    mutating func suppress(_ id: UUID) {
+        guard episodeID == id else { return }
+        suppressedEpisodeID = id
+        persist()
+    }
+
+    /// A different output means the old prompt and its dismissal no longer
+    /// describe the signal the user is hearing.
+    mutating func invalidateForOutputChange() {
+        episodeID = nil
+        lastSignalAt = nil
+        suppressedEpisodeID = nil
+        quietCoverageStart = nil
+        lastCoverageThrough = nil
+        defaults.removeObject(forKey: Key.episodeID)
+        defaults.removeObject(forKey: Key.lastSignalAt)
+        defaults.removeObject(forKey: Key.suppressedEpisodeID)
+    }
+
+    /// `from`/`through` describe a successfully enumerated interval from the
+    /// unified log. A later signal moves the beginning of the quiet interval.
+    /// The interval is deliberately runtime-only; after a relaunch Fennec asks
+    /// for a fresh covered minute before presenting another prompt.
+    @discardableResult
+    mutating func observeSuccessfulCoverage(from: Date, through: Date) -> UUID? {
+        guard let id = episodeID, let lastSignalAt, through >= from else { return nil }
+
+        if let lastCoverageThrough, from.timeIntervalSince(lastCoverageThrough) > 10 {
+            quietCoverageStart = nil
+        }
+        if let lastCoverageThrough, lastSignalAt >= lastCoverageThrough {
+            quietCoverageStart = max(from, lastSignalAt)
+        }
+        if quietCoverageStart == nil {
+            quietCoverageStart = max(from, lastSignalAt)
+        }
+        lastCoverageThrough = through
+
+        guard let quietCoverageStart,
+              through.timeIntervalSince(quietCoverageStart) >= Self.quietInterval else { return nil }
+
+        episodeID = nil
+        self.lastSignalAt = nil
+        suppressedEpisodeID = nil
+        self.quietCoverageStart = nil
+        lastCoverageThrough = nil
+        defaults.removeObject(forKey: Key.episodeID)
+        defaults.removeObject(forKey: Key.lastSignalAt)
+        defaults.removeObject(forKey: Key.suppressedEpisodeID)
+        return id
+    }
+
+    private func persist() {
+        defaults.set(episodeID?.uuidString, forKey: Key.episodeID)
+        defaults.set(lastSignalAt, forKey: Key.lastSignalAt)
+        defaults.set(suppressedEpisodeID?.uuidString, forKey: Key.suppressedEpisodeID)
     }
 }

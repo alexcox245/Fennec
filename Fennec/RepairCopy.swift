@@ -28,6 +28,18 @@ enum RepairCopy {
     static let foxDetail = "The fox crosses the display where your pointer is when a repair starts."
     static let foxReducedMotion = "The fox stays off while Reduce Motion is enabled in macOS."
 
+    // MARK: Prompted repair
+
+    static let promptTitle = "Fennec heard crackling."
+    static let promptConsequence = "Repairing stops all sound on this Mac."
+    static let promptRepairTitle = "Repair Audio"
+    static let promptDismissTitle = "Not now"
+
+    static func promptMessage(deviceName: String) -> String {
+        let device = deviceName.isEmpty ? "your speakers" : deviceName
+        return "Crackling on \(device). \(promptConsequence)"
+    }
+
     // MARK: Numbers
 
     /// Durations the way an engineer reads them: precise when small, coarse
@@ -115,24 +127,14 @@ enum RepairCopy {
 
     // MARK: Notifications
 
-    /// The heads-up posted the moment the automatic path commits to a
-    /// repair, so the user who just heard the crackle is told Fennec is on
-    /// the case before the safety scan and the restart run. Two short
-    /// clauses, nothing else: the user is mid-fault and mid-task, and the
-    /// result banner that replaces this one carries the detail.
+    /// The heads-up posted once the automatic path passes its safety checks,
+    /// immediately before the restart. The result banner replaces it.
     static func repairStartingTitle() -> String {
         "Crackle detected"
     }
 
     static func repairStartingBody() -> String {
         "Resetting speakers..."
-    }
-
-    /// The retraction, when the safety scan vetoes a repair the heads-up
-    /// already promised. The body is the blocker itself ("Skipped: the
-    /// microphone is active."), which is the one thing the user can act on.
-    static func repairCalledOffTitle() -> String {
-        "Crackle repair skipped"
     }
 
     /// One line, and the same line whether Fennec caught it or the user
@@ -151,7 +153,7 @@ enum RepairCopy {
     /// The one sentence for "it worked", used everywhere it is said.
     /// Changing it here changes the banner, the button, and the receipt
     /// together, which is the point.
-    static let repairedTitle = "Audio repaired"
+    static let repairedTitle = "Donesies"
 
     /// A successful repair has an empty body on purpose. The title already
     /// says the only thing the user wanted to know, and a second line

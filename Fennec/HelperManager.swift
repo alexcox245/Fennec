@@ -296,6 +296,76 @@ final class HelperManager: ObservableObject {
         }
     }
 
+    /// Removes the registered helper immediately before Sparkle replaces the
+    /// app bundle. Unlike the setup actions this does not change repair mode;
+    /// the updater persists whether it needs to restore this registration.
+    func unregisterForUpdate() async -> Bool {
+        guard service.status != .notRegistered, service.status != .notFound else {
+            state = .notConfigured
+            identity = nil
+            return true
+        }
+
+        do {
+            try await service.unregister()
+        } catch {
+            lastError = error.localizedDescription
+        }
+
+        for _ in 0..<8 {
+            switch service.status {
+            case .notRegistered, .notFound:
+                state = .notConfigured
+                identity = nil
+                lastError = nil
+                return true
+            default:
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+        }
+
+        refreshStatus(testReachability: false)
+        return false
+    }
+
+    /// Restores only a registration that was already present before the
+    /// update. A missing approval leaves Fennec in prompted mode until the
+    /// person enables the helper again.
+    func restoreRegistrationAfterUpdate() async -> Bool {
+        if service.status == .requiresApproval {
+            state = .awaitingApproval
+            return false
+        }
+
+        if service.status == .notRegistered || service.status == .notFound {
+            do {
+                try service.register()
+            } catch {
+                lastError = error.localizedDescription
+            }
+        }
+
+        for _ in 0..<10 {
+            switch service.status {
+            case .enabled:
+                state = .enabled(reachable: false)
+                for attempt in 0..<3 {
+                    if attempt > 0 { try? await Task.sleep(for: .seconds(1)) }
+                    if await confirmReachable() { return true }
+                }
+                return false
+            case .requiresApproval:
+                state = .awaitingApproval
+                return false
+            default:
+                try? await Task.sleep(for: .milliseconds(300))
+            }
+        }
+
+        refreshStatus(testReachability: true)
+        return false
+    }
+
     func openApprovalSettings() {
         SMAppService.openSystemSettingsLoginItems()
     }

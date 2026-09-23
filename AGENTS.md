@@ -10,7 +10,7 @@ Operating guide for AI agents working on this repository. Read this file **befor
 |---|---|
 | **Remote** | `https://github.com/alexcox245/Fennec` |
 | **Default branch** | `main` |
-| **Xcode project** | `Fennec.xcodeproj` (no standalone `.xcworkspace`, no SPM packages, no CocoaPods) |
+| **Xcode project** | `Fennec.xcodeproj` (no standalone `.xcworkspace` or CocoaPods; Sparkle 2.10.0 is pinned through Swift Package Manager) |
 | **Targets** | `Fennec` (app), `FennecHelper` (privileged helper), `FennecTests` (unit tests) |
 | **Schemes** | `Fennec` (builds the app, runs `FennecTests`) and `FennecHelper`, both shared |
 | **Bundle IDs** | `com.ludicrousdesigns.Fennec`, `com.ludicrousdesigns.Fennec.helper` |
@@ -18,13 +18,13 @@ Operating guide for AI agents working on this repository. Read this file **befor
 | **Deployment target** | macOS 14.2 · Swift 5 language mode · arm64 |
 | **Verified toolchain** | Xcode 26.6 (17F113) |
 
-There are **no external dependencies**. Everything builds from the checked-in sources against the macOS SDK.
+Sparkle 2.10.0 is the only external dependency. Xcode resolves it from the exact version pin and records the revision in `Fennec.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
 
 ---
 
 ## 2. What Fennec is
 
-A local-only macOS menu-bar utility for one specific failure mode: Core Audio starts crackling under heavy local workloads and stays corrupted until `coreaudiod` is restarted.
+A local-first macOS menu-bar utility for one specific failure mode: Core Audio starts crackling under heavy local workloads and stays corrupted until `coreaudiod` is restarted. Detection, repair, logs, and repair history stay local. Sparkle contacts the signed release feed only after the user starts an update check.
 
 Fennec watches the default output device for `kAudioDeviceProcessorOverload` and `kAudioDevicePropertyIOStoppedAbnormally`. When a threshold is met and safety checks pass, it restarts `coreaudiod` through a tightly scoped root helper, leaving every application open.
 
@@ -50,15 +50,17 @@ These are load-bearing. Violating one produces a build that looks fine and fails
 
 7. **Never present an `.alert` or `.confirmationDialog` from the `MenuBarExtra` scene.** The popover is a panel that dismisses the moment it resigns key, and presenting an alert *is* what makes it resign key. The dialog flashes and vanishes, on the code path that restarts the audio system. Ask inline with `PendingConfirmation` instead. Settings may use a sheet, but it renders the same `PendingConfirmation` so the two cannot disagree.
 
-8. **Fennec must stay removable, and the daemon is the part that is not.** Dragging the app to the Trash leaves the root LaunchDaemon registered in Background Task Management, the login item in place, and the support folder on disk; anyone can demonstrate this in thirty seconds. `Uninstaller` unwinds all of it and reports failures **per step**, because "uninstall failed" tells a user nothing they can act on. `UNINSTALL.md` carries the command-line fallback for the case where the app is already gone. If you add anything that persists outside the bundle, add it to `UninstallPlan.steps` in the same commit.
+8. **Fennec must stay removable, and the daemon is the part that is not.** Dragging the app to the Trash leaves the root LaunchDaemon registered in Background Task Management, the login item in place, and the support folder on disk; anyone can demonstrate this in thirty seconds. `Uninstaller` unwinds all of it and reports failures **per step**, because "uninstall failed" tells a user nothing they can act on. `UNINSTALL.md` carries the command-line fallback for the case where the app is already gone. If you add anything that persists outside the bundle, including Sparkle's update cache, add it to `UninstallPlan.steps` in the same commit.
 
 9. **A repair is provisional until it holds.** The instant `restartCoreAudio` returns, the only established fact is that a new `coreaudiod` PID exists; whether the *fault* is gone takes a minute of quiet to find out. `RepairRecord.outcome` tracks that (`pending` → `held` or `returned`), the headline tally counts only repairs that held, and aviator gold is not spent until one does. Three automatic repairs inside twenty minutes that did not hold trips `RepairGovernor`, and Fennec stands down for an hour rather than looping every 45 seconds on a machine where the restart is not the cure. Do not make the UI call a repair "fixed" from `succeeded` alone.
 
-10. **Every privileged path is disclosed in `PrivilegeDisclosure.swift`, and there are three of them.** The obvious version of an About panel enumerates the XPC surface (`ping` and `restartCoreAudio`) and stops. That is a true statement engineered to mislead, because `PrivilegedPromptRepair` runs the same command through an `osascript` administrator prompt when the helper is not enabled. A user who reads "exactly two methods" and then sees a password dialog has been lied to by omission. If you add a way for Fennec to act with privilege, it goes in that file, and `FirstRunTests` will tell you if the disclosed command drifts from the executed one.
+10. **Every privileged path is disclosed in `PrivilegeDisclosure.swift`.** The helper's two XPC methods and the administrator-prompt repair path are only part of the picture: installing a signed update may also require authorization to replace Fennec in `/Applications`. A user who is asked for a password must have been told why. If you add a way for Fennec to act with privilege, it goes in that file, and `FirstRunTests` checks the exact repair command and the disclosed update behavior.
 
 11. **Every window goes through `WindowPresenter`, including Settings.** Fennec is `LSUIElement`, so it has no main menu, which silently breaks ⌘W, ⌘Q and ⌘, in any window it opens. `WindowPresenter` is `.accessory` while only the popover shows and `.regular` for exactly as long as a real window is open, so the standard shortcuts work whenever there is something to type them at. Do **not** reintroduce SwiftUI's `Settings` scene: its only programmatic entry point is the undocumented `showSettingsWindow:` responder action, which reports success and then does nothing in an accessory app (verified on macOS 26). Never decide activation policy by counting `NSApp.windows` without filtering; the `MenuBarExtra` popover is an `NSStatusBarWindow`, and counting it strands the app in `.regular` forever.
 
 12. **User-facing repair copy lives in `RepairCopy.swift`, and it is under test.** The notification, the menu receipt, and the activity list must say the same thing in the same voice. `FennecTests/RepairCopyTests.swift` pins the exact strings, including checks that nothing shouts, uses emoji, says "Core Audio", or states a timing. If you need new copy, add it there rather than inlining a string in a view. See §7 for the register and for the three places precision still wins.
+
+13. **Updates are explicit at every step.** Sparkle checks only after the user asks, downloads only after the user chooses, and installs only after **Install & Relaunch**. Keep automatic checks, downloads, installation, and system profiling disabled. The Ed25519 private key stays in the login Keychain; only its public key belongs in `Fennec/Info.plist`. Before installation, wait for a repair to finish and unregister a previously registered helper. Restore only that prior registration after relaunch; if approval is needed, fall back to **Ask me first**. **Ask me first must not trigger background helper-registration repair.** See `Docs/UPDATES.md` for the release flow.
 
 ---
 
@@ -109,6 +111,7 @@ Fennec/                        app target (Swift + 1 C file)
   PauseSchedule.swift          pause durations and the persisted pause state
   RepairGovernor.swift         verification window + the stand-down breaker  ← see rule 9
   AboutView.swift              the privilege panel: what runs as root, and removal
+  Updater.swift                manual Sparkle updates, signed feed, and install gate
   Uninstaller.swift            the removal plan, and performing it  ← see rule 8
   HelperIdentity.swift         parses the helper's ping reply (build + path)
   ActivityView.swift           every repair, grouped by day
@@ -254,7 +257,7 @@ Three ideas in tension, and the tension *is* the brand:
 
 **Audiophile precision.** The headphones are the tell. Open-back cans leak sound in every direction; nobody wears them on a train. They mean a person who sits still in one room and cares what the soundstage does. That is Fennec's actual claim: it is not a general "sound fixer," it detects one specific Core Audio failure that only people who notice would notice.
 
-**Punk stance.** Not punk *ornament*: there is no distressed texture, no ransom-note type, no chaos in this art, and there should be none in the UI. The punk is in the posture: a small, unsigned, local-only tool that fixes the thing itself instead of filing a radar and waiting. No telemetry, no account, no cloud. It restarts a system daemon on your behalf and doesn't make a ceremony of it. DIY, self-hosted, unbothered.
+**Punk stance.** Not punk *ornament*: there is no distressed texture, no ransom-note type, no chaos in this art, and there should be none in the UI. The punk is in the posture: a small tool that fixes the thing itself instead of filing a radar and waiting. No telemetry or account; monitoring and repair stay on the Mac, and update checks happen only when asked. It restarts a system daemon on your behalf and doesn't make a ceremony of it. DIY, self-hosted, unbothered.
 
 **Desert stillness.** Deadvlei at noon. Flat light, no weather, nothing moving. A fennec is a listening animal; the ears are oversized precisely because the desert is silent and it is built to detect the one signal that matters. That is the product, drawn.
 
@@ -271,7 +274,7 @@ Deadpan, specific, plain. Confident without selling. The fox is not grinning and
 
 | Do | Don't |
 |---|---|
-| "Audio repaired" | "Core Audio restarted in 0.84 s." |
+| "Donesies" | "Core Audio restarted in 0.84 s." |
 | "Repeated crackling on MacBook Pro Speakers." | "2 crackle signals in 5.8 s on MacBook Pro Speakers." |
 | "Repair Audio Now" | "Fix My Sound!" |
 | "Skipped: microphone is active." | "We couldn't do that right now." |
@@ -357,6 +360,8 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 
 | ID | P | Task | Status | Owner | Notes |
 |---|---|---|---|---|---|
+| T-046 | P1 | Refocus the app around automatic or prompted repair and align its screens with Figma | In progress | /root | Includes safe first-run mode selection, episode-aware prompts, protected-call notification behavior, Figma copy/layout cleanup, and preserving the repair fox. |
+| T-047 | P1 | Add explicit in-app updates and prepare signed public releases | In progress | /root | Sparkle updater, signed feed/release tooling, privacy and uninstall disclosures, and public-repository readiness. Do not publish an unreviewed release. |
 | T-005 | P0 | Run the 9-step on-device runtime validation in `Docs/VALIDATION.md` §"Still required on macOS" | Open | · | **Requires a human.** Needs signing, `/Applications` install, helper approval in System Settings, and reproducing the audible fault. Until this is done, nobody should trust automatic repair or switch detection to Immediate. Agents must not attempt this unsupervised (rule 4). |
 | T-007 | P2 | Fix 2 unsafe-pointer warnings in `CoreAudioProperty.swift:192` and `:223` | Open | · | "forming `UnsafeMutableRawPointer` to a variable of type `T` / `Optional<CFString>`; may contain an object reference." Real hazard for the `CFString` case. Touches Core Audio property reads; verify carefully. |
 | T-008 | P2 | Fix 2 non-`Sendable` capture warnings in `HelperManager.swift:96` and `:141` | Open | · | `NSXPCConnection` captured in `@Sendable` closures. Will become an error under Swift 6 language mode; project is currently `SWIFT_VERSION = 5.0`. |

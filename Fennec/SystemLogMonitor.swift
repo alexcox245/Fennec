@@ -39,6 +39,8 @@ final class SystemLogMonitor: @unchecked Sendable {
     /// One per tick while audio is actually playing: the graph's activity
     /// trace. Silence delivers nothing; a gap in the trace is the gap.
     typealias ActivityHandler = @Sendable (_ date: Date) -> Void
+    /// A successful query, including an empty one, and the interval it covered.
+    typealias CoverageHandler = @Sendable (_ from: Date, _ through: Date, _ eventDates: [Date]) -> Void
     typealias ErrorHandler = @Sendable (Error) -> Void
 
     /// One overload event writes exactly one line containing this marker
@@ -84,6 +86,7 @@ final class SystemLogMonitor: @unchecked Sendable {
     var onOverloads: OverloadHandler?
     var onIOStateChanges: IOStateHandler?
     var onActivitySample: ActivityHandler?
+    var onSuccessfulCoverage: CoverageHandler?
     var onError: ErrorHandler?
 
     func start() {
@@ -188,6 +191,7 @@ final class SystemLogMonitor: @unchecked Sendable {
         var auxiliary: [Date] = []
         var ioStops: [Date] = []
         var ioStarts: [Date] = []
+        let coveredFrom = lastProcessedDate
         var newest = lastProcessedDate
         let queryStart = Date()
         do {
@@ -228,11 +232,13 @@ final class SystemLogMonitor: @unchecked Sendable {
         lastProcessedDate = max(newest, queryStart.addingTimeInterval(-10))
         guard isRunning else { return }
 
+        let events = OverloadLogGrouper.eventDates(markers: markers, auxiliary: auxiliary)
+        onSuccessfulCoverage?(coveredFrom, lastProcessedDate, events)
+
         if !ioStops.isEmpty || !ioStarts.isEmpty {
             onIOStateChanges?(ioStops.sorted(), ioStarts.sorted())
         }
 
-        let events = OverloadLogGrouper.eventDates(markers: markers, auxiliary: auxiliary)
         guard let newestEvent = events.last else { return }
         lastOverloadSeen = newestEvent
         onOverloads?(events)

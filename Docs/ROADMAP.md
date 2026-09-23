@@ -24,7 +24,7 @@ That means the roadmap is not a feature list. It is, in order:
 1. **Stop being wrong.** A background process that misfires is worse than no process.
 2. **Be operable.** An app with no window, no menu, and a confirmation dialog that dismisses itself
    is not usable, however good the engine is.
-3. **Be legible.** Say what happened, in numbers, and never claim more than was verified.
+3. **Be legible.** Say what happened in plain language, and never claim more than was verified.
 4. **Be removable.** An app that asks for root and cannot be cleanly taken back has no standing to
    talk about restraint.
 5. **Then, and only then, be liked.**
@@ -87,8 +87,9 @@ Fixes D9. The single biggest reason someone deletes this app in ten seconds.
 
 One window, opened on first launch and on every launch until setup completes. It states the
 **complete** privilege surface (both XPC methods by name *and* the administrator-prompt path), the
-literal cost of a repair, that there is no network code, and the two files it writes. It runs the
-existing `SetupChecklist`, so it cannot disagree with the popover.
+literal cost of a repair, that update checks contact a signed feed only when requested, and the
+local records it writes. It runs the existing `SetupChecklist`, so it cannot disagree with the
+popover.
 
 Two things it does that a tour would not:
 
@@ -177,4 +178,4 @@ Recorded so they stay cut, and so the reasoning survives.
 | Full repair-history window with sortable table, filters, CSV export | A window most people open once and find empty. R7 ships the useful tenth of it. |
 | Swift 6 concurrency migration | Real debt, zero user-visible surface, and it means touching the XPC lifecycle and the Core Audio property reads, the two files where a mistake is least recoverable. Stays as T-007 / T-008. |
 | Localisation restructure | The completeness critic is right that every night of new copy welds the app harder to English, and right that unit-testing exact English strings makes the eventual pass a test rewrite. It is also a night of its own. Logged as a ledger item with the reasoning rather than half-done. |
-| Sparkle, auto-update, crash reporting | All three need the network. The constraint is absolute, and the no-network claim is only worth making if it stays true. |
+| Automatic checks, silent downloads, crash reporting | Fennec has a narrow signed update check, started only by the user. Automatic checks, downloads, installation, profiling, and crash reports stay disabled. |

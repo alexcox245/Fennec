@@ -134,6 +134,8 @@
 		8A4E65E771CA9B75F5F75F68 /* FoxRunAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE27046A3669191A40F751 /* FoxRunAsset.swift */; };
 		3D7654123D0CE9C5225A8739 /* FoxRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B2EF3114F43AF346DC8788 /* FoxRunTests.swift */; };
 		8CDF9470B1012B3822C9FB50 /* fennec-run.gif in Resources */ = {isa = PBXBuildFile; fileRef = DCDD3680989676D1294EECE4 /* fennec-run.gif */; };
+		A8D21C2AE10F4AC192320001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A8D21C2AE10F4AC192320002 /* Sparkle */; };
+		A8D21C2AE10F4AC192320004 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D21C2AE10F4AC192320005 /* Updater.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -244,6 +246,7 @@
 		396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperIdentity.swift; sourceTree = "<group>"; };
 		C4E25A70DAA04F3A79401019 /* Uninstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstaller.swift; sourceTree = "<group>"; };
 		0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		A8D21C2AE10F4AC192320005 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		BDB135AAE4E46F154D69E127 /* UninstallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallTests.swift; sourceTree = "<group>"; };
 		70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysWithoutIncident.swift; sourceTree = "<group>"; };
 		7A64E84489F0B6AB889C87C9 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
@@ -280,6 +283,7 @@
 				6E225F03FD467727FB855895 /* ServiceManagement.framework in Frameworks */,
 				B6B697C3DE7C5D3C289EDEA3 /* SwiftUI.framework in Frameworks */,
 				54FFEFDEB90CCE55D7C0E2C4 /* UserNotifications.framework in Frameworks */,
+				A8D21C2AE10F4AC192320001 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,6 +361,7 @@
 				70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */,
 				7A64E84489F0B6AB889C87C9 /* ActivityView.swift */,
 				0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */,
+				A8D21C2AE10F4AC192320005 /* Updater.swift */,
 				C4E25A70DAA04F3A79401019 /* Uninstaller.swift */,
 				396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */,
 				C92F80F62BC00CAD462C6079 /* RepairGovernor.swift */,
@@ -473,6 +478,9 @@
 			dependencies = (
 				0FBC5C7CDCE0FAEAE7CFE449 /* PBXTargetDependency */,
 			);
+			packageProductDependencies = (
+				A8D21C2AE10F4AC192320002 /* Sparkle */,
+			);
 			name = Fennec;
 			productName = Fennec;
 			productReference = 845F65209D19F1E91A3C573D /* Fennec.app */;
@@ -550,8 +558,30 @@
 				C0DFCD4F7B9B74251BA3118B /* FennecHelper */,
 				059F418228F2A6AF2DD04FC1 /* FennecTests */,
 			);
+			packageReferences = (
+				A8D21C2AE10F4AC192320003 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 		};
 /* End PBXProject section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A8D21C2AE10F4AC192320003 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A8D21C2AE10F4AC192320002 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8D21C2AE10F4AC192320003 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		253694B87BCB5FB6ECA0DC84 /* Resources */ = {
@@ -644,6 +674,7 @@
 				718DFE65EADFDAAE4B651A32 /* LoginItemManager.swift in Sources */,
 				E049477CCF731A07453CF8A9 /* MenuView.swift in Sources */,
 				9CCEC2E73B999823A8A60339 /* NotificationController.swift in Sources */,
+				A8D21C2AE10F4AC192320004 /* Updater.swift in Sources */,
 				1CD48FA92DE3437305698673 /* PrivilegedPromptRepair.swift in Sources */,
 				DA8245D65355DAEB558285D8 /* RecoverySafetyChecker.swift in Sources */,
 				2314A5D92FF4B8C71DC8321B /* SettingsStore.swift in Sources */,

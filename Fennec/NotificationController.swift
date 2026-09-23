@@ -23,7 +23,8 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         static let failed = "REPAIR_FAILED"
     }
 
-    var onRepairRequested: (() -> Void)?
+    var onRepairRequested: ((UUID?) -> Void)?
+    var onIgnoreRequested: ((UUID?) -> Void)?
     var onShowActivityRequested: (() -> Void)?
 
     /// `false` until the user has answered the system prompt, or when they
@@ -39,7 +40,7 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
             UNNotificationCategory(
                 identifier: Category.detected,
                 actions: [
-                    UNNotificationAction(identifier: Action.repair, title: "Repair Now", options: [.foreground]),
+                    UNNotificationAction(identifier: Action.repair, title: "Repair Audio", options: [.foreground]),
                     UNNotificationAction(identifier: Action.ignore, title: "Ignore", options: [])
                 ],
                 intentIdentifiers: [],
@@ -94,12 +95,9 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         NSWorkspace.shared.open(url)
     }
 
-    /// The heads-up, posted the moment the automatic path commits to a
-    /// repair, before the safety scan that precedes the privileged call: the
-    /// user hears the crackle and is told Fennec is on the case in the same
-    /// breath. It shares an identifier with the result banner, so "Crackle
-    /// resolved" (or a retraction) replaces it in place instead of stacking
-    /// under it.
+    /// Posted only after the safety scan passes, immediately before the
+    /// privileged call. It shares an identifier with the result banner, so
+    /// the outcome replaces it instead of stacking under it.
     func postRepairStarting() {
         let content = UNMutableNotificationContent()
         content.title = RepairCopy.repairStartingTitle()
@@ -109,21 +107,6 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         // while the audio is out. Passive would file it in Notification
         // Centre unseen, which is where field testing found it.
         content.interruptionLevel = .active
-        post(content, identifier: Identifier.repair)
-    }
-
-    /// Takes the promise back: the safety scan vetoed the repair after
-    /// "Resetting speakers..." was already on screen. Posted under the same
-    /// identifier so the retraction lands exactly where the promise was, and
-    /// with the detected category so Repair Now is offered: a user who knows
-    /// the microphone light is nothing important can overrule deliberately.
-    func postRepairCalledOff(blocker: String) {
-        let content = UNMutableNotificationContent()
-        content.title = RepairCopy.repairCalledOffTitle()
-        content.body = blocker
-        content.categoryIdentifier = Category.detected
-        content.interruptionLevel = .active
-        content.sound = .default
         post(content, identifier: Identifier.repair)
     }
 
@@ -157,7 +140,12 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
     /// `alsoSuppressed` is the count the notification budget swallowed since
     /// the last banner. Suppression is never silent: if Fennec held twelve of
     /// these back, the one that gets through says so.
-    func postUnrepairedDetection(reason: String, blocker: String?, alsoSuppressed: Int?) {
+    func postUnrepairedDetection(
+        reason: String,
+        blocker: String?,
+        alsoSuppressed: Int?,
+        episodeID: UUID?
+    ) {
         let content = UNMutableNotificationContent()
         content.title = "Crackling detected"
 
@@ -168,6 +156,9 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         content.body = body
         content.categoryIdentifier = Category.detected
         content.sound = .default
+        if let episodeID {
+            content.userInfo = ["episodeID": episodeID.uuidString]
+        }
         post(content, identifier: Identifier.detection)
     }
 
@@ -242,11 +233,15 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let identifier = response.actionIdentifier
+        let episodeID = (response.notification.request.content.userInfo["episodeID"] as? String)
+            .flatMap(UUID.init(uuidString:))
         Task { @MainActor [weak self] in
             guard let self else { return }
             switch identifier {
             case Action.repair:
-                self.onRepairRequested?()
+                self.onRepairRequested?(episodeID)
+            case Action.ignore:
+                self.onIgnoreRequested?(episodeID)
             case UNNotificationDefaultActionIdentifier:
                 // Clicking the banner is what people actually do, and in an
                 // LSUIElement app it used to do literally nothing, which for

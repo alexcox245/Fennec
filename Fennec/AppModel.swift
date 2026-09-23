@@ -40,6 +40,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var recentActivity: [ActivityRecord] = []
     @Published var manualRepairWarning: ManualRepairWarning?
     @Published var administratorRepairRequest: AdministratorRepairRequest?
+    @Published private(set) var promptedRepair: DetectedRepairPrompt?
     /// The id of the most recent repair this launch produced, so a window can
     /// show *the repair the user just ran* rather than the newest record of
     /// any kind from any day.
@@ -56,6 +57,7 @@ final class AppModel: ObservableObject {
     let loginItemManager: LoginItemManager
     let repairHistory: RepairHistoryStore
     let notificationController: NotificationController
+    weak var updaterController: FennecUpdater?
 
     private let monitor = CoreAudioMonitor()
     private let logMonitor = SystemLogMonitor()
@@ -63,6 +65,12 @@ final class AppModel: ObservableObject {
     private let safetyChecker = RecoverySafetyChecker()
     private let eventLogger = EventLogger()
     private let systemEvents = SystemEventObserver()
+    private var faultEpisodes = FaultEpisodePolicy()
+    private var decisionByEpisode: [UUID: DetectionDecision] = [:]
+    private var deviceUIDByEpisode: [UUID: String] = [:]
+    private var pendingManualDecision: DetectionDecision?
+    private var pendingManualEpisodeID: UUID?
+    private var pendingManualDeviceUID: String?
     private var suppressSignalsUntil = Date.distantPast
     private var detectionTaskActive = false
     /// Keyed on the last *attempt*, not the last success. A machine whose
@@ -76,6 +84,9 @@ final class AppModel: ObservableObject {
     private var pauseTimer: Timer?
     private var monitorRecoveryInFlight = false
     private var rehearsalRequested = false
+    private var updaterInstallationPending = false
+    private var updatePreparationID: UUID?
+    private var updatePreparationCancelled = false
     private var verificationTimer: Timer?
     private var verifyingRepairID: UUID?
     private var announcedStandDownUntil: Date?
@@ -92,8 +103,12 @@ final class AppModel: ObservableObject {
         notificationController = NotificationController()
         WindowPresenter.shared.configureRepairFox(settings: settings)
 
-        notificationController.onRepairRequested = { [weak self] in
-            self?.requestManualRepair()
+        notificationController.onRepairRequested = { [weak self] episodeID in
+            self?.requestManualRepair(for: episodeID)
+        }
+        notificationController.onIgnoreRequested = { [weak self] episodeID in
+            guard let episodeID else { return }
+            self?.dismissDetectedRepairPrompt(episodeID: episodeID)
         }
         notificationController.onShowActivityRequested = { [weak self] in
             guard let self else { return }
@@ -134,6 +149,11 @@ final class AppModel: ObservableObject {
                 self?.ingestActivitySample(date)
             }
         }
+        logMonitor.onSuccessfulCoverage = { [weak self] from, through, eventDates in
+            Task { @MainActor in
+                self?.handleSuccessfulLogCoverage(from: from, through: through, eventDates: eventDates)
+            }
+        }
 
         systemEvents.onEvent = { [weak self] event in
             self?.beQuiet(for: event)
@@ -158,8 +178,29 @@ final class AppModel: ObservableObject {
         // makes most available) meant a 620×720 window and a Dock icon shoved
         // in front of the user at every login, forever.
         WindowPresenter.shared.onWindowClosed = { [weak self] id in
-            guard id == WindowPresenter.ID.welcome else { return }
-            self?.completeFirstRun()
+            switch id {
+            case WindowPresenter.ID.welcome:
+                self?.completeFirstRun()
+            case WindowPresenter.ID.repairPrompt:
+                if let episodeID = self?.promptedRepair?.episodeID {
+                    self?.dismissDetectedRepairPrompt(episodeID: episodeID, closeWindow: false)
+                }
+            case WindowPresenter.ID.about:
+                self?.updaterController?.driver.cancelForWindowClose()
+            default:
+                break
+            }
+        }
+
+        if UserDefaults.standard.bool(forKey: FennecUpdater.helperWasRegisteredKey) {
+            Task { [weak self] in
+                guard let self else { return }
+                let restored = await helperManager.restoreRegistrationAfterUpdate()
+                if !restored {
+                    settings.repairMode = .askFirst
+                }
+                UserDefaults.standard.removeObject(forKey: FennecUpdater.helperWasRegisteredKey)
+            }
         }
 
         if !settings.hasCompletedFirstRun {
@@ -178,15 +219,14 @@ final class AppModel: ObservableObject {
         // renegotiation a wake does.
         beQuiet(for: .launch, log: false)
 
-        // A registration that died while Fennec was not running (a replaced
-        // build, a moved bundle) gets rebuilt at launch, not discovered by
-        // the first 2am detection. Delayed so `HelperManager.init`'s
-        // reachability probe has landed first and a helper that is merely
-        // slow to answer is never torn down.
-        Task { [weak self] in
-            try? await Task.sleep(for: .seconds(8))
-            guard let self else { return }
-            _ = await self.healSilentHelper(userInitiated: false)
+        // Automatic mode may repair an enabled-but-silent helper at launch.
+        // Ask me first must not touch helper registration in the background.
+        if settings.repairMode == .automatic {
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(8))
+                guard let self, self.settings.repairMode == .automatic else { return }
+                _ = await self.healSilentHelper(userInitiated: false)
+            }
         }
     }
 
@@ -309,6 +349,9 @@ final class AppModel: ObservableObject {
 
     func pause(_ option: PauseSchedule.Option) {
         applyPause(.make(for: option, from: Date()))
+        if let episodeID = promptedRepair?.episodeID {
+            dismissDetectedRepairPrompt(episodeID: episodeID)
+        }
         record(.init(
             kind: .paused,
             summary: "Automatic repair paused \(option.title.lowercased()).",
@@ -378,7 +421,7 @@ final class AppModel: ObservableObject {
         if isPaused {
             // The device card must not claim to be watching while the user
             // has explicitly told Fennec not to act.
-            return "Automatic repair is paused. Fennec is still counting signals on \(currentDevice.name)."
+            return "Repair responses are paused. Fennec is still counting signals on \(currentDevice.name)."
         }
         switch monitoringState {
         case .starting:
@@ -416,7 +459,7 @@ final class AppModel: ObservableObject {
 
     /// True when Fennec can repair on its own without asking for anything.
     var isArmed: Bool {
-        settings.autoRepairEnabled && helperManager.state.isReachable
+        settings.repairMode == .automatic && helperManager.state.isReachable
     }
 
     // MARK: Setup readiness
@@ -426,6 +469,7 @@ final class AppModel: ObservableObject {
             helper: helperManager.state,
             loginItem: loginItemManager.state,
             notificationsAuthorized: notificationController.isAuthorized,
+            repairMode: settings.repairMode,
             location: installLocation
         )
     }
@@ -435,12 +479,18 @@ final class AppModel: ObservableObject {
             helper: helperManager.state,
             loginItem: loginItemManager.state,
             notificationsAuthorized: notificationController.isAuthorized,
+            repairMode: settings.repairMode,
             location: installLocation
         )
     }
 
     var isFullySetUp: Bool {
-        SetupChecklist.isReady(helper: helperManager.state, loginItem: loginItemManager.state)
+        SetupChecklist.isReady(
+            helper: helperManager.state,
+            loginItem: loginItemManager.state,
+            repairMode: settings.repairMode,
+            location: installLocation
+        )
     }
 
     var setupSummary: String {
@@ -448,6 +498,7 @@ final class AppModel: ObservableObject {
             helper: helperManager.state,
             loginItem: loginItemManager.state,
             notificationsAuthorized: notificationController.isAuthorized,
+            repairMode: settings.repairMode,
             location: installLocation
         )
     }
@@ -596,8 +647,15 @@ final class AppModel: ObservableObject {
 
     // MARK: User-initiated repair
 
-    func requestManualRepair() {
-        guard !isRepairing, !isPreparingRepair else { return }
+    func requestManualRepair(for episodeID: UUID? = nil) {
+        guard !updaterInstallationPending, !isRepairing, !isPreparingRepair else { return }
+        if let episodeID {
+            guard faultEpisodes.isCurrent(episodeID) else { return }
+        }
+        pendingManualEpisodeID = episodeID
+        pendingManualDecision = episodeID.flatMap { decisionByEpisode[$0] }
+        pendingManualDeviceUID = episodeID.flatMap { deviceUIDByEpisode[$0] }
+            ?? (episodeID == nil ? nil : currentDevice.uid)
         isPreparingRepair = true
         throttleNotice = nil
         Task {
@@ -611,8 +669,9 @@ final class AppModel: ObservableObject {
                 )
             }.value
 
+            guard pendingManualEpisodeIsValid() else { return }
             if report.canAutoRepair {
-                await beginManualRepair()
+                await beginManualRepair(decision: pendingManualDecision)
             } else {
                 manualRepairWarning = ManualRepairWarning(
                     message: report.blockers.joined(separator: "\n\n")
@@ -625,11 +684,80 @@ final class AppModel: ObservableObject {
 
     func confirmManualRepair() {
         manualRepairWarning = nil
-        Task { await beginManualRepair() }
+        guard pendingManualEpisodeIsValid() else { return }
+        Task { await beginManualRepair(decision: pendingManualDecision) }
     }
 
     func cancelManualRepair() {
         manualRepairWarning = nil
+        if let episodeID = pendingManualEpisodeID {
+            dismissDetectedRepairPrompt(episodeID: episodeID)
+        }
+        pendingManualEpisodeID = nil
+        pendingManualDecision = nil
+        pendingManualDeviceUID = nil
+    }
+
+    func requestPromptedRepair(_ prompt: DetectedRepairPrompt) {
+        guard promptedRepair?.id == prompt.id, faultEpisodes.mayPrompt(for: prompt.episodeID) else { return }
+        requestManualRepair(for: prompt.episodeID)
+    }
+
+    private func pendingManualEpisodeIsValid() -> Bool {
+        guard let episodeID = pendingManualEpisodeID else { return true }
+        guard faultEpisodes.isCurrent(episodeID),
+              let expectedDeviceUID = pendingManualDeviceUID,
+              currentDevice.uid == expectedDeviceUID else {
+            manualRepairWarning = nil
+            administratorRepairRequest = nil
+            pendingManualEpisodeID = nil
+            pendingManualDecision = nil
+            pendingManualDeviceUID = nil
+            record(.init(kind: .repairSkipped, summary: "The audio output or crackling episode changed while the repair was being prepared."))
+            return false
+        }
+        return true
+    }
+
+    func dismissDetectedRepairPrompt(episodeID: UUID, closeWindow: Bool = true) {
+        faultEpisodes.suppress(episodeID)
+        guard promptedRepair?.episodeID == episodeID else { return }
+        promptedRepair = nil
+        if closeWindow { WindowPresenter.shared.closeRepairPrompt() }
+    }
+
+    private func presentDetectedRepairPrompt(
+        decision: DetectionDecision,
+        device: AudioDeviceSnapshot,
+        episodeID: UUID
+    ) {
+        guard currentDevice.uid == device.uid, faultEpisodes.mayPrompt(for: episodeID) else { return }
+        guard promptedRepair?.episodeID != episodeID else { return }
+        promptedRepair = DetectedRepairPrompt(
+            episodeID: episodeID,
+            decision: decision,
+            deviceName: device.name,
+            deviceUID: device.uid
+        )
+        WindowPresenter.shared.showRepairPrompt(model: self)
+    }
+
+    private func handleSuccessfulLogCoverage(from: Date, through: Date, eventDates: [Date]) {
+        for date in eventDates {
+            _ = faultEpisodes.noteSignal(at: date)
+        }
+        let lastPlaybackSample = [recentAudioActivity.last, pendingActivity.last].compactMap { $0 }.max()
+        let recentPlayback = lastPlaybackSample.map {
+            through.timeIntervalSince($0) <= OverloadLogSchedule.runningGrace
+        } ?? false
+        guard recentPlayback,
+              let endedEpisode = faultEpisodes.observeSuccessfulCoverage(from: from, through: through) else { return }
+        decisionByEpisode.removeValue(forKey: endedEpisode)
+        deviceUIDByEpisode.removeValue(forKey: endedEpisode)
+        if promptedRepair?.episodeID == endedEpisode {
+            promptedRepair = nil
+            WindowPresenter.shared.closeRepairPrompt()
+        }
     }
 
     /// The one place that decides *which* privileged path a manual repair
@@ -682,14 +810,18 @@ final class AppModel: ObservableObject {
         return healed
     }
 
-    private func beginManualRepair() async {
+    private func beginManualRepair(decision: DetectionDecision?) async {
+        guard !updaterInstallationPending, pendingManualEpisodeIsValid() else { return }
+        let trigger: RepairRecord.Trigger = isRehearsal ? .rehearsal : .manual
         if helperManager.state.isReachable {
-            await performRepair(trigger: .manual, decision: nil, viaAdministratorPrompt: false)
+            await performRepair(trigger: trigger, decision: decision, viaAdministratorPrompt: false)
             return
         }
         // Before asking for a password, try the fix that needs none.
-        if await healSilentHelper(userInitiated: true) {
-            await performRepair(trigger: .manual, decision: nil, viaAdministratorPrompt: false)
+        let healed = await healSilentHelper(userInitiated: true)
+        guard pendingManualEpisodeIsValid() else { return }
+        if healed {
+            await performRepair(trigger: trigger, decision: decision, viaAdministratorPrompt: false)
             return
         }
         let reason: String
@@ -712,16 +844,114 @@ final class AppModel: ObservableObject {
 
     func confirmAdministratorRepair() {
         administratorRepairRequest = nil
-        Task { await performRepair(trigger: .manual, decision: nil, viaAdministratorPrompt: true) }
+        guard pendingManualEpisodeIsValid() else { return }
+        let trigger: RepairRecord.Trigger = isRehearsal ? .rehearsal : .manual
+        Task { await performRepair(trigger: trigger, decision: pendingManualDecision, viaAdministratorPrompt: true) }
     }
 
     func cancelAdministratorRepair() {
         administratorRepairRequest = nil
+        if let episodeID = pendingManualEpisodeID {
+            dismissDetectedRepairPrompt(episodeID: episodeID)
+        }
+        pendingManualEpisodeID = nil
+        pendingManualDecision = nil
+        pendingManualDeviceUID = nil
+        rehearsalRequested = false
         record(.init(kind: .repairSkipped, summary: "Administrator repair was cancelled."))
+    }
+
+    /// Called only after the user has pressed the final Install & Relaunch
+    /// button. New repairs are held while an active attempt finishes, then a
+    /// previously registered helper is unregistered so Sparkle can replace
+    /// the app bundle without leaving launchd bound to a stale executable.
+    func prepareForUpdateInstall() async -> Bool {
+        guard !updaterInstallationPending else { return false }
+        let preparationID = UUID()
+        updatePreparationID = preparationID
+        updatePreparationCancelled = false
+        updaterInstallationPending = true
+
+        while isRepairing || isPreparingRepair {
+            if updatePreparationID != preparationID || updatePreparationCancelled {
+                return await cancelUpdatePreparation(helperWasRegistered: false)
+            }
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+
+        if updatePreparationID != preparationID || updatePreparationCancelled {
+            return await cancelUpdatePreparation(helperWasRegistered: false)
+        }
+
+        let helperWasRegistered = helperManager.isRegistered
+        if helperWasRegistered {
+            UserDefaults.standard.set(true, forKey: FennecUpdater.helperWasRegisteredKey)
+            let unregistered = await helperManager.unregisterForUpdate()
+            if updatePreparationID != preparationID || updatePreparationCancelled {
+                return await cancelUpdatePreparation(helperWasRegistered: unregistered)
+            }
+            guard unregistered else {
+                UserDefaults.standard.removeObject(forKey: FennecUpdater.helperWasRegisteredKey)
+                updaterInstallationPending = false
+                updatePreparationID = nil
+                return false
+            }
+        } else {
+            UserDefaults.standard.removeObject(forKey: FennecUpdater.helperWasRegisteredKey)
+        }
+        updatePreparationID = nil
+        return true
+    }
+
+    private func cancelUpdatePreparation(helperWasRegistered: Bool) async -> Bool {
+        if helperWasRegistered {
+            let restored = await helperManager.restoreRegistrationAfterUpdate()
+            if !restored { settings.repairMode = .askFirst }
+        }
+        UserDefaults.standard.removeObject(forKey: FennecUpdater.helperWasRegisteredKey)
+        updaterInstallationPending = false
+        updatePreparationID = nil
+        updatePreparationCancelled = false
+        return false
+    }
+
+    /// A canceled or failed install leaves this copy running. Put back only
+    /// a helper that was registered before the user started the update.
+    func cancelUpdateInstallation() {
+        if updatePreparationID != nil {
+            updatePreparationCancelled = true
+            return
+        }
+        let helperWasRegistered = UserDefaults.standard.bool(forKey: FennecUpdater.helperWasRegisteredKey)
+        guard updaterInstallationPending || helperWasRegistered else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            if helperWasRegistered {
+                let restored = await helperManager.restoreRegistrationAfterUpdate()
+                if !restored { settings.repairMode = .askFirst }
+                UserDefaults.standard.removeObject(forKey: FennecUpdater.helperWasRegisteredKey)
+            }
+            updaterInstallationPending = false
+        }
     }
 
     func openEventLog() {
         NSWorkspace.shared.activateFileViewerSelecting([eventLogger.logURL])
+    }
+
+    @discardableResult
+    func copyRecentEvents() -> Bool {
+        guard !recentActivity.isEmpty else { return false }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        let lines = recentActivity.reversed().compactMap { record -> String? in
+            guard let data = try? encoder.encode(record) else { return nil }
+            return String(data: data, encoding: .utf8)
+        }
+        guard !lines.isEmpty else { return false }
+        NSPasteboard.general.clearContents()
+        return NSPasteboard.general.setString(lines.joined(separator: "\n"), forType: .string)
     }
 
     func quit() {
@@ -731,7 +961,17 @@ final class AppModel: ObservableObject {
     // MARK: Signal handling
 
     private func handle(_ batch: AudioSignalBatch) {
+        let previousDeviceUID = currentDevice.uid
         currentDevice = batch.device
+
+        if !previousDeviceUID.isEmpty, previousDeviceUID != batch.device.uid {
+            if let episodeID = promptedRepair?.episodeID {
+                dismissDetectedRepairPrompt(episodeID: episodeID)
+            }
+            faultEpisodes.invalidateForOutputChange()
+            decisionByEpisode.removeAll()
+            deviceUIDByEpisode.removeAll()
+        }
 
         if batch.serviceRestarts > 0 {
             // Every AudioObjectID from before the restart is invalid,
@@ -806,7 +1046,21 @@ final class AppModel: ObservableObject {
         // the user is actually hearing something wrong.
         noteCrackleSignal()
 
+        var episodeID: UUID?
+        if batch.overloads > 0 {
+            for date in batch.overloadDates ?? Array(repeating: batch.date, count: Int(batch.overloads)) {
+                episodeID = faultEpisodes.noteSignal(at: date)
+            }
+        }
+        if batch.abnormalStops > 0 {
+            episodeID = faultEpisodes.noteSignal(at: batch.date)
+        }
+        if let episodeID {
+            deviceUIDByEpisode[episodeID] = batch.device.uid
+        }
+
         guard let decision = detectionEngine.ingest(batch, sensitivity: settings.sensitivity) else { return }
+        guard let episodeID else { return }
 
         // A fresh detection inside the verification window is the fault
         // coming back, which is the one thing that decides whether the last
@@ -816,6 +1070,7 @@ final class AppModel: ObservableObject {
         }
 
         detectionCount += 1
+        decisionByEpisode[episodeID] = decision
         lastDetectionDate = batch.date
         lastDetectionReason = decision.reason
         record(.init(
@@ -835,14 +1090,22 @@ final class AppModel: ObservableObject {
         detectionTaskActive = true
         Task {
             defer { detectionTaskActive = false }
-            await respondToDetection(decision, device: batch.device)
+            await respondToDetection(decision, device: batch.device, episodeID: episodeID)
         }
     }
 
     /// Everything between "Fennec is sure the audio is broken" and "Fennec
     /// restarts Core Audio". Every early return is a refusal the user is
     /// entitled to see, so each one records a reason.
-    private func respondToDetection(_ decision: DetectionDecision, device: AudioDeviceSnapshot) async {
+    private func respondToDetection(
+        _ decision: DetectionDecision,
+        device: AudioDeviceSnapshot,
+        episodeID: UUID
+    ) async {
+        guard !updaterInstallationPending else {
+            recordSkipped("An app update is preparing to install.")
+            return
+        }
         if isPaused {
             // Deliberately silent and deliberately above every other gate: the
             // user asked for quiet, and a banner explaining why Fennec is quiet
@@ -858,12 +1121,6 @@ final class AppModel: ObservableObject {
             return
         }
 
-        guard settings.autoRepairEnabled else {
-            recordSkipped("Automatic repair is turned off.")
-            notifyUnrepaired(decision, blocker: "Automatic repair is turned off.")
-            return
-        }
-
         guard !isRepairing else {
             recordSkipped("A repair is already running.")
             return
@@ -872,7 +1129,7 @@ final class AppModel: ObservableObject {
         if settings.skipBluetooth && device.transport.isBluetooth {
             let blocker = "Automatic repair is set to skip Bluetooth outputs."
             recordSkipped(blocker)
-            notifyUnrepaired(decision, blocker: blocker)
+            notifyUnrepaired(decision, blocker: blocker, episodeID: episodeID)
             return
         }
 
@@ -901,33 +1158,6 @@ final class AppModel: ObservableObject {
             return
         }
 
-        if helperManager.state.isEnabled && !helperManager.state.isReachable {
-            // The one blocker Fennec can remove by itself: the helper is
-            // approved but silent, and a rebuilt registration is often the
-            // difference between repairing now and posting a banner about
-            // why it could not.
-            _ = await healSilentHelper(userInitiated: false)
-        }
-
-        guard helperManager.state.isReachable else {
-            let blocker = RepairCopy.helperBlocker(for: helperManager.state)
-            recordSkipped(blocker)
-            notifyUnrepaired(decision, blocker: blocker)
-            return
-        }
-
-        if settings.notifyOnRepair {
-            // The promise, posted the instant every cheap gate has passed:
-            // the user hearing the crackle learns Fennec is on the case
-            // while the safety scan below is still running. That scan is
-            // seconds on a starved machine (and a starved machine is the
-            // product's premise), so waiting to announce until just before
-            // the privileged call meant the banner could trail the crackle
-            // by half a minute. If the scan vetoes, the promise is taken
-            // back in place below, never left standing.
-            notificationController.postRepairStarting()
-        }
-
         let protectMicrophone = settings.protectMicrophone
         let protectApps = settings.protectCommunicationApps
         let report = await Task.detached(priority: .utility) { [safetyChecker] in
@@ -940,17 +1170,44 @@ final class AppModel: ObservableObject {
         guard report.canAutoRepair else {
             let blocker = report.blockers.joined(separator: " ")
             recordSkipped(blocker)
-            if settings.notifyOnRepair {
-                // Corrects "Resetting speakers..." where it stands. Not
-                // budgeted: a stated intention that will not happen must
-                // always be retracted, however recently the last banner ran.
-                notificationController.postRepairCalledOff(blocker: blocker)
-            } else {
-                notifyUnrepaired(decision, blocker: blocker)
-            }
+            notifyUnrepaired(decision, blocker: blocker, episodeID: episodeID)
             return
         }
 
+        guard currentDevice.uid == device.uid else {
+            recordSkipped("The audio output changed while Fennec was checking it.")
+            return
+        }
+
+        guard faultEpisodes.mayPrompt(for: episodeID) else {
+            recordSkipped("This crackling episode has already been answered.")
+            return
+        }
+
+        if settings.repairMode == .askFirst {
+            presentDetectedRepairPrompt(decision: decision, device: device, episodeID: episodeID)
+            return
+        }
+
+        if helperManager.state.isEnabled && !helperManager.state.isReachable {
+            // The one blocker Fennec can remove by itself: the helper is
+            // approved but silent, and a rebuilt registration is often the
+            // difference between repairing now and posting a banner about
+            // why it could not.
+            _ = await healSilentHelper(userInitiated: false)
+        }
+
+        guard helperManager.state.isReachable else {
+            // The saved preference remains automatic. A repair that needs an
+            // administrator password still requires a foreground decision.
+            recordSkipped(RepairCopy.helperBlocker(for: helperManager.state))
+            presentDetectedRepairPrompt(decision: decision, device: device, episodeID: episodeID)
+            return
+        }
+
+        // The safety scan and every other gate passed before a promise is
+        // made. This avoids a banner and retraction when a call is active.
+        if settings.notifyOnRepair { notificationController.postRepairStarting() }
         await performRepair(trigger: .automatic, decision: decision, viaAdministratorPrompt: false)
     }
 
@@ -961,7 +1218,7 @@ final class AppModel: ObservableObject {
         decision: DetectionDecision?,
         viaAdministratorPrompt: Bool
     ) async {
-        guard !isRepairing else { return }
+        guard !updaterInstallationPending, !isRepairing else { return }
         isRepairing = true
         lastRepairAttemptDate = Date()
         detectionEngine.reset()
@@ -974,11 +1231,11 @@ final class AppModel: ObservableObject {
             summary: automatic ? "Automatic Core Audio repair requested." : "Manual Core Audio repair requested."
         ))
 
-        // The "Crackle detected" heads-up is posted upstream, the moment the
-        // automatic path committed, so the banner races Mac notification
-        // latency from detection time instead of from here.
+        // The heads-up is posted only after the safety scan passes, directly
+        // before this call, so Fennec never promises a repair it must retract.
 
         let foxAttemptID = UUID()
+        var repairCompleted = false
         if !viaAdministratorPrompt {
             WindowPresenter.shared.showRepairFox(for: foxAttemptID)
         }
@@ -1012,6 +1269,7 @@ final class AppModel: ObservableObject {
                 message: message
             )
             repairHistory.record(repair)
+            repairCompleted = true
             lastRepairID = repair.id
             lastError = nil
             detectionNotificationBudget.reset()
@@ -1056,8 +1314,15 @@ final class AppModel: ObservableObject {
             // decision, not a fault: no red receipt, no alarm, no attention
             // mark, and no reset of the days-without-incident sign.
             record(.init(kind: .repairSkipped, summary: "Administrator authorization was cancelled."))
+            if let episodeID = pendingManualEpisodeID {
+                dismissDetectedRepairPrompt(episodeID: episodeID)
+            }
             clearCrackleWatch()
             isRepairing = false
+            pendingManualEpisodeID = nil
+            pendingManualDecision = nil
+            pendingManualDeviceUID = nil
+            rehearsalRequested = false
             return
         } catch let error as HelperCallError where error.isThrottled {
             WindowPresenter.shared.cancelRepairFox(for: foxAttemptID)
@@ -1070,6 +1335,10 @@ final class AppModel: ObservableObject {
             throttleNotice = error.message
             clearCrackleWatch()
             isRepairing = false
+            pendingManualEpisodeID = nil
+            pendingManualDecision = nil
+            pendingManualDeviceUID = nil
+            rehearsalRequested = false
             return
         } catch {
             WindowPresenter.shared.cancelRepairFox(for: foxAttemptID)
@@ -1101,6 +1370,16 @@ final class AppModel: ObservableObject {
         // and failure raises the attention mark, which takes the icon anyway.
         clearCrackleWatch()
         isRepairing = false
+        if repairCompleted, let episodeID = pendingManualEpisodeID {
+            promptedRepair = nil
+            WindowPresenter.shared.closeRepairPrompt()
+            faultEpisodes.suppress(episodeID)
+        }
+        if trigger != .automatic {
+            pendingManualEpisodeID = nil
+            pendingManualDecision = nil
+            pendingManualDeviceUID = nil
+        }
     }
 
     // MARK: Verification
@@ -1340,8 +1619,9 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func notifyUnrepaired(_ decision: DetectionDecision, blocker: String?) {
+    private func notifyUnrepaired(_ decision: DetectionDecision, blocker: String?, episodeID: UUID) {
         guard settings.notifyOnDetection else { return }
+        guard faultEpisodes.isCurrent(episodeID) else { return }
         guard detectionNotificationBudget.allow() else { return }
         let suppressed = detectionNotificationBudget.suppressedSinceLastPost()
         detectionNotificationBudget.clearSuppressed()
@@ -1350,7 +1630,8 @@ final class AppModel: ObservableObject {
             // for the event log, which is where precision belongs (T-043).
             reason: decision.plainReason,
             blocker: blocker,
-            alsoSuppressed: suppressed
+            alsoSuppressed: suppressed,
+            episodeID: episodeID
         )
     }
 

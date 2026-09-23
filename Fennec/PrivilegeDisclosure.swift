@@ -58,6 +58,12 @@ enum PrivilegeDisclosure {
                     + "standard macOS password prompt instead. It always asks you first and always "
                     + "shows you the command. It will never do this on its own after a failure.",
                 code: nil
+            ),
+            Item(
+                id: "update",
+                title: "Install a signed app update",
+                detail: "When you choose Install & Relaunch, Sparkle replaces Fennec with a signed release. macOS may ask for administrator authorization if your account cannot write to Applications. This path does not touch audio.",
+                code: nil
             )
         ]
     }
@@ -76,15 +82,14 @@ enum PrivilegeDisclosure {
             ),
             Item(
                 id: "network",
-                title: "No network, no account, no telemetry",
-                detail: "Fennec contains no networking code. Nothing it observes leaves your Mac.",
+                title: "Updates only when you ask",
+                detail: "Check for Updates contacts Fennec's signed release feed. A download starts only after you choose it, and installation waits for Install & Relaunch. Fennec sends no system profile, account data, or telemetry.",
                 code: nil
             ),
             Item(
                 id: "files",
-                title: "Two files, both readable",
-                detail: "A rotating log of everything Fennec saw, and a receipt for every repair it "
-                    + "performed. Nothing else is written.",
+                title: "Local records",
+                detail: "Fennec keeps a rotating event log and repair receipts in its support folder. Sparkle keeps temporary update downloads in the user cache.",
                 code: "~/Library/Application Support/Fennec/"
             ),
             Item(

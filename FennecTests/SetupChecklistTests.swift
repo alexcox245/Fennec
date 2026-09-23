@@ -9,28 +9,36 @@ final class SetupChecklistTests: XCTestCase {
         helper: RepairHelperState = .notConfigured,
         loginItem: LoginItemState = .notRegistered,
         notifications: Bool = false,
+        repairMode: RepairMode = .automatic,
         location: InstallLocation = .applications
     ) -> [SetupStep] {
         SetupChecklist.remaining(
             helper: helper,
             loginItem: loginItem,
             notificationsAuthorized: notifications,
+            repairMode: repairMode,
             location: location
         )
     }
 
-    func testAFreshInstallHasEverythingLeftToDo() {
+    func testAutomaticModeOnlyBlocksOnTheHelper() {
         let steps = remaining()
-        XCTAssertEqual(steps.map(\.kind), [.helper, .loginItem, .notifications])
+        XCTAssertEqual(steps.map(\.kind), [.helper])
+        XCTAssertTrue(steps.allSatisfy(\.isRequired))
     }
 
-    func testRequiredStepsSortAheadOfOptionalOnes() {
-        // Notifications are nice; without the helper Fennec cannot repair at
-        // all. The blocking work has to be the first thing the user sees.
-        let steps = remaining(helper: .notConfigured, loginItem: .notRegistered, notifications: false)
-        let firstOptional = steps.firstIndex { !$0.isRequired } ?? steps.count
-        let lastRequired = steps.lastIndex { $0.isRequired } ?? -1
-        XCTAssertLessThan(lastRequired, firstOptional)
+    func testAskFirstNeedsNoBackgroundPermissions() {
+        XCTAssertTrue(remaining(repairMode: .askFirst).isEmpty)
+        XCTAssertTrue(SetupChecklist.isReady(helper: .notConfigured, loginItem: .notRegistered, repairMode: .askFirst))
+        XCTAssertEqual(
+            SetupChecklist.summary(
+                helper: .notConfigured,
+                loginItem: .notRegistered,
+                notificationsAuthorized: false,
+                repairMode: .askFirst
+            ),
+            "Ask me first is ready."
+        )
     }
 
     func testAFullyConfiguredMacHasNothingLeft() {
@@ -65,8 +73,13 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertEqual(steps.first?.kind, .install)
     }
 
-    func testADevelopmentBuildIsNotedButNotRequired() throws {
-        let steps = remaining(location: .developmentBuild)
+    func testADevelopmentBuildIsNotRequired() throws {
+        let steps = SetupChecklist.steps(
+            helper: .enabled(reachable: true),
+            loginItem: .notRegistered,
+            notificationsAuthorized: false,
+            location: .developmentBuild
+        )
         let install = try XCTUnwrap(steps.first { $0.kind == .install })
         XCTAssertFalse(install.isRequired)
     }
@@ -78,7 +91,7 @@ final class SetupChecklistTests: XCTestCase {
         let helperStep = try XCTUnwrap(steps.first { $0.kind == .helper })
         // The action rebuilds the registration (the fix) rather than
         // re-pinging a daemon that cannot answer and calling it a day.
-        XCTAssertEqual(helperStep.actionTitle, "Rebuild")
+        XCTAssertEqual(helperStep.actionTitle, "Reconnect")
         XCTAssertFalse(helperStep.isComplete)
     }
 
@@ -101,14 +114,25 @@ final class SetupChecklistTests: XCTestCase {
     // MARK: Login item states
 
     func testAStagedLoginItemSendsTheUserToSystemSettings() throws {
-        let step = try XCTUnwrap(remaining(loginItem: .requiresApproval).first { $0.kind == .loginItem })
+        let steps = SetupChecklist.steps(
+            helper: .enabled(reachable: true),
+            loginItem: .requiresApproval,
+            notificationsAuthorized: false
+        )
+        let step = try XCTUnwrap(steps.first { $0.kind == .loginItem })
         XCTAssertEqual(step.actionTitle, "Open Login Items…")
+        XCTAssertFalse(step.isRequired)
     }
 
     func testAnUnregisteredLoginItemOffersToTurnItOn() throws {
-        let step = try XCTUnwrap(remaining(loginItem: .notRegistered).first { $0.kind == .loginItem })
+        let steps = SetupChecklist.steps(
+            helper: .enabled(reachable: true),
+            loginItem: .notRegistered,
+            notificationsAuthorized: false
+        )
+        let step = try XCTUnwrap(steps.first { $0.kind == .loginItem })
         XCTAssertEqual(step.actionTitle, "Turn On")
-        XCTAssertTrue(step.isRequired, "Fennec has to already be running to catch the first signal.")
+        XCTAssertFalse(step.isRequired, "Starting at login is optional.")
     }
 
     func testLoginItemStateMapsEverySMAppServiceStatus() {
@@ -132,9 +156,9 @@ final class SetupChecklistTests: XCTestCase {
 
     // MARK: Readiness and the summary line
 
-    func testReadinessNeedsBothTheHelperAndTheLoginItem() {
+    func testAutomaticReadinessNeedsTheHelperButNotTheLoginItem() {
         XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .enabled))
-        XCTAssertFalse(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .notRegistered))
+        XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .notRegistered))
         XCTAssertFalse(SetupChecklist.isReady(helper: .enabled(reachable: false), loginItem: .enabled))
         XCTAssertFalse(SetupChecklist.isReady(helper: .notConfigured, loginItem: .enabled))
     }
@@ -142,22 +166,23 @@ final class SetupChecklistTests: XCTestCase {
     func testSummaryCountsOnlyBlockingWork() {
         XCTAssertEqual(
             SetupChecklist.summary(helper: .notConfigured, loginItem: .notRegistered, notificationsAuthorized: false),
-            "2 steps left before Fennec can repair on its own."
+            "1 step before automatic repair is ready."
         )
         XCTAssertEqual(
             SetupChecklist.summary(helper: .enabled(reachable: true), loginItem: .enabled, notificationsAuthorized: false),
-            "Fennec will repair automatically. 1 optional step left."
+            "Automatic repair is ready."
         )
         XCTAssertEqual(
             SetupChecklist.summary(helper: .enabled(reachable: true), loginItem: .enabled, notificationsAuthorized: true),
-            "Fennec is set up. It starts with your Mac and repairs without asking."
+            "Automatic repair is ready."
         )
     }
 
-    func testSummarySingularisesOneRemainingStep() {
+    func testLoginItemDoesNotBlockAutomaticRepairReadiness() {
+        XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .notRegistered))
         XCTAssertEqual(
             SetupChecklist.summary(helper: .enabled(reachable: true), loginItem: .notRegistered, notificationsAuthorized: true),
-            "1 step left before Fennec can repair on its own."
+            "Automatic repair is ready."
         )
     }
 
@@ -178,5 +203,71 @@ final class SetupChecklistTests: XCTestCase {
                 XCTAssertFalse(step.detail.contains("!"))
             }
         }
+    }
+
+    func testDismissalPersistsUntilAFullMinuteOfSuccessfulQuietCoverage() {
+        let suite = "FennecTests-episode-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let signal = Date(timeIntervalSince1970: 1_000)
+        var policy = FaultEpisodePolicy(defaults: defaults)
+        let episodeID = policy.noteSignal(at: signal)
+        policy.suppress(episodeID)
+
+        var reopened = FaultEpisodePolicy(defaults: defaults)
+        XCTAssertTrue(reopened.isCurrent(episodeID))
+        XCTAssertFalse(reopened.mayPrompt(for: episodeID))
+
+        // A failed query has no coverage callback, so the persisted dismissal
+        // remains in force. Fifty-nine covered seconds are also insufficient.
+        XCTAssertNil(reopened.observeSuccessfulCoverage(from: signal, through: signal.addingTimeInterval(59)))
+        XCTAssertFalse(reopened.mayPrompt(for: episodeID))
+
+        XCTAssertEqual(
+            reopened.observeSuccessfulCoverage(
+                from: signal.addingTimeInterval(59),
+                through: signal.addingTimeInterval(60)
+            ),
+            episodeID
+        )
+        XCTAssertFalse(reopened.isCurrent(episodeID))
+
+        let nextEpisodeID = reopened.noteSignal(at: signal.addingTimeInterval(61))
+        XCTAssertNotEqual(nextEpisodeID, episodeID)
+        XCTAssertTrue(reopened.mayPrompt(for: nextEpisodeID))
+    }
+
+    func testCoverageMustBeContiguousToRearmAnEpisode() {
+        let suite = "FennecTests-episode-gap-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let signal = Date(timeIntervalSince1970: 2_000)
+        var policy = FaultEpisodePolicy(defaults: defaults)
+        let episodeID = policy.noteSignal(at: signal)
+        XCTAssertNil(policy.observeSuccessfulCoverage(from: signal, through: signal.addingTimeInterval(30)))
+        XCTAssertNil(policy.observeSuccessfulCoverage(
+            from: signal.addingTimeInterval(50),
+            through: signal.addingTimeInterval(80)
+        ))
+        XCTAssertTrue(policy.isCurrent(episodeID))
+    }
+
+    func testAnOutputChangeInvalidatesTheOldDismissedEpisode() {
+        let suite = "FennecTests-episode-output-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        var policy = FaultEpisodePolicy(defaults: defaults)
+        let oldID = policy.noteSignal(at: Date(timeIntervalSince1970: 3_000))
+        policy.suppress(oldID)
+        XCTAssertFalse(policy.mayPrompt(for: oldID))
+
+        policy.invalidateForOutputChange()
+        let nextID = policy.noteSignal(at: Date(timeIntervalSince1970: 3_001))
+
+        XCTAssertNotEqual(nextID, oldID)
+        XCTAssertTrue(policy.mayPrompt(for: nextID))
     }
 }

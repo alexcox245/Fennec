@@ -53,7 +53,7 @@ struct FennecCommands: Commands {
                 Button("Resume Watching") { model.resume() }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
             } else {
-                Menu("Pause Automatic Repair") {
+                Menu("Pause Repair Responses") {
                     ForEach(PauseSchedule.Option.allCases) { option in
                         Button(option.title) { model.pause(option) }
                     }

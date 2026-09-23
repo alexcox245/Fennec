@@ -17,6 +17,7 @@ struct SettingsView: View {
     }
 
     @State private var confirmingHelperRemoval = false
+    @State private var copiedEvents = false
 
     var body: some View {
         TabView {
@@ -67,20 +68,22 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Automatic Repair") {
-                Toggle("Repair crackling automatically", isOn: $settings.autoRepairEnabled)
-                    .disabled(!helper.state.isReachable)
-                Text("One blip is usually nothing. Two in a row is the fault that stays broken until Fennec steps in, so it waits for the second one, then fixes it.")
+            Section("Repair Mode") {
+                Picker("When crackling is detected", selection: $settings.repairMode) {
+                    ForEach(RepairMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text(settings.repairMode.detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if !helper.state.isReachable {
-                    // Without this the screen reads "Repair crackling
-                    // automatically: on" directly above "Privileged helper:
-                    // Not configured", which is a promise Fennec cannot keep.
+                if settings.repairMode == .automatic && !helper.state.isReachable {
                     Label {
-                        Text("This switch does nothing until the repair helper is enabled. Fennec will still detect crackling and tell you about it.")
+                        Text("Automatic repair needs the approved helper. Fennec will ask before repairing while you set it up.")
                             .font(.caption)
                             .fixedSize(horizontal: false, vertical: true)
                     } icon: {
@@ -105,18 +108,22 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-                helperControls
+                if settings.repairMode == .automatic {
+                    helperControls
+                }
             }
 
             Section("Notifications") {
                 Toggle("Tell me after Fennec repairs the audio", isOn: $settings.notifyOnRepair)
                 Toggle("Tell me when crackling is detected but not repaired", isOn: $settings.notifyOnDetection)
+                Text("These switches control banners. Ask me first still opens a repair window.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if notifications.authorizationChecked && !notifications.isAuthorized {
-                    // Without this the screen shows two switches that are on
-                    // and produce nothing: the same "promise Fennec cannot
-                    // keep" the auto-repair notice forty lines up exists to
-                    // prevent.
+                    // The switches still control banners; the repair prompt
+                    // remains available even when notification access is off.
                     Label {
                         Text("macOS is not allowing Fennec to notify you, so these do nothing.")
                             .font(.caption)
@@ -128,10 +135,6 @@ struct SettingsView: View {
                     Button("Open Notification Settings…") { notifications.openSystemSettings() }
                 }
 
-                Text("A repair that failed always notifies you; that is the one case where something is left for you to do.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Section(RepairCopy.foxSection) {
@@ -187,18 +190,6 @@ struct SettingsView: View {
                 }
             }
 
-            if !model.remainingSetupSteps.isEmpty {
-                Section("Finish Setup") {
-                    ForEach(model.remainingSetupSteps) { step in
-                        SetupStepRow(step: step, compact: false) {
-                            model.performSetupAction(for: step)
-                        }
-                    }
-                    Text(model.setupSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
         }
         .formStyle(.grouped)
     }
@@ -227,7 +218,7 @@ struct SettingsView: View {
             }
         }
 
-        Text("The helper can only restart Core Audio; it cannot be given a command, a path, or an argument. With it enabled, repairs never show a password prompt. Without it, Fennec can still repair by asking for your administrator password, but only after showing you the command.")
+        Text("The approved helper repairs without a password prompt. Without it, Fennec asks before opening the administrator prompt and shows the command first.")
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -253,21 +244,21 @@ struct SettingsView: View {
 
             Section("Pause") {
                 if model.isPaused {
-                    LabeledContent("Automatic repair", value: model.pauseStatusText ?? "Paused")
+                    LabeledContent("Repair responses", value: model.pauseStatusText ?? "Paused")
                     Button("Resume Listening") { model.resume() }
                 } else {
                     // Not "Status": General has a Status row driven by the
                     // monitor, and two rows with the same label in one window,
                     // one of them false, is worse than no row.
-                    LabeledContent("Automatic repair", value: model.isArmed ? "Armed" : "Not armed")
-                    Menu("Pause Automatic Repair") {
+                    LabeledContent("Repair responses", value: model.isArmed ? "Armed" : "Prompted")
+                    Menu("Pause Repair Responses") {
                         ForEach(PauseSchedule.Option.allCases) { option in
                             Button(option.title) { model.pause(option) }
                         }
                     }
                     .fixedSize()
                 }
-                Text("Pausing stops automatic repair only. Repair Audio Now keeps working, and every duration except the last one expires on its own.")
+                Text("Pausing stops automatic repairs and detected repair windows. Repair Audio Now still works, and timed pauses expire on their own.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -281,6 +272,7 @@ struct SettingsView: View {
                             .frame(minWidth: 180)
                             .accessibilityLabel("Wait between repairs")
                             .accessibilityValue("\(Int(settings.cooldownSeconds)) seconds")
+                            .sensoryFeedback(.selection, trigger: Int(settings.cooldownSeconds))
                         Text("\(Int(settings.cooldownSeconds)) s")
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
@@ -333,11 +325,18 @@ struct SettingsView: View {
                 diagnosticMetric("Repairs", UInt64(model.repairCount), accent: FennecBrand.sky)
             }
 
-            HStack {
-                Button("Refresh") { model.refreshAll() }
+            HStack(spacing: 10) {
+                Button(copiedEvents ? "Copied" : "Copy Recent Events") {
+                    guard model.copyRecentEvents() else { return }
+                    copiedEvents = true
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(1_500))
+                        copiedEvents = false
+                    }
+                }
+                .disabled(copiedEvents || model.recentActivity.isEmpty)
                 Button("Repair History…") { model.showActivityWindow() }
                 Button("Reveal Event Log") { model.openEventLog() }
-                Button("About & Uninstall…") { model.showAboutWindow() }
                 Spacer()
                 if let lastRepairDate = model.lastRepairDate {
                     Text("Last repair \(lastRepairDate.formatted(date: .abbreviated, time: .standard))")

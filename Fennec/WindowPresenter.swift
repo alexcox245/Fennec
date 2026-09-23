@@ -24,6 +24,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         static let welcome = "fennec.welcome"
         static let activity = "fennec.activity"
         static let about = "fennec.about"
+        static let repairPrompt = "fennec.repair-prompt"
     }
 
     // MARK: The app's windows
@@ -86,6 +87,25 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         ) {
             SettingsView(model: model).tint(FennecBrand.sky)
         }
+    }
+
+    /// Detection in Ask me first mode is a foreground decision, including
+    /// when a banner is disabled or unavailable. The window is reusable so
+    /// repeated signals in one episode never stack prompts.
+    func showRepairPrompt(model: AppModel) {
+        show(
+            id: ID.repairPrompt,
+            title: "Fennec heard crackling",
+            size: CGSize(width: 460, height: 330),
+            resizable: false,
+            minSize: CGSize(width: 460, height: 330)
+        ) {
+            RepairPromptView(model: model).tint(FennecBrand.sky)
+        }
+    }
+
+    func closeRepairPrompt() {
+        close(ID.repairPrompt)
     }
 
     private var windows: [String: NSWindow] = [:]

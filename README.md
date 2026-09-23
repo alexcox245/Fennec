@@ -6,7 +6,7 @@ under heavy local load and stays broken until `coreaudiod` is restarted.
 Fennec watches the current output device for missed real-time deadlines. When
 the fault is confirmed and its safety checks pass, it restarts Core Audio
 through a tightly scoped root helper, leaving every application open, and
-tells you what it did, in numbers.
+reports what happened without claiming the repair held before it is verified.
 
 <img src="Brand/Fennec-AppIcon-Master.png" width="180" alt="Fennec app icon">
 
@@ -57,7 +57,12 @@ the right answer.
   of crackle, then it is gone; up to a couple of minutes when only the log
   path can see the fault, because polling the log costs CPU and Fennec's
   whole budget is under one percent of a core.
+- Can repair automatically with the approved helper, or ask before each repair
+  if you prefer not to enable it. The prompted path shows the administrator
+  command before macOS asks for a password.
 - Restarts Core Audio through a root helper that can do exactly one thing.
+- Shows the fox crossing the bottom of the display while a repair runs. You
+  can turn it off in Settings; Reduce Motion suppresses the animation.
 - Rebuilds the helper's registration itself when macOS reports it enabled but
   it stops answering, the state a replaced or moved app leaves behind. No
   password is involved; the attempt and its outcome go in the event log.
@@ -88,8 +93,11 @@ low-overhead system-level signal for this fault, but it is a proxy:
   app and every logged-in user. The goal is a sub-second recovery, not a
   gapless one.
 
-No network code of any kind. No account, no telemetry, no update check, no
-crash reporting. No kernel extension, no audio driver, no virtual device.
+The repair monitor and repair path stay on this Mac. The only network activity
+is a signed update check when you choose **Check for Updates**, followed by a
+download only when you choose it. Fennec sends no system profile, account data,
+telemetry, or crash reports. No kernel extension, audio driver, or virtual
+device.
 
 ## Requirements
 
@@ -125,19 +133,10 @@ verify Fennec is free of malware."* Right-click → **Open**, or
 
 ## First run
 
-Launching Fennec opens a window that states, before asking for anything:
-
-- the complete privileged surface: both XPC methods **and** the administrator
-  prompt path;
-- what a repair costs, in seconds;
-- that there is no network code;
-- the two files it writes and where.
-
-Then it offers a **test repair** you run on purpose, while nothing is at
-stake, so you know exactly what an automatic one will cost on your machine.
-It does not play a test tone: Fennec does not know your monitor gain, and a
-sine wave through open-back headphones at whatever level the last session left
-them is a hearing risk.
+The first window lets you choose **Automatically** or **Ask me first**.
+Automatic repair needs the approved helper. Asked repairs work without it and
+show the administrator command before macOS asks for a password. Startup and
+notifications are optional; the one-time test repair is optional too.
 
 Recommended settings for the MacBook + heavy-local-workload case: **Balanced**,
 protections on, skip Bluetooth on, cooldown 45 s. Move to **Immediate** only
@@ -148,10 +147,11 @@ actually hear.
 
 The helper exposes exactly two XPC methods and runs one command, fixed at
 compile time. Both ends verify the other's Team ID and bundle identifier.
-There is a second privileged path: a standard administrator prompt, used only
-when the helper is not installed and only after Fennec has shown you the
-command. See [`SECURITY.md`](SECURITY.md) for the full boundary and for how to
-report a vulnerability.
+The other privileged paths are a standard administrator prompt, used only
+when the helper is unavailable and after Fennec shows you the command, and
+authorization macOS may request when an explicitly chosen update replaces
+Fennec in Applications. See [`SECURITY.md`](SECURITY.md) for the full boundary
+and for how to report a vulnerability.
 
 ## Verify this build
 
@@ -194,9 +194,10 @@ zsh Scripts/build-release.sh
 
 ## Validation status
 
-The full Debug and Release matrix builds for both targets, 266 unit tests
-pass, `audit-source.sh` passes including the source-manifest check, and
-`build-release.sh` verifies the bundle layout and code signature.
+All four app/helper Debug and Release configurations compile, all 286
+standalone tests pass, and `audit-source.sh` passes. The local builds had code
+signing disabled because no signing identity is available; they do not verify
+a signed bundle or a release archive.
 
 **Not yet verified on a device:** helper registration and the System Settings
 approval flow, an actual privileged repair, notification delivery, and
@@ -214,7 +215,7 @@ FennecTests/          standalone XCTest bundle (no TEST_HOST)
 Shared/               XPC protocol, identifiers, signing checks
 LaunchDaemons/        SMAppService property list
 Scripts/              build, audit, and manifest tooling
-Docs/                 ARCHITECTURE.md, ROADMAP.md, VALIDATION.md, SOURCE_MANIFEST.sha256
+Docs/                 ARCHITECTURE.md, ROADMAP.md, UPDATES.md, VALIDATION.md, SOURCE_MANIFEST.sha256
 Brand/                the master icon art and what it means
 AGENTS.md             ground rules, known traps, brand direction, task ledger
 ```

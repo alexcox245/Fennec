@@ -109,7 +109,7 @@ struct MenuView: View {
                     .fixedSize()
                     .help("Stop repairing automatically for a while. Repair Audio Now still works.")
 
-                    Text("Stops automatic repair only.")
+                    Text("Stops automatic repairs and repair windows.")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                     Spacer()
@@ -163,7 +163,7 @@ struct MenuView: View {
                 // "SIGNALS 0 · REPAIRS 7". The lifetime number lives in the
                 // header; this row says what it is.
                 metric(title: "FORMAT", value: sampleRateText)
-                metric(title: "SIGNALS TODAY", value: "\(model.overloadSignalCount + model.abnormalStopCount)")
+                metric(title: "SIGNALS THIS SESSION", value: "\(model.overloadSignalCount + model.abnormalStopCount)")
                 metric(title: "DETECTIONS", value: "\(model.detectionCount)")
             }
         }
@@ -177,18 +177,18 @@ struct MenuView: View {
 
     private var repairControls: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Toggle(isOn: $settings.autoRepairEnabled) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Repair crackling automatically")
-                        .font(.subheadline.weight(.medium))
-                    Text(autoRepairDetail)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            Picker("Repair mode", selection: $settings.repairMode) {
+                ForEach(RepairMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
                 }
             }
-            .toggleStyle(.switch)
-            .disabled(!helper.state.isReachable)
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Repair mode")
+
+            Text(autoRepairDetail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             if let lastError = model.lastError {
                 VStack(alignment: .leading, spacing: 7) {
@@ -267,7 +267,7 @@ struct MenuView: View {
                 .buttonStyle(PrimaryRepairButtonStyle(
                     readsAtFullStrengthWhileDisabled: primaryPhase == .repaired
                 ))
-                // Held through the confirmation too: "Audio repaired" is a
+                // Held through the confirmation too: the result label is a
                 // result, not an offer, and a second restart is the last
                 // thing a user who just got their audio back wants to trigger
                 // by clicking what they are already reading.
@@ -504,6 +504,9 @@ struct MenuView: View {
     }
 
     private var autoRepairDetail: String {
+        guard settings.repairMode == .automatic else {
+            return "Fennec opens a repair window when it hears crackling."
+        }
         if let pauseStatus = model.pauseStatusText {
             return "\(pauseStatus). Repair Audio Now still works."
         }
@@ -515,10 +518,7 @@ struct MenuView: View {
             return "Off for Bluetooth outputs, which is this one. Repair Audio Now still works."
         }
         guard helper.state.isReachable else {
-            return "Enable the helper below to let Fennec repair without a password prompt."
-        }
-        guard settings.autoRepairEnabled else {
-            return "Fennec will detect crackling but wait for you to press Repair Audio Now."
+            return "Fennec will ask before repairing until its helper is allowed."
         }
         return settings.sensitivity.detail
     }

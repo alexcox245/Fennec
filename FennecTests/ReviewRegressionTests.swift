@@ -194,10 +194,7 @@ final class ReviewRegressionTests: XCTestCase {
             SetupChecklist.steps(helper: .notConfigured, loginItem: .enabled, notificationsAuthorized: true)
                 .first { $0.kind == .helper }
         )
-        XCTAssertTrue(
-            step.detail.contains("cannot fix it on its own"),
-            "\"every repair asks for your password\" reads as if automatic repair merely prompts."
-        )
-        XCTAssertTrue(step.compactDetail.contains("cannot repair on its own"))
+        XCTAssertTrue(step.detail.contains("asks before each repair"))
+        XCTAssertTrue(step.compactDetail.contains("ask before repairing"))
     }
 }

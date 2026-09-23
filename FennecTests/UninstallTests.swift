@@ -54,6 +54,25 @@ final class UninstallPlanTests: XCTestCase {
         XCTAssertTrue(kept.contains { $0.kind == .preferences })
     }
 
+    func testDownloadedUpdateCacheIsRemovedWhenPresent() {
+        let steps = UninstallPlan.steps(
+            helperInstalled: false,
+            loginItemEnabled: false,
+            keepLogs: true,
+            canRemoveBundle: false,
+            hasUpdateCache: true
+        )
+        XCTAssertTrue(steps.contains { $0.kind == .updateCache })
+        XCTAssertTrue(steps.first { $0.kind == .updateCache }?.detail.contains("Library/Caches") == true)
+        XCTAssertTrue(UninstallPlan.summary(keepLogs: true, hasUpdateCache: true).contains("downloaded updates"))
+    }
+
+    func testUpdateCacheLocationUsesSparklesFennecCache() {
+        let cache = FennecUpdateCache.directory
+        XCTAssertEqual(cache.lastPathComponent, "org.sparkle-project.Sparkle")
+        XCTAssertEqual(cache.deletingLastPathComponent().lastPathComponent, AppConstants.appBundleIdentifier)
+    }
+
     func testPreferencesAreAlwaysForgotten() {
         // There is no configuration in which leaving them behind is useful.
         XCTAssertTrue(steps(helper: false, loginItem: false, keepLogs: true, bundle: false)

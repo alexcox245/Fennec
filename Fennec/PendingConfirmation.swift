@@ -1,5 +1,14 @@
 import Foundation
 
+struct DetectedRepairPrompt: Identifiable, Equatable, Sendable {
+    let episodeID: UUID
+    let decision: DetectionDecision
+    let deviceName: String
+    let deviceUID: String
+
+    var id: UUID { episodeID }
+}
+
 /// Something is using audio right now, and repairing would interrupt it.
 struct ManualRepairWarning: Identifiable, Equatable, Sendable {
     let id = UUID()
