@@ -16,8 +16,10 @@ For each release:
 1. Set `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` to the same values in
    both the Fennec and FennecHelper targets. The release script checks the
    built app and helper versions and build numbers.
-2. Write the release notes to `build/ReleaseNotes.md`. Keep them specific and
-   brief, without repair timings or internal framework names.
+2. Review `Docs/RELEASE_NOTES_v1.0.md` for the first release, then copy it to
+   `build/ReleaseNotes.md` (or set `FENNEC_RELEASE_NOTES` to that tracked
+   file). Keep the notes specific and brief, without repair timings or
+   internal framework names.
 3. Run `zsh Scripts/release-developer-id.sh`. It audits the source, builds,
    signs, notarizes, staples, verifies, and zips the app, then uses Sparkle's
    `generate_appcast` to sign an appcast in `build/updates/`.

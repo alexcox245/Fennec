@@ -1,7 +1,18 @@
 # Changelog
 
-Notable changes, newest first. Fennec has not had a tagged release yet; these
-are the milestones on `main`.
+Notable changes, newest first. These are the milestones toward the first
+public release; no tag has been published yet.
+
+## 1.0 (build 2) — release candidate
+
+- Recheck automatic-repair consent and safety after asynchronous helper
+  recovery, so a pause, mode change, output change, or new audio-use
+  protection cannot leave an automatic restart queued.
+- Include the final approved fox animation corrections and the bounded
+  manual-repair replay behavior.
+- Refresh installation and removal guidance and prepare the public launch
+  gallery and release notes. Distribution and live update validation remain
+  subject to the checks in `Docs/VALIDATION.md`.
 
 ## Unreleased
 

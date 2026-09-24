@@ -132,12 +132,10 @@ final class SettingsStore: ObservableObject {
         let storedMode = defaults.string(forKey: Key.repairMode).flatMap(RepairMode.init(rawValue:))
         let explicitLegacyMode = (defaults.object(forKey: Key.autoRepairEnabled) as? Bool)
             .map { $0 ? RepairMode.automatic : .askFirst }
-        // Older releases defaulted this boolean to true without persisting it.
-        // A completed first run with no stored value therefore means the same
-        // thing as the old default; a fresh install still starts in Ask me first.
-        let legacyMode = explicitLegacyMode
-            ?? ((defaults.object(forKey: Key.hasCompletedFirstRun) as? Bool == true) ? .automatic : nil)
-        let initialRepairMode = storedMode ?? legacyMode ?? .askFirst
+        // A saved choice always wins, including the older boolean preference.
+        // Fresh installs start in Automatic; a missing value on older installs
+        // has the same meaning as their original implicit automatic default.
+        let initialRepairMode = storedMode ?? explicitLegacyMode ?? .automatic
         repairMode = initialRepairMode
         defaults.set(initialRepairMode.rawValue, forKey: Key.repairMode)
         defaults.set(initialRepairMode == .automatic, forKey: Key.autoRepairEnabled)

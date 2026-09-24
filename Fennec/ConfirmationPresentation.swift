@@ -109,12 +109,20 @@ struct RepairPromptView: View {
                             model.dismissDetectedRepairPrompt(episodeID: prompt.episodeID)
                         }
                         .keyboardShortcut(.cancelAction)
-                        Button(model.isRepairing || model.isPreparingRepair ? "Repairing…" : RepairCopy.promptRepairTitle) {
+                        Button(model.manualFoxRequestCount > 0
+                            ? RepairCopy.onboardingReplayButton
+                            : (model.isRepairing || model.isPreparingRepair
+                                ? "Repairing…" : RepairCopy.promptRepairTitle)) {
                             model.requestPromptedRepair(prompt)
                         }
                         .keyboardShortcut(.defaultAction)
                         .buttonStyle(.borderedProminent)
-                        .disabled(model.isRepairing || model.isPreparingRepair)
+                        .disabled(model.manualFoxRequestCount > 0
+                            ? model.manualFoxRequestCount >= RepairFoxBurst.maximumTotal
+                            : model.isRepairing || model.isPreparingRepair)
+                        .help(model.manualFoxRequestCount > 0
+                            ? RepairCopy.onboardingReplayHelp
+                            : RepairCopy.promptConsequence)
                     }
                 }
                 .padding(24)

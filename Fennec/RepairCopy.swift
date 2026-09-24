@@ -19,6 +19,16 @@ import Foundation
 /// answers a question nobody asked.
 enum RepairCopy {
 
+    // MARK: First run
+
+    static let onboardingTestTitle = "Try it now"
+    static let onboardingTestButton = "Run a Test Repair"
+    static let onboardingTestWorking = "Repairing…"
+    static let onboardingTestDetail = "Run a test repair. Sound restarts across this Mac; your apps stay open."
+    static let onboardingReplayButton = "Run Again"
+    static let onboardingReplayHelp = "Another fox runs. Only the first click repairs audio."
+    static let replayButtonSymbol = "play.fill"
+
     // MARK: The repair fox
 
     static let foxSection = "Repair Animation"

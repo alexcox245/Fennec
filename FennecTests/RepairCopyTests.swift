@@ -7,6 +7,20 @@ import XCTest
 /// pins the exact string is the cheapest way to keep that from eroding.
 final class RepairCopyTests: XCTestCase {
 
+    func testFirstRunOffersOneExplicitRepairAndQuietReplayCopy() {
+        XCTAssertEqual(RepairCopy.onboardingTestTitle, "Try it now")
+        XCTAssertEqual(RepairCopy.onboardingTestButton, "Run a Test Repair")
+        XCTAssertEqual(RepairCopy.onboardingTestWorking, "Repairing…")
+        XCTAssertEqual(
+            RepairCopy.onboardingTestDetail,
+            "Run a test repair. Sound restarts across this Mac; your apps stay open."
+        )
+        XCTAssertEqual(RepairCopy.onboardingReplayButton, "Run Again")
+        XCTAssertEqual(RepairCopy.onboardingReplayHelp, "Another fox runs. Only the first click repairs audio.")
+        XCTAssertEqual(RepairCopy.replayButtonSymbol, "play.fill")
+        XCTAssertFalse(RepairCopy.onboardingTestDetail.localizedCaseInsensitiveContains("fox"))
+    }
+
     // MARK: Durations
 
     func testSubSecondDurationsKeepTwoDecimals() {
@@ -214,6 +228,8 @@ final class RepairCopyTests: XCTestCase {
             RepairCopy.repairStartingTitle(),
             RepairCopy.repairStartingBody(),
             RepairCopy.stallAdvisoryTitle(),
+            RepairCopy.onboardingTestDetail, RepairCopy.onboardingReplayButton,
+            RepairCopy.onboardingReplayHelp,
             RepairCopy.foxSection, RepairCopy.foxSetting, RepairCopy.foxPreview, RepairCopy.foxPreviewHelp,
             RepairCopy.foxDetail, RepairCopy.foxReducedMotion,
             RepairCopy.promptTitle, RepairCopy.promptMessage(deviceName: "Studio Display Speakers"),

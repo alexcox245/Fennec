@@ -243,7 +243,7 @@ struct MenuView: View {
                 confirmationCard(confirmation)
             } else {
                 Button {
-                    model.requestManualRepair()
+                    model.requestRepairButton()
                 } label: {
                     HStack(spacing: 9) {
                         // A tool, not a refresh arrow. The circular arrows
@@ -253,10 +253,14 @@ struct MenuView: View {
                         // screwdriver over a hammer because a hammer is
                         // Xcode's Build symbol to anyone who has seen one,
                         // and this is a repair, not a build.
-                        Image(systemName: RepairCopy.primaryButtonSymbol(for: primaryPhase))
+                        Image(systemName: isFoxReplay
+                            ? RepairCopy.replayButtonSymbol
+                            : RepairCopy.primaryButtonSymbol(for: primaryPhase))
                             .font(.system(size: 15, weight: .semibold))
                             .contentTransition(.symbolEffect(.replace))
-                        Text(RepairCopy.primaryButtonTitle(for: primaryPhase))
+                        Text(isFoxReplay
+                            ? RepairCopy.onboardingReplayButton
+                            : RepairCopy.primaryButtonTitle(for: primaryPhase))
                             .font(.system(size: 14, weight: .semibold))
                             .lineLimit(1)
                         Spacer(minLength: 0)
@@ -265,15 +269,15 @@ struct MenuView: View {
                     .animation(.easeInOut(duration: 0.18), value: primaryPhase)
                 }
                 .buttonStyle(PrimaryRepairButtonStyle(
-                    readsAtFullStrengthWhileDisabled: primaryPhase == .repaired
+                    readsAtFullStrengthWhileDisabled: primaryPhase == .repaired && !isFoxReplay
                 ))
-                // Held through the confirmation too: the result label is a
-                // result, not an offer, and a second restart is the last
-                // thing a user who just got their audio back wants to trigger
-                // by clicking what they are already reading.
-                .disabled(primaryPhase != .idle)
+                .disabled(isFoxReplay
+                    ? model.manualFoxRequestCount >= RepairFoxBurst.maximumTotal
+                    : primaryPhase != .idle)
                 .keyboardShortcut(.defaultAction)
-                .help("Fix crackling now. Sound stops for a moment.")
+                .help(isFoxReplay
+                    ? RepairCopy.onboardingReplayHelp
+                    : "Fix crackling now. Sound stops for a moment.")
             }
         }
         // On the Group, not the button. The confirmation card replaces the
@@ -436,22 +440,6 @@ struct MenuView: View {
 
             Spacer()
 
-            Menu {
-                Button("Repair History") { model.showActivityWindow() }
-                Divider()
-                Button("What Fennec Does") { model.showWelcomeWindow() }
-                Button("About & Uninstall…") { model.showAboutWindow() }
-                Divider()
-                Button("Reveal Event Log") { model.openEventLog() }
-            } label: {
-                Label("More", systemImage: "info.circle")
-                    .labelStyle(.iconOnly)
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("What Fennec does to this Mac, the event log, and how to remove it.")
-
             Button("Quit") { model.quit() }
                 .buttonStyle(.plain)
                 .help("Quit Fennec. It stops listening until you open it again.")
@@ -477,6 +465,8 @@ struct MenuView: View {
         if model.isRepairing || model.isPreparingRepair { return .working }
         return showingRepairConfirmation ? .repaired : .idle
     }
+
+    private var isFoxReplay: Bool { model.manualFoxRequestCount > 0 }
 
     /// The second haptic: the tap that says the work landed, fired at the
     /// same instant the button turns into its own result, so the press and

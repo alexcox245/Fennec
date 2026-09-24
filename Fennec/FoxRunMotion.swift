@@ -45,26 +45,23 @@ struct FoxRunMotion {
 
     init?(
         screenFrame: CGRect,
-        visibleFrame: CGRect,
         cycleDuration: TimeInterval,
         spriteWidth: CGFloat = preferredWidth,
         playbackRate: Double = 1
     ) {
-        let visible = screenFrame.intersection(visibleFrame)
-        guard !visible.isNull, !visible.isEmpty,
-              [screenFrame.minX, screenFrame.minY, screenFrame.width, screenFrame.height,
-               visible.minY, visible.height, spriteWidth].allSatisfy(\.isFinite),
-              screenFrame.width > 0, screenFrame.height > 0, spriteWidth > 0,
+        let bottomInset: CGFloat = 10
+        guard [screenFrame.minX, screenFrame.minY, screenFrame.width, screenFrame.height,
+               spriteWidth].allSatisfy(\.isFinite),
+              screenFrame.width > 0, screenFrame.height > bottomInset, spriteWidth > 0,
               cycleDuration.isFinite, cycleDuration > 0,
               playbackRate.isFinite, playbackRate > 0 else { return nil }
 
-        let bottomInset = min(CGFloat(12), visible.height / 4)
         let aspect = Self.sourceBounds.height / Self.sourceBounds.width
-        let width = min(spriteWidth, screenFrame.width / 2, (visible.height - bottomInset) / aspect)
+        let width = min(spriteWidth, screenFrame.width / 2, (screenFrame.height - bottomInset) / aspect)
         spriteSize = CGSize(width: width, height: width * aspect)
-        // The strip spans the physical display; the feet clear the Dock.
+        // The strip spans the physical display, including the area occupied by the Dock.
         panelFrame = CGRect(
-            x: screenFrame.minX, y: visible.minY + bottomInset,
+            x: screenFrame.minX, y: screenFrame.minY + bottomInset,
             width: screenFrame.width, height: ceil(spriteSize.height)
         )
         let margin: CGFloat = 16
@@ -99,4 +96,46 @@ struct FoxRunLifecycle {
         currentID = nil
         return true
     }
+}
+
+/// A bounded queue for a user-initiated repair's foxes. Requests are admitted
+/// once, so repeated clicks cannot turn into minutes of queued animation work.
+struct RepairFoxBurst {
+    static let maximumTotal = 100
+    static let maximumVisible = 100
+    /// A half-second cadence cannot put one hundred crossings on a normal display at once.
+    static let minimumSpacing: TimeInterval = 0.04
+
+    private(set) var accepted = 0
+    private(set) var spawned = 0
+    private(set) var active = 0
+    private(set) var lastSpawnedAt: TimeInterval?
+
+    mutating func request() -> Bool {
+        guard accepted < Self.maximumTotal else { return false }
+        accepted += 1
+        return true
+    }
+
+    /// Nil means there is no pending request or no visible slot yet.
+    func delayUntilNext(at now: TimeInterval) -> TimeInterval? {
+        guard now.isFinite, spawned < accepted, active < Self.maximumVisible else { return nil }
+        guard let lastSpawnedAt else { return 0 }
+        return max(0, Self.minimumSpacing - (now - lastSpawnedAt))
+    }
+
+    mutating func spawn(at now: TimeInterval) -> Bool {
+        guard delayUntilNext(at: now) == 0 else { return false }
+        spawned += 1
+        active += 1
+        lastSpawnedAt = now
+        return true
+    }
+
+    mutating func finish() {
+        guard active > 0 else { return }
+        active -= 1
+    }
+
+    mutating func reset() { self = Self() }
 }

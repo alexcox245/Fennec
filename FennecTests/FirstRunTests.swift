@@ -165,13 +165,20 @@ final class FirstRunPreferenceTests: XCTestCase {
         XCTAssertTrue(SettingsStore(defaults: defaults).hasCompletedFirstRun)
     }
 
-    func testFreshInstallStartsWithAskFirstAndBalancedDetection() {
+    func testFreshInstallStartsWithAutomaticAndBalancedDetection() {
         let store = SettingsStore(defaults: defaults)
-        XCTAssertEqual(store.repairMode, .askFirst)
-        XCTAssertFalse(store.autoRepairEnabled)
+        XCTAssertEqual(store.repairMode, .automatic)
+        XCTAssertTrue(store.autoRepairEnabled)
+        XCTAssertEqual(defaults.string(forKey: "repairMode"), RepairMode.automatic.rawValue)
         XCTAssertEqual(store.sensitivity, .balanced)
         XCTAssertTrue(store.notifyOnRepair)
+        XCTAssertTrue(store.showRepairFox)
         XCTAssertEqual(store.cooldownSeconds, 45)
+    }
+
+    func testAnExistingAskFirstChoiceSurvivesTheNewDefault() {
+        defaults.set(RepairMode.askFirst.rawValue, forKey: "repairMode")
+        XCTAssertEqual(SettingsStore(defaults: defaults).repairMode, .askFirst)
     }
 
     func testCompletedLegacyInstallKeepsItsImplicitAutomaticDefault() {

@@ -51,9 +51,10 @@ Notification behaviour is proportional to what the user must do:
 `WindowPresenter` owns `RepairFoxController` separately from its interactive
 windows. The controller presents a borderless, nonactivating `NSPanel` with
 mouse events ignored and no key/main-window eligibility. The panel spans a
-thin strip above the Dock on the display containing the pointer at trigger
-time. Full display bounds determine entry and exit; `visibleFrame` determines
-the foot baseline. Moving the pointer does not redirect an in-flight fox.
+thin strip on the display containing the pointer at trigger time. Full display
+bounds determine entry, exit, and a foot baseline 10 points above the physical
+bottom edge. Its status-bar level keeps the fox visible across the Dock without
+intercepting Dock clicks. Moving the pointer does not redirect an in-flight fox.
 The panel is excluded from activation-policy and Dock-reopen decisions.
 
 The approved GIF is decoded on a utility task once, at Retina size, using
@@ -70,10 +71,21 @@ ticket. The administrator-prompt path starts its crossing only after a successfu
 return, since that API has no separate authorization callback. A fox reports
 activity, never a verified outcome, and it does not alter repair governance.
 
-At most one ticket is active, including while decoding. Duplicate and overlapping
-requests are discarded, not queued. A cancelled ticket cannot be revived by a
-late decode, and an old completion cannot dismiss a newer crossing. A decode
-that misses the trigger by more than two seconds is discarded. Disablement,
+Automatic repairs keep one ticket active, including while decoding; duplicate
+and overlapping requests are discarded. Every user-facing Repair Audio control
+(onboarding, popover, Settings, Audio menu, prompted window, and notification
+action) sends its first click through the normal safety and privilege gates.
+Further clicks in that repair's active burst request animation only, including
+while the first repair is still preparing. The administrator-prompt path starts
+the foxes only after a successful return. The shared burst queue accepts at
+most one hundred foxes total, starts them at least 40 milliseconds apart, and
+keeps no more than one hundred on screen. Extra clicks are discarded. Ordinary
+button bursts reset after their final crossing; the onboarding test remains
+animation-only until the welcome window closes. The first test does not start
+the app's automatic-repair cooldown.
+A cancelled ticket cannot be revived by a late decode, and an old completion
+cannot dismiss a newer crossing. An ordinary decode that misses the trigger
+by more than two seconds is discarded. Disablement,
 Reduce Motion, screen reconfiguration, sleep, session resignation, screen lock,
 app hiding, and termination tear down the panel and its animations. Lock
 notifications are best-effort, as in `SystemEventObserver`; workspace sleep and

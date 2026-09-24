@@ -3,10 +3,8 @@ import XCTest
 
 final class FoxRunTests: XCTestCase {
     private let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
-    private let visible = CGRect(x: 0, y: 80, width: 1440, height: 795)
-
     private func motion(width: CGFloat = 240, rate: Double = 1) throws -> FoxRunMotion {
-        try XCTUnwrap(FoxRunMotion(screenFrame: screen, visibleFrame: visible, cycleDuration: 1.16,
+        try XCTUnwrap(FoxRunMotion(screenFrame: screen, cycleDuration: 1.16,
                                  spriteWidth: width, playbackRate: rate))
     }
 
@@ -21,21 +19,21 @@ final class FoxRunTests: XCTestCase {
         let normal = try motion()
         let wide = try XCTUnwrap(FoxRunMotion(
             screenFrame: CGRect(x: -3440, y: -200, width: 3440, height: 1440),
-            visibleFrame: CGRect(x: -3440, y: -150, width: 3440, height: 1365), cycleDuration: 1.16
+            cycleDuration: 1.16
         ))
         XCTAssertEqual(wide.speed, normal.speed)
         XCTAssertEqual(wide.cycleDuration, normal.cycleDuration)
         XCTAssertEqual(wide.duration - normal.duration, 2000 / normal.speed, accuracy: 0.001)
         XCTAssertEqual(wide.panelFrame.minX, -3440)
-        XCTAssertEqual(wide.panelFrame.minY, -138)
+        XCTAssertEqual(wide.panelFrame.minY, -190)
     }
 
-    func testFeetClearTheDockAndStripReachesBothPhysicalEdges() throws {
+    func testFeetAreTenPointsAbovePhysicalBottomAndStripReachesBothEdges() throws {
         let run = try motion()
-        XCTAssertEqual(run.panelFrame.minY, visible.minY + 12)
+        XCTAssertEqual(run.panelFrame.minY, screen.minY + 10)
         XCTAssertEqual(run.panelFrame.minX, screen.minX)
         XCTAssertEqual(run.panelFrame.maxX, screen.maxX)
-        XCTAssertLessThanOrEqual(run.panelFrame.maxY, visible.maxY)
+        XCTAssertLessThanOrEqual(run.panelFrame.maxY, screen.maxY)
     }
 
     func testStrideScalesWithFoxSize() throws {
@@ -64,10 +62,10 @@ final class FoxRunTests: XCTestCase {
     }
 
     func testInvalidGeometryAndTimingNeverProduceAnAnimation() {
-        XCTAssertNil(FoxRunMotion(screenFrame: .zero, visibleFrame: .zero, cycleDuration: 1.16))
+        XCTAssertNil(FoxRunMotion(screenFrame: .zero, cycleDuration: 1.16))
         for invalid in [0, -1, Double.nan, Double.infinity] {
-            XCTAssertNil(FoxRunMotion(screenFrame: screen, visibleFrame: visible, cycleDuration: invalid))
-            XCTAssertNil(FoxRunMotion(screenFrame: screen, visibleFrame: visible, cycleDuration: 1.16, playbackRate: invalid))
+            XCTAssertNil(FoxRunMotion(screenFrame: screen, cycleDuration: invalid))
+            XCTAssertNil(FoxRunMotion(screenFrame: screen, cycleDuration: 1.16, playbackRate: invalid))
             XCTAssertNil(FoxRunCycle(delays: [0.08, invalid]))
         }
         XCTAssertNil(FoxRunCycle(delays: []))
@@ -102,6 +100,40 @@ final class FoxRunTests: XCTestCase {
         XCTAssertEqual(state.currentID, new)
         XCTAssertTrue(state.finish(new))
         XCTAssertNil(state.currentID, "A finished crossing leaves no idle animation work.")
+    }
+
+    func testRepairBurstBoundsThreeHundredClicksToOneHundredSpawnsAndVisible() {
+        var burst = RepairFoxBurst()
+        XCTAssertEqual(RepairFoxBurst.maximumTotal, 100)
+        XCTAssertEqual(RepairFoxBurst.maximumVisible, 100)
+        XCTAssertEqual((0..<300).filter { _ in burst.request() }.count, 100)
+        XCTAssertEqual(burst.accepted, 100)
+
+        for index in 0..<100 {
+            let time = Double(index) * 0.05
+            XCTAssertTrue(burst.spawn(at: time))
+        }
+        XCTAssertEqual(burst.spawned, 100)
+        XCTAssertEqual(burst.active, 100)
+        XCTAssertNil(burst.delayUntilNext(at: 100), "A full screen must not start a 101st fox.")
+        XCTAssertFalse(burst.request())
+        XCTAssertNil(burst.delayUntilNext(at: 1_000))
+        for _ in 0..<100 { burst.finish() }
+        XCTAssertEqual(burst.active, 0)
+    }
+
+    func testRepairBurstEnforcesFortyMillisecondSpacingAndClearsPendingOnReset() {
+        var burst = RepairFoxBurst()
+        XCTAssertTrue(burst.request())
+        XCTAssertTrue(burst.request())
+        XCTAssertTrue(burst.spawn(at: 2))
+        XCTAssertEqual(burst.delayUntilNext(at: 2.02) ?? -1, 0.02, accuracy: 0.0001)
+        XCTAssertFalse(burst.spawn(at: 2.02))
+        XCTAssertTrue(burst.spawn(at: 2.04))
+        burst.reset()
+        XCTAssertEqual(burst.accepted, 0)
+        XCTAssertEqual(burst.active, 0)
+        XCTAssertNil(burst.delayUntilNext(at: 100))
     }
 
     func testBundledGIFDecodesAtRetinaSizeWithItsOriginalTimingAndTransparency() throws {

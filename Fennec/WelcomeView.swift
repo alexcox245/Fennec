@@ -1,9 +1,10 @@
 import AppKit
 import SwiftUI
 
-/// First run is a short choice and a consent record, not a tour. Users can
-/// choose unattended repair or a foreground question, then finish setup later.
+/// First run puts the repair choice, setup, and an explicit test in one place.
+/// The test runs only when the user presses its button.
 struct WelcomeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject var model: AppModel
     @ObservedObject private var settings: SettingsStore
     @ObservedObject private var helper: HelperManager
@@ -29,16 +30,18 @@ struct WelcomeView: View {
                     masthead
                     if location.warning != nil { locationNotice }
                     repairChoice
-                    if settings.repairMode == .automatic { automaticSetup }
-                    optionalSetup
-                    if loginItem.requiresApproval { dragWell }
-                    rehearsal
+                    setupSection
+                    if location.warning != nil || loginItem.requiresApproval { dragWell }
                 }
                 .padding(.horizontal, 28)
                 .padding(.top, 24)
                 .padding(.bottom, 24)
             }
 
+            Divider()
+            rehearsal
+                .padding(.horizontal, 28)
+                .padding(.vertical, 16)
             Divider()
             footer
         }
@@ -125,21 +128,19 @@ struct WelcomeView: View {
         }
     }
 
-    private var automaticSetup: some View {
+    private var setupSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Automatic repair", systemImage: "waveform.badge.mic")
+            Label("Set it up", systemImage: "slider.horizontal.3")
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            if model.remainingSetupSteps.isEmpty {
-                Label("Ready when Fennec is open", systemImage: "checkmark.circle.fill")
-                    .font(.callout)
-                    .foregroundStyle(FennecBrand.sky)
-            } else {
-                ForEach(model.remainingSetupSteps) { step in
-                    SetupStepRow(step: step, compact: false) {
-                        model.performSetupAction(for: step)
-                    }
+            Text(model.setupSummary)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            ForEach(model.setupSteps) { step in
+                SetupStepRow(step: step, compact: false) {
+                    model.performSetupAction(for: step)
                 }
             }
 
@@ -150,42 +151,6 @@ struct WelcomeView: View {
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
             }
-        }
-    }
-
-    private var optionalSetup: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Optional")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
-
-            Toggle(
-                "Start Fennec when I log in",
-                isOn: Binding(
-                    get: { loginItem.isEnabled },
-                    set: { loginItem.setEnabled($0) }
-                )
-            )
-
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Notifications")
-                        .font(.callout.weight(.medium))
-                    Text("Banners for repairs and detections.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if notifications.authorizationChecked && !notifications.isAuthorized {
-                    Button("Notification Settings…") { notifications.openSystemSettings() }
-                } else {
-                    Button(notifications.isAuthorized ? "Allowed" : "Allow") {
-                        notifications.requestAuthorization()
-                    }
-                    .disabled(notifications.isAuthorized)
-                }
-            }
-
             if let error = loginItem.lastError {
                 Text(error)
                     .font(.caption)
@@ -195,15 +160,19 @@ struct WelcomeView: View {
         }
     }
 
-    /// Lets the user drag the real bundle into Login Items when macOS requires
-    /// that route. The icon remains available in the context where it helps.
+    /// The icon carries the real bundle into Applications or Login Items when
+    /// macOS needs the user to drag it there.
     private var dragWell: some View {
         HStack(spacing: 13) {
             DraggableAppIcon()
             VStack(alignment: .leading, spacing: 3) {
-                Text("Drag Fennec into Login Items")
+                Text(loginItem.requiresApproval
+                     ? "Drag Fennec into Login Items"
+                     : "Drag Fennec into Applications")
                     .font(.callout.weight(.medium))
-                Text("macOS is waiting for you to allow it to start at login.")
+                Text(loginItem.requiresApproval
+                     ? "macOS is waiting for you to allow it to start at login."
+                     : "Keep the app there so macOS can find its repair helper.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -214,38 +183,61 @@ struct WelcomeView: View {
     }
 
     private var rehearsal: some View {
-        DisclosureGroup("Try a repair once") {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("This stops audio while Fennec restarts it. Every app stays open.")
+        VStack(alignment: .leading, spacing: 10) {
+            Label(RepairCopy.onboardingTestTitle, systemImage: "play.circle")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            if !replayReady {
+                Text(RepairCopy.onboardingTestDetail)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
 
-                HStack(spacing: 10) {
-                    Button(model.isRepairing || model.isPreparingRepair ? "Repairing…" : "Repair Audio") {
+            HStack(spacing: 10) {
+                if !replayReady || (settings.showRepairFox && !reduceMotion) {
+                    Button {
                         model.requestRehearsalRepair()
+                    } label: {
+                        Label(
+                            replayReady
+                                ? RepairCopy.onboardingReplayButton
+                                : (model.isRepairing || model.isPreparingRepair
+                                    ? RepairCopy.onboardingTestWorking : RepairCopy.onboardingTestButton),
+                            systemImage: RepairCopy.primaryButtonSymbol(for: .idle)
+                        )
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(model.isRepairing || model.isPreparingRepair)
-                    if model.isRepairing || model.isPreparingRepair {
-                        ProgressView().controlSize(.small)
-                    }
+                    .tint(FennecBrand.sky)
+                        .disabled(replayReady
+                        ? model.onboardingFoxRequestCount >= RepairFoxBurst.maximumTotal
+                        : model.isRepairing || model.isPreparingRepair)
+                    .help(replayReady
+                        ? RepairCopy.onboardingReplayHelp : RepairCopy.onboardingTestDetail)
                 }
-
-                if let repair = testRepair {
-                    Label(RepairCopy.receiptHeadline(for: repair), systemImage: repair.outcome.symbolName)
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(FennecBrand.accent(for: repair.outcome))
+                if !model.hasCompletedOnboardingRepair && (model.isRepairing || model.isPreparingRepair) {
+                    ProgressView().controlSize(.small)
                 }
             }
-            .padding(.top, 8)
+
+            if let repair = testRepair {
+                Label(RepairCopy.receiptHeadline(for: repair), systemImage: repair.outcome.symbolName)
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(FennecBrand.accent(for: repair.outcome))
+            }
         }
-        .font(.callout.weight(.medium))
     }
 
     private var testRepair: RepairRecord? {
         guard let id = model.lastRepairID else { return nil }
         return history.records.first { $0.id == id && $0.trigger == .rehearsal }
+    }
+
+    /// Replays can be queued from the first click, even while the safety
+    /// check is still preparing the one actual repair.
+    private var replayReady: Bool {
+        model.onboardingFoxRequestCount > 0 || model.hasCompletedOnboardingRepair
     }
 
     private var footer: some View {

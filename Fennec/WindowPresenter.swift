@@ -144,8 +144,20 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         }
     }
 
+    var canShowRepairFoxBurst: Bool { repairFox.canShowUserBurst }
+    var onManualFoxBurstFinished: (@MainActor (UUID) -> Void)? {
+        get { repairFox.onManualBurstFinished }
+        set { repairFox.onManualBurstFinished = newValue }
+    }
     func showRepairFox(for attemptID: UUID) { repairFox.show(for: attemptID) }
     func cancelRepairFox(for attemptID: UUID) { repairFox.cancel(for: attemptID) }
+    func startOnboardingFox(for attemptID: UUID) -> Bool { repairFox.startOnboarding(for: attemptID) }
+    func startManualFoxBurst(for attemptID: UUID) -> Bool {
+        repairFox.startOnboarding(for: attemptID, autoReset: true)
+    }
+    func queueOnboardingFox() -> Bool { repairFox.queueOnboardingReplay() }
+    func cancelOnboardingFox(for attemptID: UUID) { repairFox.cancelOnboarding(for: attemptID) }
+    func resetOnboardingFox() { repairFox.resetOnboarding() }
     func previewRepairFox() { repairFox.show(for: UUID()) }
 
     /// Shows the window for `id`, creating it the first time. Calling it again

@@ -110,7 +110,11 @@ requires it.
 
 ## Install
 
-Fennec has no notarised release build yet, so you build it yourself.
+For a published release, download `Fennec.zip` from the
+[latest GitHub release](https://github.com/alexcox245/Fennec/releases/latest),
+unzip it, move `Fennec.app` to `/Applications`, and open it there. Check that
+the release identifies the archive as notarized before installing. Until the
+first public release is posted, you can build from source:
 
 ```zsh
 git clone https://github.com/alexcox245/Fennec.git
@@ -126,10 +130,9 @@ later produces a helper that is registered, not running, and gives no
 explanation. Fennec checks its own location on first run and refuses to offer
 the Enable button when it is somewhere that will break.
 
-If you ever run an unsigned or un-notarised copy from a download, macOS will
-refuse it with *"Fennec is damaged and can't be opened"* or *"Apple could not
-verify Fennec is free of malware."* Right-click → **Open**, or
-**System Settings → Privacy & Security → Open Anyway**.
+Do not bypass a macOS security warning for an unsigned or unnotarized copy.
+The published archive should pass Gatekeeper and carry the team's Developer ID
+signature.
 
 ## First run
 
@@ -194,17 +197,13 @@ zsh Scripts/build-release.sh
 
 ## Validation status
 
-All four app/helper Debug and Release configurations compile, all 286
-standalone tests pass, and `audit-source.sh` passes. The local builds had code
-signing disabled because no signing identity is available; they do not verify
-a signed bundle or a release archive.
-
-**Not yet verified on a device:** helper registration and the System Settings
-approval flow, an actual privileged repair, notification delivery, and
-detection against a reproduction of the audible fault. Those need a signed
-build in `/Applications` and a human. They are tracked as **T-005** in
-`AGENTS.md` §8, and nobody should switch detection to **Immediate** before
-that is done.
+The latest recorded complete check built all four app/helper Debug and Release
+configurations with signing, passed 290 standalone tests and the source audit,
+and verified a notarized Developer ID export of the previous candidate. The
+final build 2 candidate requires its own verification; see
+[`Docs/VALIDATION.md`](Docs/VALIDATION.md) for exact evidence and remaining
+hands-on checks. Do not switch detection to **Immediate** until T-005 in
+`AGENTS.md` §8 is complete.
 
 ## Layout
 

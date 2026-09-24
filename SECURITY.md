@@ -6,8 +6,10 @@ to report it when the boundary is wrong.
 
 ## Reporting a vulnerability
 
-Open a private security advisory on the repository, or email the maintainer at
-the address on the GitHub profile that owns it. Please include the macOS
+Use the repository's **Report a vulnerability** button when it is available.
+If private vulnerability reporting is not enabled yet, the maintainer has not
+published a private reporting channel; avoid posting exploit details in a
+public issue. Please include the macOS
 version, the Fennec build number (**About Fennec** shows it), and what you did.
 
 Expect an acknowledgement within **7 days** and an assessment within **30**.
