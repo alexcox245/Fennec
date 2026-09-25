@@ -1,6 +1,6 @@
 b4f799a080ed09e2c98be7e68745653bbcf80bcf66d0c1c189ce1d53e234d61a  ./.github/workflows/ci.yml
 889843dea70d4f39222c327485bbd9a131fc0dd9983778bbd1b86cf89638bc92  ./.gitignore
-05fcc751c31dbc41759c4703954fce43d17e2ffe5e30a83ea7d9725416a3fb94  ./AGENTS.md
+ec73900e9a599f1afb707065fb071da57f815d3c213e3294184edaf53e94b47a  ./AGENTS.md
 298d797f35a20453f4ca8a74856f43ab1d4472be0803577e41852844fc500dd7  ./Brand/Fennec-AppIcon-Master.png
 28b1c6b96c072eb84bff05e5ba49fbdf7eaca1380d505144204d378e07e6a608  ./Brand/ProductHunt/README.md
 de25ff2670788ce8b5deacaf7945ec15548368443882901dcf15743b53d1b847  ./Brand/ProductHunt/gallery-listener.png
@@ -78,7 +78,7 @@ b271e38bb2891b25de5d970d19cf1e7440f1d18d03906211dede84e0e8281d13  ./Fennec/Recov
 f1eeab92e2c537f8a6e1e5c6a6286ecbf36d648a71104450f9e4feeee77b68e6  ./Fennec/RepairHistoryStore.swift
 7145500fd569b9d96744c34ca37208bf3afbe0455eb584d4ac82d090f08588ae  ./Fennec/Resources/fennec-run.gif
 f740e8395e7c6b7c265da5d212bc98d1ec0fb4c7ad45d666db3537c0f10ad0d9  ./Fennec/SettingsStore.swift
-3223d9344c08b3d7b8d39c876b5d389814f4c6efd8db47fee9480347e2dc76b7  ./Fennec/SettingsView.swift
+024979360caeb47b68a8cf69b3d3b031eafb26cc3eedab80739657318f69fe7f  ./Fennec/SettingsView.swift
 e7da82f5e4d5e16b5f0b8e6c001bc8df031c46c3c093b35813a83a8f9b79e8bb  ./Fennec/SetupChecklist.swift
 4b40262dd9ddff523b517b5100b30fadf172557e10bfa23e4bb610f6582bd09e  ./Fennec/SetupStepRow.swift
 db514ae9540fc2311ef05ca1c731d7a8b8c9b659cfc5d962cf072e31252d2b10  ./Fennec/SignalGraphView.swift

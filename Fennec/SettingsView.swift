@@ -62,7 +62,8 @@ struct SettingsView: View {
                         ? RepairCopy.onboardingReplayButton : "Repair Audio Now") {
                         model.requestRepairButton()
                     }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.borderedProminent)
+                        .tint(FennecBrand.sky)
                         .disabled(model.manualFoxRequestCount > 0
                             ? model.manualFoxRequestCount >= RepairFoxBurst.maximumTotal
                             : model.isRepairing || model.isPreparingRepair)
@@ -70,8 +71,6 @@ struct SettingsView: View {
                             ? RepairCopy.onboardingReplayHelp
                             : "Fix crackling now. Sound stops for a moment.")
                     Button("Restart Monitor") { model.restartMonitoring() }
-                        .buttonStyle(.borderedProminent)
-                        .tint(FennecBrand.sky)
                         .help("Tear down and rebuild the listeners Fennec uses to hear crackling. Does not touch your sound.")
                 }
             }

@@ -353,7 +353,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-067**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-068**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -373,6 +373,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-062 | P1 | Refresh public install/removal documentation and establish a security-reporting contact | Open | Codex / root / 2026-09-25 | README, UNINSTALL, and SECURITY copy was corrected for the current UI, update cache, network behavior, and absence of a verified security email. Owner deferred a private security contact. Verify or enable GitHub private vulnerability reporting when the repository becomes public if desired; documentation work is done. |
 | T-063 | P1 | Prepare the Product Hunt listing and gallery against the public download | Open | Codex / root / 2026-09-25 | `Brand/ProductHunt/` now has a square thumbnail, two icon-derived gallery illustrations, listing copy, and a first comment. Public product/download URLs cannot be tested until the repository and release are public. Posting remains separate. |
 | T-064 | P1 | Validate the signed updater installation and helper lifecycle end to end | Open | · | Existing unit tests cover disclosure/cache removal, not `FennecUpdateDriver` or `AppModel` update orchestration. Record explicit check/download/install, cancellation, repair-in-progress gating, helper unregister/restore, relaunch, and approval-required fallback results against identified builds. Needs a published/test feed and supervised helper changes; do not run root/audio paths without explicit approval. |
+| T-067 | P1 | Restore Settings action hierarchy while keeping the requested order | In progress | Codex / root / 2026-09-25 | Owner clarified Repair Audio Now stays primary on the left; Restart Monitor stays tertiary on the right. |
 
 ### Done
 
