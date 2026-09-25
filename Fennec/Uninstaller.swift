@@ -109,6 +109,16 @@ enum UninstallPlan {
             : "Fennec will unregister its root helper, remove its login item,\(updateClause) delete its log and repair history, forget its settings, and move itself to the Trash."
     }
 
+    /// The app must remain available to report and retry every earlier step.
+    /// Moving it to the Trash also makes macOS refuse to reactivate its UI.
+    static func canRecycleBundle(
+        steps: [Step],
+        results: [Step.Kind: UninstallStepResult]
+    ) -> Bool {
+        steps.prefix { $0.kind != .bundle }
+            .allSatisfy { results[$0.kind]?.succeeded == true }
+    }
+
     static let manualFallback = """
         If Fennec is already in the Trash, the helper can still be removed from the command line:
 
@@ -178,14 +188,12 @@ final class Uninstaller: ObservableObject {
                 UserDefaults.standard.removePersistentDomain(forName: AppConstants.appBundleIdentifier)
                 results[.preferences] = .done
             case .bundle:
-                // Never trash the app while the daemon is still registered.
-                // That is precisely the state ground rule 12 exists to
-                // prevent: a root LaunchDaemon pointing at a binary in the
-                // Trash, and no app left to retry the removal from.
-                if results[.helper]?.succeeded == false {
+                // A process moved to the Trash cannot reliably receive the
+                // next click. Keep the app in place if any preceding step
+                // failed, so its failure report and retry remain usable.
+                if !UninstallPlan.canRecycleBundle(steps: steps, results: results) {
                     results[.bundle] = .failed(
-                        "Left in place on purpose: the root helper is still registered, "
-                        + "so Fennec is still here to retry."
+                        "Left in place so Fennec can report and retry the failed steps above."
                     )
                 } else {
                     results[.bundle] = await recycleBundle()

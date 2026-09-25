@@ -20,6 +20,27 @@ final class ReviewRegressionTests: XCTestCase {
         XCTAssertEqual(steps.first?.kind, .helper)
     }
 
+    func testAnyUnfinishedRemovalStepKeepsTheAppAvailableForRetry() {
+        let steps = UninstallPlan.steps(
+            helperInstalled: true, loginItemEnabled: true, keepLogs: true, canRemoveBundle: true
+        )
+        let completed = Dictionary(uniqueKeysWithValues:
+            steps.filter { $0.kind != .bundle }.map { ($0.kind, UninstallStepResult.done) })
+        XCTAssertTrue(UninstallPlan.canRecycleBundle(steps: steps, results: completed))
+
+        for step in steps where step.kind != .bundle {
+            var failed = completed
+            failed[step.kind] = .failed("macOS refused")
+            XCTAssertFalse(UninstallPlan.canRecycleBundle(steps: steps, results: failed),
+                           "A failed \(step.kind.rawValue) step must leave the app available.")
+
+            var missing = completed
+            missing.removeValue(forKey: step.kind)
+            XCTAssertFalse(UninstallPlan.canRecycleBundle(steps: steps, results: missing),
+                           "An unreported \(step.kind.rawValue) step cannot count as removed.")
+        }
+    }
+
     @MainActor
     func testTheBundleIsNotTrashedWhenTheDaemonSurvived() async {
         let uninstaller = Uninstaller()

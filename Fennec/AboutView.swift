@@ -317,7 +317,7 @@ struct AboutView: View {
 
             if uninstaller.finished {
                 Text(uninstaller.allSucceeded
-                     ? "Fennec is removed. Quit to finish."
+                     ? "Fennec is removed. Quitting…"
                      : (uninstaller.failureSummary ?? "Some steps did not complete."))
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
@@ -368,25 +368,25 @@ struct AboutView: View {
                 Spacer()
 
                 if uninstaller.finished {
-                    // Always an exit. A sheet whose only control is "Quit" is
-                    // a dead end for anyone reading a partial-failure report.
-                    Button("Close") { showingUninstall = false }
-                        .keyboardShortcut(.cancelAction)
-                    if !uninstaller.allSucceeded && uninstaller.canRetry {
-                        Button("Try Again") {
-                            uninstaller.reset()
+                    if !uninstaller.allSucceeded {
+                        Button("Close") { showingUninstall = false }
+                            .keyboardShortcut(.cancelAction)
+                        if uninstaller.canRetry {
+                            Button("Try Again") {
+                                uninstaller.reset()
+                            }
                         }
                     }
-                    Button("Quit Fennec") { model.quit() }
-                        .keyboardShortcut(.defaultAction)
-                        .buttonStyle(.borderedProminent)
                 } else {
                     Button("Cancel") { showingUninstall = false }
                         .keyboardShortcut(.cancelAction)
                         .disabled(uninstaller.isRunning)
                     Button("Uninstall") {
                         let steps = uninstallSteps
-                        Task { await uninstaller.run(keepLogs: keepLogs, steps: steps) }
+                        Task {
+                            await uninstaller.run(keepLogs: keepLogs, steps: steps)
+                            if uninstaller.allSucceeded { model.quit() }
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
