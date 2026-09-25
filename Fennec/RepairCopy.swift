@@ -33,10 +33,16 @@ enum RepairCopy {
 
     static let foxSection = "Repair Animation"
     static let foxSetting = "Show fox during repairs"
-    static let foxPreview = "Preview Fox"
+    static let foxPreview = "Run Preview"
     static let foxPreviewHelp = "Preview the animation. Your sound stays on."
-    static let foxDetail = "The fox crosses the display where your pointer is when a repair starts."
+    static let foxDetail = "Press the preview button....you know you want to..."
+    static let foxDisabledDetail = "You turned off my cute little running fennec fox...🥺"
     static let foxReducedMotion = "The fox stays off while Reduce Motion is enabled in macOS."
+
+    static func foxDescription(enabled: Bool, reduceMotion: Bool) -> String {
+        if !enabled { return foxDisabledDetail }
+        return reduceMotion ? foxReducedMotion : foxDetail
+    }
 
     // MARK: Prompted repair
 

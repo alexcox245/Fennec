@@ -146,11 +146,20 @@ struct SettingsView: View {
 
             Section(RepairCopy.foxSection) {
                 Toggle(RepairCopy.foxSetting, isOn: $settings.showRepairFox)
-                Text(reduceMotion ? RepairCopy.foxReducedMotion : RepairCopy.foxDetail)
+                Text(RepairCopy.foxDescription(enabled: settings.showRepairFox, reduceMotion: reduceMotion))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button(RepairCopy.foxPreview) { model.requestPreviewFox() }
+                Button {
+                    model.requestPreviewFox()
+                } label: {
+                    Text(RepairCopy.foxPreview)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 36)
+                }
+                    .buttonStyle(.borderedProminent)
+                    .tint(FennecBrand.dune)
+                    .controlSize(.large)
                     .disabled(!settings.showRepairFox || reduceMotion
                         || model.previewFoxRequestCount >= RepairFoxBurst.maximumTotal
                         || model.manualFoxRequestCount > 0 || model.onboardingFoxRequestCount > 0

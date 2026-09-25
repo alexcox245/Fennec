@@ -162,6 +162,26 @@ final class RepairCopyTests: XCTestCase {
 
     // MARK: Voice
 
+    func testFoxPreviewCopyFollowsTheAnimationSetting() {
+        XCTAssertEqual(RepairCopy.foxPreview, "Run Preview")
+        XCTAssertEqual(
+            RepairCopy.foxDescription(enabled: true, reduceMotion: false),
+            "Press the preview button....you know you want to..."
+        )
+        XCTAssertEqual(
+            RepairCopy.foxDescription(enabled: false, reduceMotion: false),
+            "You turned off my cute little running fennec fox...🥺"
+        )
+        XCTAssertEqual(
+            RepairCopy.foxDescription(enabled: false, reduceMotion: true),
+            RepairCopy.foxDisabledDetail
+        )
+        XCTAssertEqual(
+            RepairCopy.foxDescription(enabled: true, reduceMotion: true),
+            RepairCopy.foxReducedMotion
+        )
+    }
+
     func testNoCopyShoutsOrUsesEmoji() {
         let samples: [RepairRecord] = [
             Fixture.repair(at: Fixture.epoch, trigger: .automatic, signal: .processorOverload, signalCount: 2, elapsed: 5.8),
@@ -231,7 +251,7 @@ final class RepairCopyTests: XCTestCase {
             RepairCopy.onboardingTestDetail, RepairCopy.onboardingReplayButton,
             RepairCopy.onboardingReplayHelp,
             RepairCopy.foxSection, RepairCopy.foxSetting, RepairCopy.foxPreview, RepairCopy.foxPreviewHelp,
-            RepairCopy.foxDetail, RepairCopy.foxReducedMotion,
+            RepairCopy.foxDetail, RepairCopy.foxDisabledDetail, RepairCopy.foxReducedMotion,
             RepairCopy.promptTitle, RepairCopy.promptMessage(deviceName: "Studio Display Speakers"),
             RepairCopy.promptConsequence, RepairCopy.promptRepairTitle, RepairCopy.promptDismissTitle
         ]

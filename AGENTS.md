@@ -58,7 +58,7 @@ These are load-bearing. Violating one produces a build that looks fine and fails
 
 11. **Every window goes through `WindowPresenter`, including Settings.** Fennec is `LSUIElement`, so it has no main menu, which silently breaks ⌘W, ⌘Q and ⌘, in any window it opens. `WindowPresenter` is `.accessory` while only the popover shows and `.regular` for exactly as long as a real window is open, so the standard shortcuts work whenever there is something to type them at. Do **not** reintroduce SwiftUI's `Settings` scene: its only programmatic entry point is the undocumented `showSettingsWindow:` responder action, which reports success and then does nothing in an accessory app (verified on macOS 26). Never decide activation policy by counting `NSApp.windows` without filtering; the `MenuBarExtra` popover is an `NSStatusBarWindow`, and counting it strands the app in `.regular` forever.
 
-12. **User-facing repair copy lives in `RepairCopy.swift`, and it is under test.** The notification, the menu receipt, and the activity list must say the same thing in the same voice. `FennecTests/RepairCopyTests.swift` pins the exact strings, including checks that nothing shouts, uses emoji, says "Core Audio", or states a timing. If you need new copy, add it there rather than inlining a string in a view. See §7 for the register and for the three places precision still wins.
+12. **User-facing repair copy lives in `RepairCopy.swift`, and it is under test.** The notification, the menu receipt, and the activity list must say the same thing in the same voice. `FennecTests/RepairCopyTests.swift` pins the exact strings, including checks that repair outcomes do not shout, use emoji, say "Core Audio", or state a timing. The owner-approved Settings animation opt-out line is the one emoji exception (T-076). If you need new copy, add it there rather than inlining a string in a view. See §7 for the register and for the three places precision still wins.
 
 13. **Updates are explicit at every step.** Sparkle checks only after the user asks, downloads only after the user chooses, and installs only after **Install & Relaunch**. Keep automatic checks, downloads, installation, and system profiling disabled. The Ed25519 private key stays in the login Keychain; only its public key belongs in `Fennec/Info.plist`. Before installation, wait for a repair to finish and unregister a previously registered helper. Restore only that prior registration after relaunch; if approval is needed, fall back to **Ask me first**. **Ask me first must not trigger background helper-registration repair.** See `Docs/UPDATES.md` for the release flow.
 
@@ -282,7 +282,7 @@ Deadpan, specific, plain. Confident without selling. The fox is not grinning and
 | "Skipped: microphone is active." | "We couldn't do that right now." |
 | "This Mac is working too hard to keep up." | "load 1.47 per core, memory pressure warning" |
 
-Plain is not vague. Still name the thing that happened and admit the limitation: Fennec hears the failure signal, not the sound itself, and it says so. No exclamation marks, no emoji in product UI, no anthropomorphising the fox in copy.
+Plain is not vague. Still name the thing that happened and admit the limitation: Fennec hears the failure signal, not the sound itself, and it says so. No exclamation marks, no emoji in repair outcomes, no anthropomorphising the fox in repair outcomes. The owner explicitly set the playful Settings preview and disabled-animation copy in T-076, including one emoji when the animation toggle is off; keep that exception scoped to the animation setting.
 
 The owner-approved balanced sensitivity description ends, “You hear the crackle begin. Then silence. Then your sweet sweet beats.” Preserve that line when editing the menu-bar and Settings sensitivity text.
 
@@ -353,7 +353,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-076**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-077**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -375,6 +375,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-064 | P1 | Validate the signed updater installation and helper lifecycle end to end | Open | · | Existing unit tests cover disclosure/cache removal, not `FennecUpdateDriver` or `AppModel` update orchestration. Record explicit check/download/install, cancellation, repair-in-progress gating, helper unregister/restore, relaunch, and approval-required fallback results against identified builds. Needs a published/test feed and supervised helper changes; do not run root/audio paths without explicit approval. |
 | T-071 | P1 | Determine whether Fennec's remaining Background Task Management entry is active | Open | · | After the owner's uninstall, a read-only BTM dump listed an enabled Fennec app item pointing into Trash even though the daemon and process were gone. It may be a historical record. Verify its live status during supervised retest; do not reset system-wide BTM state. |
 | T-075 | P1 | Verify login startup default and uninstall against the installed test build | Open | · | Build `5118744` was installed in `/Applications` on 2026-09-26; its binary matches the signed Release artifact and it launched without a Welcome window after prior onboarding. Existing login registration was shown On in Settings before replacement. A fresh-profile login default and the revised complete uninstall need a supervised UI retest; no helper registration or audio repair was run. |
+| T-076 | P1 | Update animation preview copy and button in Settings | In progress | Codex / root / 2026-09-26 | Owner supplied exact active and disabled copy, including an emoji, and requested a large filled orange Run Preview button. Keep the existing Reduce Motion message when the toggle is on. |
 
 ### Done
 
