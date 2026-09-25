@@ -5,11 +5,8 @@ import SwiftUI
 ///
 /// Two things SwiftUI's `App` does not do for an `LSUIElement` process:
 ///
-/// - **Reopen.** Double-clicking Fennec while it is already running does
-///   nothing at all by default. There is no Dock icon to bounce and no window
-///   to raise, so the second launch is silently swallowed and the user
-///   concludes the app is broken. `applicationShouldHandleReopen` turns it
-///   into "show me what you are".
+/// - **Reopen.** An unfinished first run still needs its welcome window.
+///   Once dismissed, Fennec stays quiet in the menu bar on later launches.
 /// - **Termination.** Quitting mid-repair would leave the user's audio in
 ///   whatever state the helper had reached. A repair is about a second; it is
 ///   worth waiting out.
@@ -40,12 +37,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // a window someone can use should suppress a Dock reopen.
             guard !WindowPresenter.shared.hasInteractiveWindowOnScreen else { return true }
             guard let model = Self.model else { return true }
-            // Setup readiness can change after onboarding. Once dismissed,
-            // reopening Fennec goes to Settings even if setup needs attention.
+            // After onboarding, a relaunch should only restore the menu-bar
+            // utility. Settings opens when the user explicitly chooses it.
             if model.settings.shouldShowWelcomeOnReopen {
                 WindowPresenter.shared.showWelcome(model: model)
-            } else {
-                WindowPresenter.shared.showSettings(model: model)
             }
             return true
         }
