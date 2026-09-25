@@ -386,7 +386,7 @@ struct AboutView: View {
                         let steps = uninstallSteps
                         Task {
                             await uninstaller.run(keepLogs: keepLogs, steps: steps)
-                            if uninstaller.allSucceeded { model.quit() }
+                            if uninstaller.allSucceeded { model.quitAfterSuccessfulUninstall() }
                         }
                     }
                     .buttonStyle(.borderedProminent)

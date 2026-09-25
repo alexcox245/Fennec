@@ -353,7 +353,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-080**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-081**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -375,7 +375,8 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-064 | P1 | Validate the signed updater installation and helper lifecycle end to end | Open | · | Existing unit tests cover disclosure/cache removal, not `FennecUpdateDriver` or `AppModel` update orchestration. Record explicit check/download/install, cancellation, repair-in-progress gating, helper unregister/restore, relaunch, and approval-required fallback results against identified builds. Needs a published/test feed and supervised helper changes; do not run root/audio paths without explicit approval. |
 | T-071 | P1 | Determine whether Fennec's remaining Background Task Management entry is active | Open | · | After the owner's uninstall, a read-only BTM dump listed an enabled Fennec app item pointing into Trash even though the daemon and process were gone. It may be a historical record. Verify its live status during supervised retest; do not reset system-wide BTM state. |
 | T-075 | P1 | Verify login startup default and uninstall against the installed test build | Open | · | Build `5118744` was installed in `/Applications` on 2026-09-26; its binary matches the signed Release artifact and it launched without a Welcome window after prior onboarding. Existing login registration was shown On in Settings before replacement. A fresh-profile login default and the revised complete uninstall need a supervised UI retest; no helper registration or audio repair was run. |
-| T-079 | P1 | Install the blue Run Preview test build | In progress | Codex / root / 2026-09-26 | Owner approved replacing the installed app and restoring its currently running helper on 2026-09-26. Source commit `7415ac1` has a verified signed Release build, staged and signature-verified at `/Applications/.Fennec-primary-staged.app`. The installed app still has its running helper. Fennec exposes its unregister control only in Settings; the menu-bar-only app has no open window for computer control. Await the owner opening Settings, then unregister, replace, relaunch, and restore per rule 13. |
+| T-079 | P1 | Install the blue Run Preview test build | Open | · | The owner uninstalled the prior app while testing; its helper is gone, and the hidden staging copy was moved out of Applications. The current signed Release build includes the blue Run Preview button and T-080's uninstall fix. Reinstallation awaits the owner's choice; do not register the helper without separate explicit approval. |
+| T-080 | P0 | Make successful uninstall actually terminate Fennec | In progress | Codex / root / 2026-09-26 | Owner's live test again reached “Fennec is removed. Quitting…” but left the trashed app process running. The helper is absent and the bundle was moved to Trash. Replace the AppKit-only quit with a bounded process-exit fallback after successful removal, while preserving the repair grace period. |
 
 ### Done
 

@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import Foundation
 
 enum MonitoringState: Equatable {
@@ -1057,6 +1058,19 @@ final class AppModel: ObservableObject {
 
     func quit() {
         NSApplication.shared.terminate(nil)
+    }
+
+    /// The app's bundle has already moved to the Trash when this runs.
+    /// AppKit can leave its last sheet on screen without ending that process,
+    /// so give normal termination a chance and then guarantee the uninstall
+    /// does not strand a live copy outside Applications. A repair gets longer
+    /// than AppDelegate's 12-second quit grace before the fallback fires.
+    func quitAfterSuccessfulUninstall() {
+        let delay: TimeInterval = isRepairing || isPreparingRepair ? 15 : 2
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + delay) {
+            Darwin._exit(EXIT_SUCCESS)
+        }
+        quit()
     }
 
     // MARK: Signal handling
