@@ -353,7 +353,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-078**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-079**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -375,6 +375,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-064 | P1 | Validate the signed updater installation and helper lifecycle end to end | Open | · | Existing unit tests cover disclosure/cache removal, not `FennecUpdateDriver` or `AppModel` update orchestration. Record explicit check/download/install, cancellation, repair-in-progress gating, helper unregister/restore, relaunch, and approval-required fallback results against identified builds. Needs a published/test feed and supervised helper changes; do not run root/audio paths without explicit approval. |
 | T-071 | P1 | Determine whether Fennec's remaining Background Task Management entry is active | Open | · | After the owner's uninstall, a read-only BTM dump listed an enabled Fennec app item pointing into Trash even though the daemon and process were gone. It may be a historical record. Verify its live status during supervised retest; do not reset system-wide BTM state. |
 | T-075 | P1 | Verify login startup default and uninstall against the installed test build | Open | · | Build `5118744` was installed in `/Applications` on 2026-09-26; its binary matches the signed Release artifact and it launched without a Welcome window after prior onboarding. Existing login registration was shown On in Settings before replacement. A fresh-profile login default and the revised complete uninstall need a supervised UI retest; no helper registration or audio repair was run. |
+| T-078 | P1 | Give Run Preview the existing primary CTA treatment | In progress | Codex / root / 2026-09-26 | Owner wants the preview button to use the same native prominent blue treatment as Repair Audio Now in Settings, replacing the custom full-width orange style. |
 
 ### Done
 

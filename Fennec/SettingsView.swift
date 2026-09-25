@@ -150,16 +150,9 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button {
-                    model.requestPreviewFox()
-                } label: {
-                    Text(RepairCopy.foxPreview)
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 36)
-                }
+                Button(RepairCopy.foxPreview) { model.requestPreviewFox() }
                     .buttonStyle(.borderedProminent)
-                    .tint(FennecBrand.dune)
-                    .controlSize(.large)
+                    .tint(FennecBrand.sky)
                     .disabled(!settings.showRepairFox || reduceMotion
                         || model.previewFoxRequestCount >= RepairFoxBurst.maximumTotal
                         || model.manualFoxRequestCount > 0 || model.onboardingFoxRequestCount > 0
