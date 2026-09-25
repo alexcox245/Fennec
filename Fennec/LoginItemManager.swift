@@ -16,6 +16,13 @@ enum LoginItemState: Equatable, Sendable {
 
     var isEnabled: Bool { self == .enabled }
     var requiresApproval: Bool { self == .requiresApproval }
+    /// An item awaiting approval still has a registration to remove.
+    var isRegistered: Bool {
+        switch self {
+        case .notRegistered, .notFound: return false
+        case .enabled, .requiresApproval, .unknown: return true
+        }
+    }
 
     var title: String {
         switch self {

@@ -15,14 +15,14 @@ final class ReviewRegressionTests: XCTestCase {
         // dropped the daemon step, trashed the app, and reported success.
         XCTAssertFalse(RepairHelperState.awaitingApproval.isEnabled)
         let steps = UninstallPlan.steps(
-            helperInstalled: true, loginItemEnabled: false, keepLogs: true, canRemoveBundle: true
+            helperInstalled: true, loginItemRegistered: false, keepLogs: true, canRemoveBundle: true
         )
         XCTAssertEqual(steps.first?.kind, .helper)
     }
 
     func testAnyUnfinishedRemovalStepKeepsTheAppAvailableForRetry() {
         let steps = UninstallPlan.steps(
-            helperInstalled: true, loginItemEnabled: true, keepLogs: true, canRemoveBundle: true
+            helperInstalled: true, loginItemRegistered: true, keepLogs: true, canRemoveBundle: true
         )
         let completed = Dictionary(uniqueKeysWithValues:
             steps.filter { $0.kind != .bundle }.map { ($0.kind, UninstallStepResult.done) })
@@ -50,7 +50,7 @@ final class ReviewRegressionTests: XCTestCase {
         await uninstaller.run(
             keepLogs: true,
             steps: UninstallPlan.steps(
-                helperInstalled: true, loginItemEnabled: false, keepLogs: true, canRemoveBundle: true
+                helperInstalled: true, loginItemRegistered: false, keepLogs: true, canRemoveBundle: true
             )
         )
         if uninstaller.results[.helper]?.succeeded == false {
@@ -77,7 +77,7 @@ final class ReviewRegressionTests: XCTestCase {
         // "helper: …" is a developer's label. The user needs to know which
         // thing is still on their Mac.
         let steps = UninstallPlan.steps(
-            helperInstalled: true, loginItemEnabled: true, keepLogs: false, canRemoveBundle: true
+            helperInstalled: true, loginItemRegistered: true, keepLogs: false, canRemoveBundle: true
         )
         for step in steps {
             XCTAssertFalse(step.title.lowercased() == step.kind.rawValue.lowercased())

@@ -302,7 +302,7 @@ struct AboutView: View {
             // registered, and dropping it from the plan produced "Fennec is
             // removed" over a root helper that was still there.
             helperInstalled: helper.isRegistered,
-            loginItemEnabled: model.loginItemManager.isEnabled,
+            loginItemRegistered: model.loginItemManager.state.isRegistered,
             keepLogs: keepLogs,
             canRemoveBundle: true,
             hasUpdateCache: FennecUpdater.hasUpdateCache
@@ -382,6 +382,7 @@ struct AboutView: View {
                         .keyboardShortcut(.cancelAction)
                         .disabled(uninstaller.isRunning)
                     Button("Uninstall") {
+                        model.loginItemManager.refresh()
                         let steps = uninstallSteps
                         Task {
                             await uninstaller.run(keepLogs: keepLogs, steps: steps)

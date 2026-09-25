@@ -144,6 +144,10 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertTrue(LoginItemState.enabled.isEnabled)
         XCTAssertFalse(LoginItemState.notFound.isEnabled)
         XCTAssertTrue(LoginItemState.requiresApproval.requiresApproval)
+        XCTAssertTrue(LoginItemState.enabled.isRegistered)
+        XCTAssertTrue(LoginItemState.requiresApproval.isRegistered)
+        XCTAssertFalse(LoginItemState.notRegistered.isRegistered)
+        XCTAssertFalse(LoginItemState.notFound.isRegistered)
     }
 
     func testEveryLoginItemStateHasAUsefulSentence() {

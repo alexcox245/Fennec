@@ -50,7 +50,8 @@ enum UninstallPlan {
         /// keying this off `RepairHelperState.isEnabled` silently dropped the
         /// daemon from the plan and then reported "Fennec is removed".
         helperInstalled: Bool,
-        loginItemEnabled: Bool,
+        /// An item awaiting macOS approval is registered and must be removed.
+        loginItemRegistered: Bool,
         keepLogs: Bool,
         canRemoveBundle: Bool,
         hasUpdateCache: Bool = false
@@ -65,7 +66,7 @@ enum UninstallPlan {
                     + "that does not happen if you only drag Fennec to the Trash."
             ))
         }
-        if loginItemEnabled {
+        if loginItemRegistered {
             steps.append(Step(
                 kind: .loginItem,
                 title: "Remove the login item",
@@ -146,8 +147,8 @@ final class Uninstaller: ObservableObject {
 
     private let helperService = SMAppService.daemon(plistName: AppConstants.helperPlistName)
 
-    /// Everything except quitting, which the caller does once it has shown the
-    /// results. Deliberately sequential and deliberately not transactional:
+    /// Everything except quitting, which the caller does after a successful
+    /// removal. Deliberately sequential and deliberately not transactional:
     /// each step is independently useful, so a failure part-way through still
     /// leaves the machine better off than it started.
     func run(keepLogs: Bool, steps: [UninstallPlan.Step]) async {

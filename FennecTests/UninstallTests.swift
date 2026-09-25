@@ -14,7 +14,7 @@ final class UninstallPlanTests: XCTestCase {
     ) -> [UninstallPlan.Step] {
         UninstallPlan.steps(
             helperInstalled: helper,
-            loginItemEnabled: loginItem,
+            loginItemRegistered: loginItem,
             keepLogs: keepLogs,
             canRemoveBundle: bundle
         )
@@ -31,6 +31,19 @@ final class UninstallPlanTests: XCTestCase {
         // It is the only step with root behind it, and the only one a user
         // cannot undo themselves from the Finder.
         XCTAssertEqual(steps().first?.kind, .helper)
+    }
+
+    func testLoginItemAwaitingApprovalIsStillInTheRemovalPlan() {
+        let state = LoginItemState.requiresApproval
+        XCTAssertFalse(state.isEnabled)
+        XCTAssertTrue(state.isRegistered)
+        let plan = UninstallPlan.steps(
+            helperInstalled: false,
+            loginItemRegistered: state.isRegistered,
+            keepLogs: true,
+            canRemoveBundle: true
+        )
+        XCTAssertTrue(plan.contains { $0.kind == .loginItem })
     }
 
     func testTheHelperStepNamesTheTrapItExistsFor() throws {
@@ -57,7 +70,7 @@ final class UninstallPlanTests: XCTestCase {
     func testDownloadedUpdateCacheIsRemovedWhenPresent() {
         let steps = UninstallPlan.steps(
             helperInstalled: false,
-            loginItemEnabled: false,
+            loginItemRegistered: false,
             keepLogs: true,
             canRemoveBundle: false,
             hasUpdateCache: true
