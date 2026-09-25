@@ -353,7 +353,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-068**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-069**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -378,6 +378,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 
 | ID | Task | Completed | Commit | Notes |
 |---|---|---|---|---|
+| T-068 | Install the current local Release build for owner testing | 2026-09-25 | e422222 | Owner approved replacing the notarized app with a Gatekeeper-rejected Apple Development build for local testing. The Release build was copied to `/Applications/Fennec.app`; strict code-signature checks pass and app/helper executable hashes match the build. The previous notarized app is preserved at `build/InstallBackups/Fennec-previous-notarized-20260925.app` and passes Gatekeeper. The old running app was quit cleanly; the owner must launch the new app to test. No repair, helper registration, notarization, or push was run. |
 | T-067 | Restore Settings action hierarchy while keeping the requested order | 2026-09-25 | 53da47c | Corrected T-065's button styling: Repair Audio Now is prominent on the left, and Restart Monitor keeps its tertiary style on the right. All 291 tests, four app/helper Debug/Release builds, and source audit pass. Live Settings UI was not exercised; no repair or helper registration was run. |
 | T-066 | Keep completed Fennec launches silent in the menu bar | 2026-09-25 | a18d0ef | Corrected T-065's reopen behavior: only unfinished onboarding shows Welcome; a completed launch raises no window and stays in the menu bar. Settings opens through explicit controls. All 291 tests, four app/helper Debug/Release builds, and source audit pass. No live reboot, repair, or helper registration was run. |
 | T-065 | Keep completed onboarding closed on reopen; adjust Settings controls, Preview Fox burst, and menu copy | 2026-09-25 | 097f824 | Reopen now uses persisted first-run completion rather than setup readiness. Settings hit area and button priority were adjusted, Preview Fox uses the 100-request bounded burst without audio repair, and balanced sensitivity copy matches the owner's line. All 291 tests, four app/helper Debug/Release builds, and source audit pass. Reboot and live animation UI were not exercised; no repair or helper registration was run. |
