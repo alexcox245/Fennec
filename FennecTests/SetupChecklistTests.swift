@@ -158,6 +158,60 @@ final class SetupChecklistTests: XCTestCase {
         }
     }
 
+    func testNewApplicationsInstallRegistersAtLoginByDefault() {
+        XCTAssertEqual(
+            LoginItemDefaultPolicy.action(
+                hasHandledDefault: false,
+                hasCompletedFirstRun: false,
+                isPendingInstall: false,
+                installLocation: .applications
+            ),
+            .register
+        )
+    }
+
+    func testDefaultRegistrationWaitsForMoveToApplications() {
+        XCTAssertEqual(
+            LoginItemDefaultPolicy.action(
+                hasHandledDefault: false,
+                hasCompletedFirstRun: false,
+                isPendingInstall: false,
+                installLocation: .elsewhere("~/Downloads")
+            ),
+            .waitForApplications
+        )
+        XCTAssertEqual(
+            LoginItemDefaultPolicy.action(
+                hasHandledDefault: false,
+                hasCompletedFirstRun: true,
+                isPendingInstall: true,
+                installLocation: .applications
+            ),
+            .register
+        )
+    }
+
+    func testUpgradeAndExplicitChoiceDoNotReenableLogin() {
+        XCTAssertEqual(
+            LoginItemDefaultPolicy.action(
+                hasHandledDefault: false,
+                hasCompletedFirstRun: true,
+                isPendingInstall: false,
+                installLocation: .applications
+            ),
+            .preserveExistingChoice
+        )
+        XCTAssertEqual(
+            LoginItemDefaultPolicy.action(
+                hasHandledDefault: true,
+                hasCompletedFirstRun: false,
+                isPendingInstall: false,
+                installLocation: .applications
+            ),
+            .alreadyHandled
+        )
+    }
+
     // MARK: Readiness and the summary line
 
     func testAutomaticReadinessNeedsTheHelperButNotTheLoginItem() {

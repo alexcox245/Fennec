@@ -138,8 +138,10 @@ signature.
 
 The first window lets you choose **Automatically** or **Ask me first**.
 Automatic repair needs the approved helper. Asked repairs work without it and
-show the administrator command before macOS asks for a password. Startup and
-notifications are optional; the one-time test repair is optional too.
+show the administrator command before macOS asks for a password. A new copy in
+Applications starts at login by default; you can turn that off in Settings.
+macOS may ask you to approve the login item. Notifications and the one-time
+test repair are optional.
 
 Recommended settings for the MacBook + heavy-local-workload case: **Balanced**,
 protections on, skip Bluetooth on, cooldown 45 s. Move to **Immediate** only

@@ -23,7 +23,7 @@ final class UninstallPlanTests: XCTestCase {
     func testAFullInstallRemovesEverythingInOrder() {
         XCTAssertEqual(
             steps().map(\.kind),
-            [.helper, .loginItem, .supportFiles, .preferences, .bundle]
+            [.helper, .loginItem, .supportFiles, .bundle, .preferences]
         )
     }
 
@@ -90,6 +90,20 @@ final class UninstallPlanTests: XCTestCase {
         // There is no configuration in which leaving them behind is useful.
         XCTAssertTrue(steps(helper: false, loginItem: false, keepLogs: true, bundle: false)
             .contains { $0.kind == .preferences })
+    }
+
+    func testFailedBundleMoveKeepsPreferencesForAnUninstallRetry() {
+        let plan = steps()
+        XCTAssertFalse(UninstallPlan.canForgetPreferences(steps: plan, results: [:]))
+        XCTAssertFalse(UninstallPlan.canForgetPreferences(
+            steps: plan, results: [.bundle: .failed("macOS refused")]
+        ))
+        XCTAssertTrue(UninstallPlan.canForgetPreferences(
+            steps: plan, results: [.bundle: .done]
+        ))
+        XCTAssertTrue(UninstallPlan.canForgetPreferences(
+            steps: steps(bundle: false), results: [:]
+        ))
     }
 
     func testTheSummaryChangesWithTheLogChoice() {

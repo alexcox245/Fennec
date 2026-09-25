@@ -107,6 +107,10 @@ final class AppModel: ObservableObject {
         settings = SettingsStore()
         helperManager = HelperManager()
         loginItemManager = LoginItemManager()
+        loginItemManager.configureDefaultIfNeeded(
+            hasCompletedFirstRun: settings.hasCompletedFirstRun,
+            installLocation: InstallLocation.current()
+        )
         repairHistory = RepairHistoryStore()
         notificationController = NotificationController()
         WindowPresenter.shared.configureRepairFox(settings: settings)

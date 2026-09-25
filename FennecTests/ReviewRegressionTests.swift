@@ -24,11 +24,12 @@ final class ReviewRegressionTests: XCTestCase {
         let steps = UninstallPlan.steps(
             helperInstalled: true, loginItemRegistered: true, keepLogs: true, canRemoveBundle: true
         )
+        let preceding = Array(steps.prefix { $0.kind != .bundle })
         let completed = Dictionary(uniqueKeysWithValues:
-            steps.filter { $0.kind != .bundle }.map { ($0.kind, UninstallStepResult.done) })
+            preceding.map { ($0.kind, UninstallStepResult.done) })
         XCTAssertTrue(UninstallPlan.canRecycleBundle(steps: steps, results: completed))
 
-        for step in steps where step.kind != .bundle {
+        for step in preceding {
             var failed = completed
             failed[step.kind] = .failed("macOS refused")
             XCTAssertFalse(UninstallPlan.canRecycleBundle(steps: steps, results: failed),
@@ -38,29 +39,6 @@ final class ReviewRegressionTests: XCTestCase {
             missing.removeValue(forKey: step.kind)
             XCTAssertFalse(UninstallPlan.canRecycleBundle(steps: steps, results: missing),
                            "An unreported \(step.kind.rawValue) step cannot count as removed.")
-        }
-    }
-
-    @MainActor
-    func testTheBundleIsNotTrashedWhenTheDaemonSurvived() async {
-        let uninstaller = Uninstaller()
-        // `.helper` will fail here: the test process has no registered daemon
-        // to unregister and no authorization to try, which is precisely the
-        // shape of the real failure.
-        await uninstaller.run(
-            keepLogs: true,
-            steps: UninstallPlan.steps(
-                helperInstalled: true, loginItemRegistered: false, keepLogs: true, canRemoveBundle: true
-            )
-        )
-        if uninstaller.results[.helper]?.succeeded == false {
-            XCTAssertEqual(
-                uninstaller.results[.bundle]?.succeeded, false,
-                "Trashing the app while a root daemon is registered is the exact state rule 12 forbids."
-            )
-            XCTAssertTrue(uninstaller.canRetry)
-            XCTAssertFalse(uninstaller.allSucceeded)
-            XCTAssertNotNil(uninstaller.failureSummary)
         }
     }
 

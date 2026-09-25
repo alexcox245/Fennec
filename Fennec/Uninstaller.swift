@@ -87,11 +87,6 @@ enum UninstallPlan {
                 detail: "~/Library/Application Support/Fennec"
             ))
         }
-        steps.append(Step(
-            kind: .preferences,
-            title: "Forget Fennec's settings",
-            detail: "Sensitivity, safety switches, and the pause state."
-        ))
         if canRemoveBundle {
             steps.append(Step(
                 kind: .bundle,
@@ -99,6 +94,11 @@ enum UninstallPlan {
                 detail: "Then Fennec quits."
             ))
         }
+        steps.append(Step(
+            kind: .preferences,
+            title: "Forget Fennec's settings",
+            detail: "Sensitivity, safety switches, and the pause state."
+        ))
         return steps
     }
 
@@ -106,8 +106,8 @@ enum UninstallPlan {
     static func summary(keepLogs: Bool, hasUpdateCache: Bool = false) -> String {
         let updateClause = hasUpdateCache ? " delete downloaded updates," : ""
         return keepLogs
-            ? "Fennec will unregister its root helper, remove its login item,\(updateClause) forget its settings, and move itself to the Trash. Your event log and repair history stay where they are."
-            : "Fennec will unregister its root helper, remove its login item,\(updateClause) delete its log and repair history, forget its settings, and move itself to the Trash."
+            ? "Fennec will unregister its root helper, remove its login item,\(updateClause) move itself to the Trash, and forget its settings. Your event log and repair history stay where they are."
+            : "Fennec will unregister its root helper, remove its login item,\(updateClause) delete its log and repair history, move itself to the Trash, and forget its settings."
     }
 
     /// The app must remain available to report and retry every earlier step.
@@ -118,6 +118,16 @@ enum UninstallPlan {
     ) -> Bool {
         steps.prefix { $0.kind != .bundle }
             .allSatisfy { results[$0.kind]?.succeeded == true }
+    }
+
+    /// A failed bundle move leaves the app launchable. Keep its preferences
+    /// so a subsequent launch cannot look like a new install and re-register
+    /// the login item while the user is retrying removal.
+    static func canForgetPreferences(
+        steps: [Step],
+        results: [Step.Kind: UninstallStepResult]
+    ) -> Bool {
+        !steps.contains { $0.kind == .bundle } || results[.bundle]?.succeeded == true
     }
 
     static let manualFallback = """
@@ -186,8 +196,14 @@ final class Uninstaller: ObservableObject {
                     }
                 }
             case .preferences:
-                UserDefaults.standard.removePersistentDomain(forName: AppConstants.appBundleIdentifier)
-                results[.preferences] = .done
+                if UninstallPlan.canForgetPreferences(steps: steps, results: results) {
+                    UserDefaults.standard.removePersistentDomain(forName: AppConstants.appBundleIdentifier)
+                    results[.preferences] = .done
+                } else {
+                    results[.preferences] = .failed(
+                        "Kept while Fennec is still installed so it can retry removal without restoring its login item."
+                    )
+                }
             case .bundle:
                 // A process moved to the Trash cannot reliably receive the
                 // next click. Keep the app in place if any preceding step
