@@ -426,6 +426,9 @@ struct MenuView: View {
                 WindowPresenter.shared.showSettings(model: model)
             } label: {
                 Label("Settings", systemImage: "gearshape")
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 5)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help("Open Fennec Settings.")
@@ -501,9 +504,9 @@ struct MenuView: View {
             return "\(pauseStatus). Repair Audio Now still works."
         }
         // AirPods and Bluetooth headphones are the majority output on a modern
-        // Mac, and `skipBluetooth` defaults on. Without this the popover said
-        // "You hear the fault start, then it is gone" two rows under a
-        // BLUETOOTH badge, over a device it will never touch.
+        // Mac, and `skipBluetooth` defaults on. Without this, the popover
+        // promises a repair beneath a BLUETOOTH badge for a device it will
+        // never touch.
         if settings.skipBluetooth && model.currentDevice.transport.isBluetooth {
             return "Off for Bluetooth outputs, which is this one. Repair Audio Now still works."
         }

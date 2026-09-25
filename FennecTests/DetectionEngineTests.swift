@@ -11,6 +11,13 @@ final class DetectionEngineTests: XCTestCase {
         engine = DetectionEngine()
     }
 
+    func testBalancedDescriptionUsesApprovedMenuCopy() {
+        XCTAssertEqual(
+            DetectionSensitivity.balanced.detail,
+            "Waits for 2 signals within 3 seconds. You hear the crackle begin. Then silence. Then your sweet sweet beats."
+        )
+    }
+
     // MARK: Balanced: "let it crackle twice, then fix it"
 
     func testBalancedIgnoresASingleOverload() {

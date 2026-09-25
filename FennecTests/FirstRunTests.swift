@@ -156,13 +156,17 @@ final class FirstRunPreferenceTests: XCTestCase {
     }
 
     func testFirstLaunchHasNotCompletedFirstRun() {
-        XCTAssertFalse(SettingsStore(defaults: defaults).hasCompletedFirstRun)
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertFalse(store.hasCompletedFirstRun)
+        XCTAssertTrue(store.shouldShowWelcomeOnReopen)
     }
 
     func testCompletionPersistsAcrossRelaunch() {
         let store = SettingsStore(defaults: defaults)
         store.hasCompletedFirstRun = true
-        XCTAssertTrue(SettingsStore(defaults: defaults).hasCompletedFirstRun)
+        let reopened = SettingsStore(defaults: defaults)
+        XCTAssertTrue(reopened.hasCompletedFirstRun)
+        XCTAssertFalse(reopened.shouldShowWelcomeOnReopen)
     }
 
     func testFreshInstallStartsWithAutomaticAndBalancedDetection() {

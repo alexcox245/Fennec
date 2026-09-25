@@ -58,20 +58,21 @@ struct SettingsView: View {
                 LabeledContent("Sample rate", value: sampleRateText)
 
                 HStack {
-                    Button("Restart Monitor") { model.restartMonitoring() }
-                        .help("Tear down and rebuild the listeners Fennec uses to hear crackling. Does not touch your sound.")
                     Button(model.manualFoxRequestCount > 0
                         ? RepairCopy.onboardingReplayButton : "Repair Audio Now") {
                         model.requestRepairButton()
                     }
-                        .buttonStyle(.borderedProminent)
-                        .tint(FennecBrand.sky)
+                        .buttonStyle(.bordered)
                         .disabled(model.manualFoxRequestCount > 0
                             ? model.manualFoxRequestCount >= RepairFoxBurst.maximumTotal
                             : model.isRepairing || model.isPreparingRepair)
                         .help(model.manualFoxRequestCount > 0
                             ? RepairCopy.onboardingReplayHelp
                             : "Fix crackling now. Sound stops for a moment.")
+                    Button("Restart Monitor") { model.restartMonitoring() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(FennecBrand.sky)
+                        .help("Tear down and rebuild the listeners Fennec uses to hear crackling. Does not touch your sound.")
                 }
             }
 
@@ -150,8 +151,11 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button(RepairCopy.foxPreview) { WindowPresenter.shared.previewRepairFox() }
-                    .disabled(!settings.showRepairFox || reduceMotion)
+                Button(RepairCopy.foxPreview) { model.requestPreviewFox() }
+                    .disabled(!settings.showRepairFox || reduceMotion
+                        || model.previewFoxRequestCount >= RepairFoxBurst.maximumTotal
+                        || model.manualFoxRequestCount > 0 || model.onboardingFoxRequestCount > 0
+                        || model.isRepairing || model.isPreparingRepair)
                     .help(RepairCopy.foxPreviewHelp)
             }
 

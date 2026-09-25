@@ -20,7 +20,7 @@ enum DetectionSensitivity: String, CaseIterable, Codable, Identifiable {
     var detail: String {
         switch self {
         case .conservative: return "Waits for 3 signals within 12 seconds. Fewest interruptions, longest crackle."
-        case .balanced: return "Waits for 2 signals within 3 seconds. You hear the fault start, then it is gone."
+        case .balanced: return "Waits for 2 signals within 3 seconds. You hear the crackle begin. Then silence. Then your sweet sweet beats."
         case .immediate: return "Acts on the 1st signal. Fastest, but a harmless blip can cost you a short audio gap."
         }
     }

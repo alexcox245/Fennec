@@ -284,6 +284,8 @@ Deadpan, specific, plain. Confident without selling. The fox is not grinning and
 
 Plain is not vague. Still name the thing that happened and admit the limitation: Fennec hears the failure signal, not the sound itself, and it says so. No exclamation marks, no emoji in product UI, no anthropomorphising the fox in copy.
 
+The owner-approved balanced sensitivity description ends, “You hear the crackle begin. Then silence. Then your sweet sweet beats.” Preserve that line when editing the menu-bar and Settings sensitivity text.
+
 **Where precision still wins, and must not be plainened:**
 
 - **The event log** (`EventLogger`, `events.jsonl`). A diagnostic artifact with a technical reader. Counts, spans, OSStatus codes, `coreaudiod`, all of it stays. `DetectionDecision` carries both: `reason` for the log, `plainReason` for the banner.
@@ -351,7 +353,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-065**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-066**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -371,6 +373,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-062 | P1 | Refresh public install/removal documentation and establish a security-reporting contact | Open | Codex / root / 2026-09-25 | README, UNINSTALL, and SECURITY copy was corrected for the current UI, update cache, network behavior, and absence of a verified security email. Owner deferred a private security contact. Verify or enable GitHub private vulnerability reporting when the repository becomes public if desired; documentation work is done. |
 | T-063 | P1 | Prepare the Product Hunt listing and gallery against the public download | Open | Codex / root / 2026-09-25 | `Brand/ProductHunt/` now has a square thumbnail, two icon-derived gallery illustrations, listing copy, and a first comment. Public product/download URLs cannot be tested until the repository and release are public. Posting remains separate. |
 | T-064 | P1 | Validate the signed updater installation and helper lifecycle end to end | Open | · | Existing unit tests cover disclosure/cache removal, not `FennecUpdateDriver` or `AppModel` update orchestration. Record explicit check/download/install, cancellation, repair-in-progress gating, helper unregister/restore, relaunch, and approval-required fallback results against identified builds. Needs a published/test feed and supervised helper changes; do not run root/audio paths without explicit approval. |
+| T-065 | P1 | Keep completed onboarding closed on reopen; adjust Settings controls, Preview Fox burst, and menu copy | In progress | Codex / root / 2026-09-25 | User-reported reboot reopen and requested UI changes. |
 
 ### Done
 

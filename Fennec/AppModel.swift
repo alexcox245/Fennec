@@ -48,6 +48,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var hasCompletedOnboardingRepair = false
     @Published private(set) var onboardingFoxRequestCount = 0
     @Published private(set) var manualFoxRequestCount = 0
+    @Published private(set) var previewFoxRequestCount = 0
     /// The helper's rate limiter, phrased for the user. Transient.
     @Published private(set) var throttleNotice: String?
     /// True between pressing Repair Audio Now and the safety scan returning.
@@ -90,6 +91,7 @@ final class AppModel: ObservableObject {
     private var onboardingFoxStarted = false
     private var manualFoxBurstID: UUID?
     private var manualFoxBurstStarted = false
+    private var previewFoxBurstID: UUID?
     private var updaterInstallationPending = false
     private var updatePreparationID: UUID?
     private var updatePreparationCancelled = false
@@ -109,10 +111,15 @@ final class AppModel: ObservableObject {
         notificationController = NotificationController()
         WindowPresenter.shared.configureRepairFox(settings: settings)
         WindowPresenter.shared.onManualFoxBurstFinished = { [weak self] id in
-            guard self?.manualFoxBurstID == id else { return }
-            self?.manualFoxBurstID = nil
-            self?.manualFoxBurstStarted = false
-            self?.manualFoxRequestCount = 0
+            guard let self else { return }
+            if self.manualFoxBurstID == id {
+                self.manualFoxBurstID = nil
+                self.manualFoxBurstStarted = false
+                self.manualFoxRequestCount = 0
+            } else if self.previewFoxBurstID == id {
+                self.previewFoxBurstID = nil
+                self.previewFoxRequestCount = 0
+            }
         }
 
         notificationController.onRepairRequested = { [weak self] episodeID in
@@ -412,7 +419,7 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// The user pressed Done in the first-run window.
+    /// The user finished or dismissed the first-run window.
     func completeFirstRun() {
         settings.hasCompletedFirstRun = true
     }
@@ -501,15 +508,6 @@ final class AppModel: ObservableObject {
             helper: helperManager.state,
             loginItem: loginItemManager.state,
             notificationsAuthorized: notificationController.isAuthorized,
-            repairMode: settings.repairMode,
-            location: installLocation
-        )
-    }
-
-    var isFullySetUp: Bool {
-        SetupChecklist.isReady(
-            helper: helperManager.state,
-            loginItem: loginItemManager.state,
             repairMode: settings.repairMode,
             location: installLocation
         )
@@ -669,11 +667,31 @@ final class AppModel: ObservableObject {
 
     // MARK: User-initiated repair
 
+    /// Preview uses the same bounded animation queue as a manual repair,
+    /// without entering any audio or privileged repair path.
+    func requestPreviewFox() {
+        if previewFoxBurstID != nil {
+            guard previewFoxRequestCount < RepairFoxBurst.maximumTotal else { return }
+            if WindowPresenter.shared.queueOnboardingFox() {
+                previewFoxRequestCount += 1
+            }
+            return
+        }
+        guard !isRepairing, !isPreparingRepair, manualFoxBurstID == nil,
+              onboardingFoxRequestCount == 0,
+              WindowPresenter.shared.canShowRepairFoxBurst else { return }
+        let id = UUID()
+        guard WindowPresenter.shared.startManualFoxBurst(for: id) else { return }
+        previewFoxBurstID = id
+        previewFoxRequestCount = 1
+    }
+
     /// Every Repair Audio control takes this route. The first click retains
     /// the normal safety and privilege checks; while its fox burst is alive,
     /// later clicks only request another bounded crossing.
     func requestRepairButton(for episodeID: UUID? = nil) {
         guard !updaterInstallationPending else { return }
+        endPreviewFoxBurst()
         if manualFoxBurstID != nil {
             guard manualFoxRequestCount < RepairFoxBurst.maximumTotal else { return }
             if !manualFoxBurstStarted || WindowPresenter.shared.queueOnboardingFox() {
@@ -830,6 +848,7 @@ final class AppModel: ObservableObject {
     /// untrue of the one repair the product asks them to run.
     func requestRehearsalRepair() {
         guard !updaterInstallationPending else { return }
+        endPreviewFoxBurst()
         if manualFoxBurstID != nil {
             requestRepairButton()
             return
@@ -1653,6 +1672,13 @@ final class AppModel: ObservableObject {
         manualFoxBurstID = nil
         manualFoxBurstStarted = false
         manualFoxRequestCount = 0
+    }
+
+    private func endPreviewFoxBurst() {
+        guard let id = previewFoxBurstID else { return }
+        WindowPresenter.shared.cancelOnboardingFox(for: id)
+        previewFoxBurstID = nil
+        previewFoxRequestCount = 0
     }
 
     // MARK: Verification

@@ -40,12 +40,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // a window someone can use should suppress a Dock reopen.
             guard !WindowPresenter.shared.hasInteractiveWindowOnScreen else { return true }
             guard let model = Self.model else { return true }
-            // Show the thing they were looking for: setup if it is unfinished,
-            // Settings if it is not.
-            if model.isFullySetUp {
-                WindowPresenter.shared.showSettings(model: model)
-            } else {
+            // Setup readiness can change after onboarding. Once dismissed,
+            // reopening Fennec goes to Settings even if setup needs attention.
+            if model.settings.shouldShowWelcomeOnReopen {
                 WindowPresenter.shared.showWelcome(model: model)
+            } else {
+                WindowPresenter.shared.showSettings(model: model)
             }
             return true
         }

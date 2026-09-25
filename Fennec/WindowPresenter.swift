@@ -158,7 +158,6 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     func queueOnboardingFox() -> Bool { repairFox.queueOnboardingReplay() }
     func cancelOnboardingFox(for attemptID: UUID) { repairFox.cancelOnboarding(for: attemptID) }
     func resetOnboardingFox() { repairFox.resetOnboarding() }
-    func previewRepairFox() { repairFox.show(for: UUID()) }
 
     /// Shows the window for `id`, creating it the first time. Calling it again
     /// brings the existing window forward instead of opening a second copy.

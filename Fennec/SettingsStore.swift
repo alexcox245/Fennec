@@ -93,12 +93,15 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(cooldownSeconds, forKey: Key.cooldownSeconds) }
     }
 
-    /// Set when the user presses Done in the first-run window. Until then
-    /// Fennec opens that window on every launch, because an app whose entire
-    /// UI is one menu-bar glyph has no other way to be found.
+    /// Set when the user finishes or closes the first-run window. Until then
+    /// Fennec opens it on launch, because a menu-bar app is easy to miss.
     @Published var hasCompletedFirstRun: Bool {
         didSet { defaults.set(hasCompletedFirstRun, forKey: Key.hasCompletedFirstRun) }
     }
+
+    /// Setup can still need attention after onboarding is dismissed. Reopen
+    /// the welcome window only until the user has completed or closed it.
+    var shouldShowWelcomeOnReopen: Bool { !hasCompletedFirstRun }
 
     /// Persisted as two plain values so a stale timestamp can never outlive
     /// its meaning: an expired date simply resolves to "running" on the next
