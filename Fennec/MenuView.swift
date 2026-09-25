@@ -109,7 +109,7 @@ struct MenuView: View {
                     .fixedSize()
                     .help("Stop repairing automatically for a while. Repair Audio Now still works.")
 
-                    Text("Stops automatic repairs and repair windows.")
+                    Text("Stops automatic repairs and repair requests.")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                     Spacer()
@@ -498,7 +498,7 @@ struct MenuView: View {
 
     private var autoRepairDetail: String {
         guard settings.repairMode == .automatic else {
-            return "Fennec opens a repair window when it hears crackling."
+            return "Fennec asks by notification when it hears crackling."
         }
         if let pauseStatus = model.pauseStatusText {
             return "\(pauseStatus). Repair Audio Now still works."

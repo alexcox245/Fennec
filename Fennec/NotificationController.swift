@@ -162,6 +162,19 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         post(content, identifier: Identifier.detection)
     }
 
+    /// Ask me first, and automatic mode when its helper is unavailable.
+    /// The notification click itself authorizes the repair attempt.
+    func postRepairRequest(reason: String, episodeID: UUID) {
+        let content = UNMutableNotificationContent()
+        content.title = RepairCopy.notificationRepairQuestion
+        content.body = RepairCopy.notificationRepairRequest(reason: reason)
+        content.categoryIdentifier = Category.detected
+        content.interruptionLevel = .active
+        content.sound = .default
+        content.userInfo = ["episodeID": episodeID.uuidString]
+        post(content, identifier: Identifier.detection)
+    }
+
     /// Stable per-class identifiers, so a new banner *replaces* the previous
     /// one of its kind instead of stacking. Notification Centre should never
     /// accumulate a wall of Fennec.
@@ -243,11 +256,12 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
             case Action.ignore:
                 self.onIgnoreRequested?(episodeID)
             case UNNotificationDefaultActionIdentifier:
-                // Clicking the banner is what people actually do, and in an
-                // LSUIElement app it used to do literally nothing, which for
-                // the success and resume banners, neither of which has any
-                // buttons, meant they were inert end to end.
-                self.onShowActivityRequested?()
+                if response.notification.request.content.categoryIdentifier == Category.detected,
+                   episodeID != nil {
+                    self.onRepairRequested?(episodeID)
+                } else {
+                    self.onShowActivityRequested?()
+                }
             default:
                 break
             }

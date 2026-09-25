@@ -107,6 +107,14 @@ final class RepairCopyTests: XCTestCase {
 
     // MARK: Notifications (the headline moment)
 
+    func testRepairRequestNotificationExplainsTheClickAndPassword() {
+        XCTAssertEqual(RepairCopy.notificationRepairQuestion, "Repair audio?")
+        XCTAssertEqual(
+            RepairCopy.notificationRepairRequest(reason: "Fennec heard crackling."),
+            "Fennec heard crackling. Repairing stops all sound. Click to repair; macOS may ask for your password."
+        )
+    }
+
     func testAutomaticSuccessSaysCrackleResolved() {
         let record = Fixture.repair(
             at: Fixture.epoch,
@@ -253,7 +261,9 @@ final class RepairCopyTests: XCTestCase {
             RepairCopy.foxSection, RepairCopy.foxSetting, RepairCopy.foxPreview, RepairCopy.foxPreviewHelp,
             RepairCopy.foxDetail, RepairCopy.foxDisabledDetail, RepairCopy.foxReducedMotion,
             RepairCopy.promptTitle, RepairCopy.promptMessage(deviceName: "Studio Display Speakers"),
-            RepairCopy.promptConsequence, RepairCopy.promptRepairTitle, RepairCopy.promptDismissTitle
+            RepairCopy.promptConsequence, RepairCopy.promptRepairTitle, RepairCopy.promptDismissTitle,
+            RepairCopy.notificationRepairQuestion,
+            RepairCopy.notificationRepairRequest(reason: "Fennec heard crackling.")
         ]
         for record in samples {
             strings += [

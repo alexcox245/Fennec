@@ -123,7 +123,7 @@ struct SettingsView: View {
             Section("Notifications") {
                 Toggle("Tell me after Fennec repairs the audio", isOn: $settings.notifyOnRepair)
                 Toggle("Tell me when crackling is detected but not repaired", isOn: $settings.notifyOnDetection)
-                Text("These switches control banners. Ask me first still opens a repair window.")
+                Text("Ask me first always sends a repair request notification.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -270,7 +270,7 @@ struct SettingsView: View {
                     }
                     .fixedSize()
                 }
-                Text("Pausing stops automatic repairs and detected repair windows. Repair Audio Now still works, and timed pauses expire on their own.")
+                Text("Pausing stops automatic repairs and detected repair requests. Repair Audio Now still works, and timed pauses expire on their own.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

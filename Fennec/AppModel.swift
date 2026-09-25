@@ -71,6 +71,7 @@ final class AppModel: ObservableObject {
     private let eventLogger = EventLogger()
     private let systemEvents = SystemEventObserver()
     private var faultEpisodes = FaultEpisodePolicy()
+    private var notifiedRepairEpisodeID: UUID?
     private var decisionByEpisode: [UUID: DetectionDecision] = [:]
     private var deviceUIDByEpisode: [UUID: String] = [:]
     private var pendingManualDecision: DetectionDecision?
@@ -128,7 +129,13 @@ final class AppModel: ObservableObject {
         }
 
         notificationController.onRepairRequested = { [weak self] episodeID in
-            self?.requestRepairButton(for: episodeID)
+            if let episodeID {
+                // The notification click is the repair decision. Keep the
+                // safety scan, then let macOS ask for a password if needed.
+                self?.requestManualRepair(for: episodeID, approvedByNotification: true)
+            } else {
+                self?.requestRepairButton()
+            }
         }
         notificationController.onIgnoreRequested = { [weak self] episodeID in
             guard let episodeID else { return }
@@ -719,7 +726,7 @@ final class AppModel: ObservableObject {
         requestManualRepair(for: episodeID)
     }
 
-    func requestManualRepair(for episodeID: UUID? = nil) {
+    func requestManualRepair(for episodeID: UUID? = nil, approvedByNotification: Bool = false) {
         guard !updaterInstallationPending, !isRepairing, !isPreparingRepair else { return }
         if let episodeID {
             guard faultEpisodes.isCurrent(episodeID) else { return }
@@ -743,7 +750,10 @@ final class AppModel: ObservableObject {
 
             guard pendingManualEpisodeIsValid() else { return }
             if report.canAutoRepair {
-                await beginManualRepair(decision: pendingManualDecision)
+                await beginManualRepair(
+                    decision: pendingManualDecision,
+                    approvedByNotification: approvedByNotification
+                )
             } else {
                 manualRepairWarning = ManualRepairWarning(
                     message: report.blockers.joined(separator: "\n\n")
@@ -808,20 +818,19 @@ final class AppModel: ObservableObject {
         if closeWindow { WindowPresenter.shared.closeRepairPrompt() }
     }
 
-    private func presentDetectedRepairPrompt(
+    private func notifyDetectedRepairRequest(
         decision: DetectionDecision,
         device: AudioDeviceSnapshot,
         episodeID: UUID
     ) {
         guard currentDevice.uid == device.uid, faultEpisodes.mayPrompt(for: episodeID) else { return }
-        guard promptedRepair?.episodeID != episodeID else { return }
-        promptedRepair = DetectedRepairPrompt(
-            episodeID: episodeID,
-            decision: decision,
-            deviceName: device.name,
-            deviceUID: device.uid
-        )
-        WindowPresenter.shared.showRepairPrompt(model: self)
+        guard notifiedRepairEpisodeID != episodeID else { return }
+        guard notificationController.isAuthorized else {
+            recordSkipped("A repair decision needs notifications, but Fennec notifications are off.")
+            return
+        }
+        notifiedRepairEpisodeID = episodeID
+        notificationController.postRepairRequest(reason: decision.plainReason, episodeID: episodeID)
     }
 
     private func handleSuccessfulLogCoverage(from: Date, through: Date, eventDates: [Date]) {
@@ -836,6 +845,7 @@ final class AppModel: ObservableObject {
               let endedEpisode = faultEpisodes.observeSuccessfulCoverage(from: from, through: through) else { return }
         decisionByEpisode.removeValue(forKey: endedEpisode)
         deviceUIDByEpisode.removeValue(forKey: endedEpisode)
+        if notifiedRepairEpisodeID == endedEpisode { notifiedRepairEpisodeID = nil }
         if promptedRepair?.episodeID == endedEpisode {
             promptedRepair = nil
             WindowPresenter.shared.closeRepairPrompt()
@@ -910,7 +920,10 @@ final class AppModel: ObservableObject {
         return healed
     }
 
-    private func beginManualRepair(decision: DetectionDecision?) async {
+    private func beginManualRepair(
+        decision: DetectionDecision?,
+        approvedByNotification: Bool = false
+    ) async {
         guard !updaterInstallationPending, pendingManualEpisodeIsValid() else { return }
         let trigger: RepairRecord.Trigger = isRehearsal ? .rehearsal : .manual
         if helperManager.state.isReachable {
@@ -922,6 +935,10 @@ final class AppModel: ObservableObject {
         guard pendingManualEpisodeIsValid() else { return }
         if healed {
             await performRepair(trigger: trigger, decision: decision, viaAdministratorPrompt: false)
+            return
+        }
+        if approvedByNotification {
+            await performRepair(trigger: trigger, decision: decision, viaAdministratorPrompt: true)
             return
         }
         let reason: String
@@ -1080,6 +1097,7 @@ final class AppModel: ObservableObject {
         currentDevice = batch.device
 
         if !previousDeviceUID.isEmpty, previousDeviceUID != batch.device.uid {
+            notifiedRepairEpisodeID = nil
             if let episodeID = promptedRepair?.episodeID {
                 dismissDetectedRepairPrompt(episodeID: episodeID)
             }
@@ -1306,7 +1324,7 @@ final class AppModel: ObservableObject {
         }
 
         if settings.repairMode == .askFirst {
-            presentDetectedRepairPrompt(decision: decision, device: device, episodeID: episodeID)
+            notifyDetectedRepairRequest(decision: decision, device: device, episodeID: episodeID)
             return
         }
 
@@ -1343,7 +1361,7 @@ final class AppModel: ObservableObject {
             return
         }
         if settings.repairMode == .askFirst {
-            presentDetectedRepairPrompt(decision: decision, device: device, episodeID: episodeID)
+            notifyDetectedRepairRequest(decision: decision, device: device, episodeID: episodeID)
             return
         }
 
@@ -1381,7 +1399,7 @@ final class AppModel: ObservableObject {
             return
         }
         if settings.repairMode == .askFirst {
-            presentDetectedRepairPrompt(decision: decision, device: device, episodeID: episodeID)
+            notifyDetectedRepairRequest(decision: decision, device: device, episodeID: episodeID)
             return
         }
         if settings.skipBluetooth && device.transport.isBluetooth {
@@ -1393,9 +1411,9 @@ final class AppModel: ObservableObject {
 
         guard helperManager.state.isReachable else {
             // The saved preference remains automatic. A repair that needs an
-            // administrator password still requires a foreground decision.
+            // administrator password still requires a notification click.
             recordSkipped(RepairCopy.helperBlocker(for: helperManager.state))
-            presentDetectedRepairPrompt(decision: decision, device: device, episodeID: episodeID)
+            notifyDetectedRepairRequest(decision: decision, device: device, episodeID: episodeID)
             return
         }
 
@@ -1447,7 +1465,7 @@ final class AppModel: ObservableObject {
                 return
             }
             if settings.repairMode == .askFirst {
-                presentDetectedRepairPrompt(
+                notifyDetectedRepairRequest(
                     decision: decision, device: automaticDevice, episodeID: automaticEpisodeID
                 )
                 return

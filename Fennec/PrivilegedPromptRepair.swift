@@ -20,8 +20,8 @@ enum PrivilegedPromptRepair {
     }
 
     /// The exact command the administrator prompt will run. Shown to the user
-    /// verbatim before they approve it, so the dialog is never a surprise and
-    /// the disclosure can never drift from the behaviour.
+    /// in the onboarding and About disclosures. A notification click is the
+    /// user's consent before macOS presents its password dialog.
     static let command = "/usr/bin/killall -TERM coreaudiod"
 
     static func restartCoreAudio() async throws -> String {

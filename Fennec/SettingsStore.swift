@@ -17,7 +17,7 @@ enum RepairMode: String, CaseIterable, Identifiable, Sendable {
     var detail: String {
         switch self {
         case .automatic: return "Repair crackling when the safety checks allow it."
-        case .askFirst: return "Show a repair window when crackling is detected."
+        case .askFirst: return "Ask by notification when crackling is detected."
         }
     }
 }

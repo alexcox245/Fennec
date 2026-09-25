@@ -16,6 +16,7 @@ import Foundation
 /// a password dialog has been told something false by omission.
 enum PrivilegeDisclosure {
 
+
     struct Item: Identifiable, Equatable, Sendable {
         let id: String
         let title: String
@@ -55,8 +56,9 @@ enum PrivilegeDisclosure {
                 id: "prompt",
                 title: "An administrator prompt, only if you ask",
                 detail: "If the helper is not enabled, Fennec can run the same command through a "
-                    + "standard macOS password prompt instead. It always asks you first and always "
-                    + "shows you the command. It will never do this on its own after a failure.",
+                    + "standard macOS password prompt instead. You must click Repair Audio in its "
+                    + "notification or another repair control first. The exact command is listed "
+                    + "above. Fennec never does this on its own after a failure.",
                 code: nil
             ),
             Item(

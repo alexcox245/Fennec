@@ -50,6 +50,11 @@ enum RepairCopy {
     static let promptConsequence = "Repairing stops all sound on this Mac."
     static let promptRepairTitle = "Repair Audio"
     static let promptDismissTitle = "Not now"
+    static let notificationRepairQuestion = "Repair audio?"
+
+    static func notificationRepairRequest(reason: String) -> String {
+        "\(reason) Repairing stops all sound. Click to repair; macOS may ask for your password."
+    }
 
     static func promptMessage(deviceName: String) -> String {
         let device = deviceName.isEmpty ? "your speakers" : deviceName
