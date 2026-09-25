@@ -77,6 +77,8 @@ final class AppModel: ObservableObject {
     private var pendingManualDecision: DetectionDecision?
     private var pendingManualEpisodeID: UUID?
     private var pendingManualDeviceUID: String?
+    private var pendingAutomaticSetupRequested = false
+    private var pendingNotificationApproved = false
     private var suppressSignalsUntil = Date.distantPast
     private var detectionTaskActive = false
     /// Keyed on the last *attempt*, not the last success. A machine whose
@@ -128,13 +130,19 @@ final class AppModel: ObservableObject {
             }
         }
 
-        notificationController.onRepairRequested = { [weak self] episodeID in
+        notificationController.onRepairRequested = { [weak self] episodeID, offerAutomaticSetup in
+            guard let self else { return }
             if let episodeID {
+                guard self.faultEpisodes.mayPrompt(for: episodeID) else { return }
                 // The notification click is the repair decision. Keep the
                 // safety scan, then let macOS ask for a password if needed.
-                self?.requestManualRepair(for: episodeID, approvedByNotification: true)
+                self.requestManualRepair(
+                    for: episodeID,
+                    approvedByNotification: true,
+                    offerAutomaticSetup: offerAutomaticSetup
+                )
             } else {
-                self?.requestRepairButton()
+                self.requestRepairButton()
             }
         }
         notificationController.onIgnoreRequested = { [weak self] episodeID in
@@ -726,7 +734,11 @@ final class AppModel: ObservableObject {
         requestManualRepair(for: episodeID)
     }
 
-    func requestManualRepair(for episodeID: UUID? = nil, approvedByNotification: Bool = false) {
+    func requestManualRepair(
+        for episodeID: UUID? = nil,
+        approvedByNotification: Bool = false,
+        offerAutomaticSetup: Bool = false
+    ) {
         guard !updaterInstallationPending, !isRepairing, !isPreparingRepair else { return }
         if let episodeID {
             guard faultEpisodes.isCurrent(episodeID) else { return }
@@ -735,6 +747,8 @@ final class AppModel: ObservableObject {
         pendingManualDecision = episodeID.flatMap { decisionByEpisode[$0] }
         pendingManualDeviceUID = episodeID.flatMap { deviceUIDByEpisode[$0] }
             ?? (episodeID == nil ? nil : currentDevice.uid)
+        pendingAutomaticSetupRequested = offerAutomaticSetup
+        pendingNotificationApproved = approvedByNotification
         isPreparingRepair = true
         throttleNotice = nil
         Task {
@@ -767,7 +781,13 @@ final class AppModel: ObservableObject {
     func confirmManualRepair() {
         manualRepairWarning = nil
         guard pendingManualEpisodeIsValid() else { return }
-        Task { await beginManualRepair(decision: pendingManualDecision) }
+        let decision = pendingManualDecision
+        let approvedByNotification = pendingNotificationApproved
+        isPreparingRepair = true
+        Task {
+            defer { isPreparingRepair = false }
+            await beginManualRepair(decision: decision, approvedByNotification: approvedByNotification)
+        }
     }
 
     func cancelManualRepair() {
@@ -778,6 +798,8 @@ final class AppModel: ObservableObject {
         pendingManualEpisodeID = nil
         pendingManualDecision = nil
         pendingManualDeviceUID = nil
+        pendingAutomaticSetupRequested = false
+        pendingNotificationApproved = false
         rehearsalRequested = false
         resetPendingOnboardingFox()
         endManualFoxBurst()
@@ -803,6 +825,8 @@ final class AppModel: ObservableObject {
             pendingManualEpisodeID = nil
             pendingManualDecision = nil
             pendingManualDeviceUID = nil
+            pendingAutomaticSetupRequested = false
+            pendingNotificationApproved = false
             resetPendingOnboardingFox()
             endManualFoxBurst()
             record(.init(kind: .repairSkipped, summary: "The audio output or crackling episode changed while the repair was being prepared."))
@@ -830,7 +854,17 @@ final class AppModel: ObservableObject {
             return
         }
         notifiedRepairEpisodeID = episodeID
-        notificationController.postRepairRequest(reason: decision.plainReason, episodeID: episodeID)
+        let offerAutomaticSetup: Bool
+        if case .applications = installLocation {
+            offerAutomaticSetup = !helperManager.isRegistered
+        } else {
+            offerAutomaticSetup = false
+        }
+        notificationController.postRepairRequest(
+            reason: decision.plainReason,
+            episodeID: episodeID,
+            offerAutomaticSetup: offerAutomaticSetup
+        )
     }
 
     private func handleSuccessfulLogCoverage(from: Date, through: Date, eventDates: [Date]) {
@@ -927,18 +961,27 @@ final class AppModel: ObservableObject {
         guard !updaterInstallationPending, pendingManualEpisodeIsValid() else { return }
         let trigger: RepairRecord.Trigger = isRehearsal ? .rehearsal : .manual
         if helperManager.state.isReachable {
-            await performRepair(trigger: trigger, decision: decision, viaAdministratorPrompt: false)
+            await performRepair(
+                trigger: trigger, decision: decision, viaAdministratorPrompt: false,
+                enableAutomaticAfterRepair: pendingAutomaticSetupRequested
+            )
             return
         }
         // Before asking for a password, try the fix that needs none.
         let healed = await healSilentHelper(userInitiated: true)
         guard pendingManualEpisodeIsValid() else { return }
         if healed {
-            await performRepair(trigger: trigger, decision: decision, viaAdministratorPrompt: false)
+            await performRepair(
+                trigger: trigger, decision: decision, viaAdministratorPrompt: false,
+                enableAutomaticAfterRepair: pendingAutomaticSetupRequested
+            )
             return
         }
         if approvedByNotification {
-            await performRepair(trigger: trigger, decision: decision, viaAdministratorPrompt: true)
+            await performRepair(
+                trigger: trigger, decision: decision, viaAdministratorPrompt: true,
+                enableAutomaticAfterRepair: pendingAutomaticSetupRequested
+            )
             return
         }
         let reason: String
@@ -963,7 +1006,16 @@ final class AppModel: ObservableObject {
         administratorRepairRequest = nil
         guard pendingManualEpisodeIsValid() else { return }
         let trigger: RepairRecord.Trigger = isRehearsal ? .rehearsal : .manual
-        Task { await performRepair(trigger: trigger, decision: pendingManualDecision, viaAdministratorPrompt: true) }
+        let decision = pendingManualDecision
+        let enableAutomaticAfterRepair = pendingAutomaticSetupRequested
+        isPreparingRepair = true
+        Task {
+            defer { isPreparingRepair = false }
+            await performRepair(
+                trigger: trigger, decision: decision, viaAdministratorPrompt: true,
+                enableAutomaticAfterRepair: enableAutomaticAfterRepair
+            )
+        }
     }
 
     func cancelAdministratorRepair() {
@@ -974,6 +1026,8 @@ final class AppModel: ObservableObject {
         pendingManualEpisodeID = nil
         pendingManualDecision = nil
         pendingManualDeviceUID = nil
+        pendingAutomaticSetupRequested = false
+        pendingNotificationApproved = false
         rehearsalRequested = false
         resetPendingOnboardingFox()
         endManualFoxBurst()
@@ -1433,6 +1487,7 @@ final class AppModel: ObservableObject {
         trigger: RepairRecord.Trigger,
         decision: DetectionDecision?,
         viaAdministratorPrompt: Bool,
+        enableAutomaticAfterRepair: Bool = false,
         automaticDevice: AudioDeviceSnapshot? = nil,
         automaticEpisodeID: UUID? = nil,
         automaticSafetyPreferences: (Bool, Bool)? = nil
@@ -1599,6 +1654,8 @@ final class AppModel: ObservableObject {
             pendingManualEpisodeID = nil
             pendingManualDecision = nil
             pendingManualDeviceUID = nil
+            pendingAutomaticSetupRequested = false
+            pendingNotificationApproved = false
             rehearsalRequested = false
             return
         } catch let error as HelperCallError where error.isThrottled {
@@ -1615,6 +1672,8 @@ final class AppModel: ObservableObject {
             pendingManualEpisodeID = nil
             pendingManualDecision = nil
             pendingManualDeviceUID = nil
+            pendingAutomaticSetupRequested = false
+            pendingNotificationApproved = false
             rehearsalRequested = false
             return
         } catch {
@@ -1657,6 +1716,18 @@ final class AppModel: ObservableObject {
             pendingManualEpisodeID = nil
             pendingManualDecision = nil
             pendingManualDeviceUID = nil
+            pendingAutomaticSetupRequested = false
+            pendingNotificationApproved = false
+        }
+        if repairCompleted && enableAutomaticAfterRepair {
+            settings.repairMode = .automatic
+            if !helperManager.isRegistered {
+                record(.init(
+                    kind: .helper,
+                    summary: "Automatic repair setup was requested after an approved manual repair."
+                ))
+                helperManager.register()
+            }
         }
     }
 

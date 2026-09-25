@@ -19,11 +19,12 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
 
     private enum Category {
         static let detected = "CRACKLE_DETECTED"
+        static let detectedSetup = "CRACKLE_DETECTED_SETUP"
         static let repaired = "AUDIO_REPAIRED"
         static let failed = "REPAIR_FAILED"
     }
 
-    var onRepairRequested: ((UUID?) -> Void)?
+    var onRepairRequested: ((UUID?, Bool) -> Void)?
     var onIgnoreRequested: ((UUID?) -> Void)?
     var onShowActivityRequested: (() -> Void)?
 
@@ -41,6 +42,15 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
                 identifier: Category.detected,
                 actions: [
                     UNNotificationAction(identifier: Action.repair, title: "Repair Audio", options: [.foreground]),
+                    UNNotificationAction(identifier: Action.ignore, title: "Ignore", options: [])
+                ],
+                intentIdentifiers: [],
+                options: []
+            ),
+            UNNotificationCategory(
+                identifier: Category.detectedSetup,
+                actions: [
+                    UNNotificationAction(identifier: Action.repair, title: "Repair & Set Up", options: [.foreground]),
                     UNNotificationAction(identifier: Action.ignore, title: "Ignore", options: [])
                 ],
                 intentIdentifiers: [],
@@ -164,14 +174,21 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
 
     /// Ask me first, and automatic mode when its helper is unavailable.
     /// The notification click itself authorizes the repair attempt.
-    func postRepairRequest(reason: String, episodeID: UUID) {
+    func postRepairRequest(reason: String, episodeID: UUID, offerAutomaticSetup: Bool) {
         let content = UNMutableNotificationContent()
-        content.title = RepairCopy.notificationRepairQuestion
-        content.body = RepairCopy.notificationRepairRequest(reason: reason)
-        content.categoryIdentifier = Category.detected
+        content.title = offerAutomaticSetup
+            ? RepairCopy.notificationRepairSetupQuestion
+            : RepairCopy.notificationRepairQuestion
+        content.body = offerAutomaticSetup
+            ? RepairCopy.notificationRepairSetupRequest(reason: reason)
+            : RepairCopy.notificationRepairRequest(reason: reason)
+        content.categoryIdentifier = offerAutomaticSetup ? Category.detectedSetup : Category.detected
         content.interruptionLevel = .active
         content.sound = .default
-        content.userInfo = ["episodeID": episodeID.uuidString]
+        content.userInfo = [
+            "episodeID": episodeID.uuidString,
+            "offerAutomaticSetup": offerAutomaticSetup
+        ]
         post(content, identifier: Identifier.detection)
     }
 
@@ -248,17 +265,20 @@ final class NotificationController: NSObject, ObservableObject, UNUserNotificati
         let identifier = response.actionIdentifier
         let episodeID = (response.notification.request.content.userInfo["episodeID"] as? String)
             .flatMap(UUID.init(uuidString:))
+        let offerAutomaticSetup = response.notification.request.content.userInfo["offerAutomaticSetup"] as? Bool ?? false
         Task { @MainActor [weak self] in
             guard let self else { return }
             switch identifier {
             case Action.repair:
-                self.onRepairRequested?(episodeID)
+                self.onRepairRequested?(episodeID, offerAutomaticSetup)
             case Action.ignore:
                 self.onIgnoreRequested?(episodeID)
             case UNNotificationDefaultActionIdentifier:
-                if response.notification.request.content.categoryIdentifier == Category.detected,
+                if [Category.detected, Category.detectedSetup].contains(
+                    response.notification.request.content.categoryIdentifier
+                ),
                    episodeID != nil {
-                    self.onRepairRequested?(episodeID)
+                    self.onRepairRequested?(episodeID, offerAutomaticSetup)
                 } else {
                     self.onShowActivityRequested?()
                 }

@@ -76,9 +76,10 @@ final class PrivilegeDisclosureTests: XCTestCase {
         let item = try XCTUnwrap(PrivilegeDisclosure.privilegedActions.first { $0.id == "prompt" })
         XCTAssertTrue(item.detail.contains("password"))
         XCTAssertTrue(
-            item.detail.contains("click Repair Audio"),
+            item.detail.contains("click its repair notification"),
             "The whole point is that this never happens unannounced."
         )
+        XCTAssertTrue(item.detail.contains("separate approval in Login Items"))
     }
 
     func testTheDisclosedCommandIsTheCommandThatRuns() throws {

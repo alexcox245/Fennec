@@ -51,9 +51,14 @@ enum RepairCopy {
     static let promptRepairTitle = "Repair Audio"
     static let promptDismissTitle = "Not now"
     static let notificationRepairQuestion = "Repair audio?"
+    static let notificationRepairSetupQuestion = "Repair audio and enable automatic repairs?"
 
     static func notificationRepairRequest(reason: String) -> String {
         "\(reason) Repairing stops all sound. Click to repair; macOS may ask for your password."
+    }
+
+    static func notificationRepairSetupRequest(reason: String) -> String {
+        "\(reason) Repairing stops all sound. Click to repair and set up automatic repairs. macOS may ask for your password and separate helper approval."
     }
 
     static func promptMessage(deviceName: String) -> String {
