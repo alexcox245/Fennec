@@ -610,3 +610,35 @@ the existing App Intents metadata notice occur. The fix is local source
 only; installed build 2 and public build 3 do not contain it. T-064 remains
 in progress for installation/relaunch, helper lifecycle, download/install
 cancellation, repair-in-progress gating, and approval-required fallback.
+
+### Owner-performed installation and relaunch (T-064)
+
+The owner clicked Install & Relaunch after the approval request. Read-only
+checks then established:
+
+- `/Applications/Fennec.app` is build 3 and running as PID 20765, replacing
+  the previously running build 2 PID 926. Its executable SHA-256 is
+  `ff34b2d5eabc18bcf8ed285f8986c455e0bd02b17e3e49ce38bd9cc2089716da`,
+  identical to the published notarized app.
+- The installed helper matches the published helper byte for byte. launchd
+  reports parent bundle version 3 and running PID 20884, replacing the
+  previous helper PID 934. Strict signatures pass, Team ID is 249X253HS3,
+  and Gatekeeper accepts the installed app as Notarized Developer ID.
+- The new app logged monitoring start at 13:18:24 UTC, an enabled-but-silent
+  helper registration rebuild at 13:18:32, and an answering helper at
+  13:18:40. The helper-restoration preference was subsequently absent.
+- `defaults read ... repairMode` reports `askFirst`, despite Automatic being
+  selected in the pre-update Settings window. The final helper is running
+  and answering, but automatic repair mode was not retained. T-103 records
+  this unexpected fallback and a possible overlap between update restoration
+  and the Automatic launch healer; the exact cause remains unproven.
+- No repair was triggered for this validation, and no repair event appears
+  in the post-update log excerpt. The agent did not change repair mode or
+  request another helper registration.
+
+Check, signed download/extraction, app replacement, relaunch, and eventual
+helper reachability are now verified for build 2→3. This was not a clean
+helper restoration with the original mode preserved. Live download/install
+cancellation, repair-in-progress gating, and a deliberately exercised
+approval-required fallback remain unverified, so T-064 stays in progress.
+The cancellation UI fix in cb5c84b is still local and is absent from build 3.
