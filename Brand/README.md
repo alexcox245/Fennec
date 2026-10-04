@@ -36,3 +36,5 @@ clock. Do not force every screen into a fixed crossing duration.
 The fox signals activity only. It has no success badge, sound, gold accent,
 interaction, or extra motion. Settings offers an opt-out and a preview;
 macOS Reduce Motion suppresses the crossing entirely.
+
+`Fennec-AppIcon-Rounded.png` is the 1254 × 1254 PNG variant with transparent outer corners, used by the repository README. The master artwork remains the source asset.
