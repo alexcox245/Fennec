@@ -1,7 +1,18 @@
 # Fennec
 
-A macOS menu-bar utility for one specific failure: Core Audio starts crackling
-under heavy local load and stays broken until `coreaudiod` is restarted.
+Hey!
+I built Fennec because my m1 mac audio output starts crackling when after working for a few hours.
+It's annoying to reset.
+Fennec watches the audio stream, detects crackling automatically, then simply resets it for you.
+
+The reset takes about 2-3 seconds which might sometimes be annoying so I've added some protections in:
+1. Does not reset when you're listening on bluetooth (the crackling doesn't affect bluetooth audio)
+2. Does not reset while your mic is in use like if you're on a call.
+3. Uses cooldown so it doesn't spam reset on you if the reset is not sticking
+
+To get more technical, I'll let Sol take it from here...
+
+Core Audio starts crackling under heavy local load and stays broken until `coreaudiod` is restarted.
 
 Fennec watches the current output device for missed real-time deadlines. When
 the fault is confirmed and its safety checks pass, it restarts Core Audio
