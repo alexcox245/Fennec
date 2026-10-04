@@ -771,3 +771,36 @@ T-104 is complete for local release creation. No publication, installation,
 helper registration, or audio repair was performed. Live fixed-candidate
 update/helper restoration remains unverified in T-064; Intel runtime remains
 unverified. The prospective asset URLs must be checked after publication.
+
+
+### Public 1.0.1 release and main merge (T-105 / T-060)
+
+The owner explicitly requested public download availability and merge to main.
+PR #15 (<https://github.com/alexcox245/Fennec/pull/15>) merged on 2026-10-04
+at `ab4b8956669e5ae3cd20d914c621cbfbf964ca07`. Its CI run
+<https://github.com/alexcox245/Fennec/actions/runs/37213328007> passes the
+source audit, all 306 standalone tests, all four app/helper build combinations,
+17 release signature/security checks, and the four-warning ceiling. The
+upstream README introduction and rounded icon are preserved; no app, helper,
+test, project, shared, or script source differs from archived source 4baf3d1.
+
+Release <https://github.com/alexcox245/Fennec/releases/tag/v1.0.1> was published
+as latest. Its tag points to release source `90c1c0d`, an ancestor of the main
+merge. All seven uploaded files were downloaded back and verified, then
+all seven public assets were anonymously downloaded and compared byte for
+byte with `build/Release-1.0.1/Publish/`. The public feed and all three
+local public enclosures verify against the notarized app's unchanged key.
+Latest DMG and feed URLs redirect to the v1.0.1 assets. Verification evidence
+is in `build/Release-1.0.1/PublicCheck/verification.json` and CI logs in
+`build/Release-1.0.1/ci-pr-15.log`.
+
+HostGator returned HTTP 406 to terminal HTTP checks. A fresh Chrome page loads
+correctly with “Stop mac audio crackling” and both download buttons pointing
+to GitHub's latest Fennec.dmg, which now resolves to the verified build 4.
+No hosting edit was needed. The browser snapshot and screenshots record this
+check. The DMG SHA-256 remains
+`60e335ea4d72c498f2c911af687924c44a29229aa36a1ef6a21e91def83bc8e5`.
+
+No app installation, helper registration, or audio repair was performed.
+Live build 4 installation/helper restoration and Intel runtime remain
+unverified; T-005/T-064 continue to own those supervised checks.
