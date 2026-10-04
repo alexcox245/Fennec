@@ -1,7 +1,14 @@
 # Changelog
 
-Notable changes, newest first. These are the milestones toward the first
-public release; no tag has been published yet.
+Notable changes, newest first.
+
+## 1.0.1 (build 4)
+
+- Preserve Automatic repair mode after an update when the approved helper
+  is slow to answer, and prevent launch recovery from racing restoration.
+- Retry helper registration once when it races macOS teardown; preserve
+  the approval-required fallback to Ask me first.
+- Re-enable Check for Updates after cancelling an update offer.
 
 ## 1.0 (build 2) — release candidate
 

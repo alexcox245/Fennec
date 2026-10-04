@@ -366,7 +366,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-104**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-105**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -397,6 +397,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-094 | P2 | Harden local log and repair-history storage | Open | · | A temporary events.jsonl symlink made the production logger append to an unrelated temporary file. Use descriptor-based symlink/ownership checks, private modes, and bounded history loading. Same-user integrity/availability issue; no root file write was demonstrated. |
 | T-095 | P1 | Verify generated feed signatures and define feed failure expiry | Open | · | T-100 replaced the grep with public-key verification of the feed and archives plus update security settings, covered by 17 regression checks in CI. Remaining: explicitly choose Sparkle's documented 20-day signed-feed failure fallback policy. Existing T-064 still owns supervised updater lifecycle validation. |
 | T-096 | P2 | Harden helper target identity and bound subprocess work | Open | · | Name-only pgrep included an inert user-owned coreaudiod impostor. Authenticate the actual daemon, bound/drain child output, use deadlines and a monotonic throttle, and define helper-side session policy. Root execution, output-flood stalls, and fast-user-switch behavior remain unverified. |
+| T-104 | P1 | Create the Xcode-signed/notarized release with both updater fixes | In progress | Codex / root / 2026-10-04 | Owner requested Xcode signing for all latest fixes. Prepare version 1.0.1 build 4, validate the candidate, use Organizer Direct Distribution and Export Notarized App, and verify/package the exported app plus signed update feed. Do not install or exercise helper/root repair without explicit approval. |
 
 
 
