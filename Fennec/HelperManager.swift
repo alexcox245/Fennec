@@ -186,6 +186,9 @@ final class HelperManager: ObservableObject {
 
     private let service = SMAppService.daemon(plistName: AppConstants.helperPlistName)
     private let client = HelperClient()
+    private let updateRestoration = HelperUpdateRestorationGate()
+
+    var isRestoringAfterUpdate: Bool { updateRestoration.isRestoring }
 
     /// Set while a registration rebuild is between its teardown and a
     /// resolved outcome, and persisted because that gap can outlive the
@@ -331,39 +334,34 @@ final class HelperManager: ObservableObject {
     /// Restores only a registration that was already present before the
     /// update. A missing approval leaves Fennec in prompted mode until the
     /// person enables the helper again.
-    func restoreRegistrationAfterUpdate() async -> Bool {
-        if service.status == .requiresApproval {
-            state = .awaitingApproval
-            return false
-        }
-
-        if service.status == .notRegistered || service.status == .notFound {
-            do {
-                try service.register()
-            } catch {
-                lastError = error.localizedDescription
-            }
-        }
-
-        for _ in 0..<10 {
-            switch service.status {
-            case .enabled:
-                state = .enabled(reachable: false)
-                for attempt in 0..<3 {
-                    if attempt > 0 { try? await Task.sleep(for: .seconds(1)) }
-                    if await confirmReachable() { return true }
+    func restoreRegistrationAfterUpdate() async -> HelperUpdateRestorationResult {
+        await updateRestoration.restore { [self] in
+            let result = await HelperUpdateRestoration.restore(
+                status: { [self] in
+                    switch self.service.status {
+                    case .enabled: return .enabled
+                    case .requiresApproval: return .requiresApproval
+                    case .notRegistered, .notFound: return .notRegistered
+                    @unknown default: return .unavailable
+                    }
+                },
+                register: { [self] in
+                    do { try self.service.register() }
+                    catch { self.lastError = error.localizedDescription }
+                },
+                ping: { [self] in await self.confirmReachable() },
+                pause: { seconds in
+                    try? await Task.sleep(for: .seconds(seconds))
                 }
-                return false
-            case .requiresApproval:
-                state = .awaitingApproval
-                return false
-            default:
-                try? await Task.sleep(for: .milliseconds(300))
+            )
+            switch result {
+            case .enabled(let reachable): state = .enabled(reachable: reachable)
+            case .requiresApproval: state = .awaitingApproval
+            case .unavailable:
+                state = .unavailable(lastError ?? "Could not restore the repair helper registration after the update.")
             }
+            return result
         }
-
-        refreshStatus(testReachability: true)
-        return false
     }
 
     func openApprovalSettings() {
@@ -391,6 +389,7 @@ final class HelperManager: ObservableObject {
     ///
     /// Returns `true` when the helper answers afterwards.
     func rebuildRegistration() async -> Bool {
+        await updateRestoration.waitUntilFinished()
         // Confirm the silence first. The last ping may be minutes old, and a
         // healthy registration must never be torn down over stale news.
         if await confirmReachable() { return true }

@@ -642,3 +642,35 @@ helper restoration with the original mode preserved. Live download/install
 cancellation, repair-in-progress gating, and a deliberately exercised
 approval-required fallback remain unverified, so T-064 stays in progress.
 The cancellation UI fix in cb5c84b is still local and is absent from build 3.
+
+### Automatic-mode preservation fix (T-103)
+
+Source inspection found two interacting failures: the post-update restoration
+and the launch healer could operate concurrently, and every false restoration
+result (including three unanswered pings from an enabled helper) selected
+Ask me first. The live log is consistent with that overlap; it does not record
+each restoration ping, so the exact failing ping is not established.
+
+The fix uses a typed restoration result. An enabled helper preserves the
+current repair mode even when still unreachable; its existing safety gates
+continue to prevent repair until it answers. Approval-required and unresolved
+registration outcomes still select Ask me first. Restoration retries registration
+once after teardown settles, with bounded waits. A coalescing restoration gate
+and the model's restoration task prevent the launch healer from rebuilding
+registration until restoration and its mode decision finish. New repair work
+remains gated during post-update restoration. The same outcome policy is used
+when an installation is cancelled and the prior helper needs restoring.
+
+Eight inert XCTest cases cover delayed pings, an enabled-but-unresponsive
+helper, approval-required status, registration restoration and teardown retry,
+bounded registration failure, approval loss during ping, and concurrent
+restoration/launch-healer waiting. Fake operations never call SMAppService, XPC,
+or repair. All 306 standalone tests pass. App and helper Debug/Release builds
+pass with only the four catalogued Swift warnings and existing App Intents
+metadata notices; source audit and regenerated manifest pass.
+
+No new app was installed or published for this fix, no helper registration was
+performed, and no repair was triggered. Installed/public build 3 remains the
+older code, and the installed repair preference was not changed. A supervised
+signed update using the fixed candidate is still required to verify this
+behavior with macOS Background Task Management; T-064 remains in progress.

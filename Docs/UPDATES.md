@@ -53,6 +53,22 @@ stapled archive, and verify both the feed and enclosure Ed25519 signatures
 against the exported app's `SUPublicEDKey`; an enclosure signature alone does
 not establish that the feed is signed.
 
+## Repair mode after an update
+
+After relaunch, Fennec restores only the helper registration that existed
+before Install & Relaunch. The selected repair mode stays unchanged while
+an approved helper starts responding; a failed ping does not switch
+Automatic to Ask me first. The normal launch recovery waits until update
+restoration and its mode decision finish, and repairs remain gated during
+that work. Registration restoration retries once if it races macOS teardown.
+
+If macOS requires approval again or registration cannot be restored, Fennec
+falls back to Ask me first. That mode does not start a background registration
+rebuild. Choosing Ask me first during restoration is also preserved.
+`HelperUpdateRestorationTests` exercises delayed pings, teardown/retry,
+approval changes, bounded failure, and concurrent callers using fake helper
+operations; it never contacts launchd or runs a repair.
+
 ## DMG installs and later updates
 
 The first-install download can use

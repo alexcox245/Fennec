@@ -106,6 +106,7 @@ final class AppModel: ObservableObject {
     /// enabled but that is not answering. The decision lives in the pure
     /// policy; the attempt lives in `healSilentHelper`.
     private var helperHealPolicy = HelperHealPolicy()
+    private var updateHelperRestorationTask: Task<Void, Never>?
 
     init() {
         settings = SettingsStore()
@@ -235,13 +236,16 @@ final class AppModel: ObservableObject {
         }
 
         if UserDefaults.standard.bool(forKey: FennecUpdater.helperWasRegisteredKey) {
-            Task { [weak self] in
+            updaterInstallationPending = true
+            updateHelperRestorationTask = Task { [weak self] in
                 guard let self else { return }
                 let restored = await helperManager.restoreRegistrationAfterUpdate()
-                if !restored {
+                if restored.needsPromptedMode {
                     settings.repairMode = .askFirst
                 }
                 UserDefaults.standard.removeObject(forKey: FennecUpdater.helperWasRegisteredKey)
+                updaterInstallationPending = false
+                updateHelperRestorationTask = nil
             }
         }
 
@@ -266,7 +270,9 @@ final class AppModel: ObservableObject {
         if settings.repairMode == .automatic {
             Task { [weak self] in
                 try? await Task.sleep(for: .seconds(8))
-                guard let self, self.settings.repairMode == .automatic else { return }
+                guard let self else { return }
+                await self.updateHelperRestorationTask?.value
+                guard self.settings.repairMode == .automatic else { return }
                 _ = await self.healSilentHelper(userInitiated: false)
             }
         }
@@ -927,6 +933,9 @@ final class AppModel: ObservableObject {
     /// log exists to admit to. Returns whether the helper answers now.
     private func healSilentHelper(userInitiated: Bool) async -> Bool {
         let state = helperManager.state
+        guard !updaterInstallationPending, !helperManager.isRestoringAfterUpdate else {
+            return state.isReachable
+        }
         guard helperHealPolicy.shouldAttempt(
             enabled: state.isEnabled,
             reachable: state.isReachable,
@@ -1079,7 +1088,7 @@ final class AppModel: ObservableObject {
     private func cancelUpdatePreparation(helperWasRegistered: Bool) async -> Bool {
         if helperWasRegistered {
             let restored = await helperManager.restoreRegistrationAfterUpdate()
-            if !restored { settings.repairMode = .askFirst }
+            if restored.needsPromptedMode { settings.repairMode = .askFirst }
         }
         UserDefaults.standard.removeObject(forKey: FennecUpdater.helperWasRegisteredKey)
         updaterInstallationPending = false
@@ -1101,7 +1110,7 @@ final class AppModel: ObservableObject {
             guard let self else { return }
             if helperWasRegistered {
                 let restored = await helperManager.restoreRegistrationAfterUpdate()
-                if !restored { settings.repairMode = .askFirst }
+                if restored.needsPromptedMode { settings.repairMode = .askFirst }
                 UserDefaults.standard.removeObject(forKey: FennecUpdater.helperWasRegisteredKey)
             }
             updaterInstallationPending = false
