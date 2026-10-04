@@ -1,6 +1,6 @@
 b4f799a080ed09e2c98be7e68745653bbcf80bcf66d0c1c189ce1d53e234d61a  ./.github/workflows/ci.yml
 889843dea70d4f39222c327485bbd9a131fc0dd9983778bbd1b86cf89638bc92  ./.gitignore
-e8e1a1df4caa848278ae6dad0601058e34d48d8e318b673f682a8dcfa7fbc3d0  ./AGENTS.md
+27e3ef9c5146b19811405a373f285eacacaed5d61ea3a748664c98d415cd7e33  ./AGENTS.md
 298d797f35a20453f4ca8a74856f43ab1d4472be0803577e41852844fc500dd7  ./Brand/Fennec-AppIcon-Master.png
 58cdf0bf4627e6c7348710d2d373854f746c0c3260b7cf2b5e46d99992da358c  ./Brand/ProductHunt/PROMPTS.md
 4ee6693ee7258fb9d41a03201452d5bf01f6e4c99bf586e512e570a228b9f61f  ./Brand/ProductHunt/README.md
@@ -145,5 +145,5 @@ eeccc6f1621c02c769c3e42f3d8c3c68ef5bde334eda837eba3a926554ccf682  ./Site/assets/
 7145500fd569b9d96744c34ca37208bf3afbe0455eb584d4ac82d090f08588ae  ./Site/assets/fennec-run.gif
 54769f4f2b5d14ab328de630c16c38355cb58d72040580f57265354f9d456afe  ./Site/assets/og-image.jpg
 d36fc645384295acbf2d8f7ea47eea5acd6581754e22e1ccfbcdae07be52e352  ./Site/assets/site.css
-32367eee00cc0ab7f6d1a00e8de012e167c9691d6250a86c7bbc9cfad0deee18  ./Site/index.html
+2d642a4c2cf54d19e7decd14a72ccef171463d3d84c3fc4dc34e293b35216dbb  ./Site/index.html
 2429f047b38868393d9f3b12e77cee3efefc3176031b677be5d5d0ff5257a1f8  ./UNINSTALL.md

@@ -356,7 +356,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-099**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-100**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -393,6 +393,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 
 | ID | Task | Completed | Commit | Notes |
 |---|---|---|---|---|
+| T-099 | Update the website headline and make both Mac buttons download the release archive | 2026-10-04 | This ledger commit | Updated local source and the existing HostGator homepage to the owner’s exact “Stop mac audio crackling” headline; both buttons now use the latest Fennec.zip asset URL. Fresh public response and Chrome render confirm the live changes; anonymous archive request returns HTTP 200 with attachment filename Fennec.zip. Browser download-event capture timed out, so actual browser download completion is unverified. All app/helper Debug and Release configurations, 298 standalone tests, and source audit pass. Existing hosting cache may show older HTML until refreshed. No installation, helper registration, repair, or updater installation exercised. |
 | T-098 | Research Show HN guidance and prepare an unpublished Fennec submission in the owner's browser | 2026-10-04 | This ledger commit | Read official Show HN guidelines and moderator presentation advice; verified MIT license, public repository, and live v1.0 release. Filled title, repository URL, and introduction in the logged-in Chrome submission form and verified all field values. Kept the tab open for owner handoff; never clicked submit. Told owner that HN prohibits generated text and to rewrite the draft in their own voice before publishing. No app sources or behavior changed; no audio repair, helper registration, or installation exercised. |
 | T-090 | Review Fennec's security from an adversarial perspective and document mitigations | 2026-10-04 | 40fad04 | Docs/SECURITY_REVIEW.md records six findings, inert evidence, attack prerequisites, and mitigations. Added T-091–T-096 for unresolved fixes. 298 tests, all four signed app/helper builds, source audit, and manifest verification pass; Gitleaks reports no matches across 95 commits. No application behavior changed. No helper lifecycle, live XPC exploitation, debugger injection, audio repair, or updater installation was exercised. |
 | T-089 | Add the landing page source to the Fennec repository and push it | 2026-10-04 | 0985b17 | Added the static site and local demo assets to `codex/onboarding-settings-fixes` and pushed to `alexcox245/Fennec`. JavaScript syntax, local asset references, and source audit pass. Hosting remains in T-087. |
