@@ -576,3 +576,37 @@ continue. No update was installed, and no helper registration or audio
 repair was performed. Check/download cancellation, Install & Relaunch,
 repair-in-progress gating, helper unregister/restore, relaunch, and
 approval-required fallback remain unverified; T-064 stays in progress.
+
+### Live check/download and cancellation results (T-064/T-102)
+
+After the owner opened About, installed build 2 successfully checked the
+signed public feed and offered build 3. Cancel returned the UI to idle but
+left Check for Updates disabled. Closing/reopening About did not fix it;
+a read-only helper-status refresh did. This is a real UI failure in the
+installed and published updater source, not a feed failure.
+
+A second explicit check and Download Update completed the real transfer
+and extraction, reaching “Version 1.0 is ready” with Install & Relaunch and
+Cancel. The updater waited for that installation choice. The owner was
+asked for approval because installation temporarily unregisters and then
+restores the existing root helper. No installation, helper mutation, or
+audio repair has been performed at this checkpoint. Screenshot evidence:
+`/tmp/fennec-updater-ready.png` and `/tmp/fennec-updater-cancel-stuck.png`.
+
+T-102 changes the wrapper to publish Sparkle’s KVO-compliant
+`canCheckForUpdates` property on the main run loop. Inert verification in
+`build/UpdaterValidation/AvailabilityProbe.swift` compiles the production
+Updater.swift with an AppModel stub that traps any installation attempt.
+It performs two manual signed-feed checks and dismisses each offer,
+requiring both restored availability and an observable wrapper notification.
+Both cycles pass with the fix. The identical probe against the previous
+source fails with “missing availability publication”, confirming that it
+detects this regression. The probe has a distinct bundle identifier and
+does not start audio monitoring or communicate with the privileged helper.
+
+All app/helper Debug and Release builds pass; all 298 standalone unit tests
+pass; the source audit passes. Only the catalogued four Swift warnings and
+the existing App Intents metadata notice occur. The fix is local source
+only; installed build 2 and public build 3 do not contain it. T-064 remains
+in progress for installation/relaunch, helper lifecycle, download/install
+cancellation, repair-in-progress gating, and approval-required fallback.

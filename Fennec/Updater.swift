@@ -285,7 +285,9 @@ final class FennecUpdater: NSObject, ObservableObject {
     static var hasUpdateCache: Bool { FennecUpdateCache.exists }
 
     let driver: FennecUpdateDriver
+    @Published private(set) var canCheckForUpdates = false
     private let updater: SPUUpdater
+    private var availabilityObservation: AnyCancellable?
     private weak var model: AppModel?
 
     init(model: AppModel) {
@@ -298,6 +300,12 @@ final class FennecUpdater: NSObject, ObservableObject {
             delegate: nil
         )
         super.init()
+
+        // Sparkle ends a cancelled session after the driver returns to idle.
+        // Publish that later change so About re-enables its check button.
+        availabilityObservation = updater.publisher(for: \.canCheckForUpdates)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in self?.canCheckForUpdates = $0 }
 
         driver.prepareForInstall = { [weak self] in
             await self?.model?.prepareForUpdateInstall() ?? true
@@ -313,8 +321,6 @@ final class FennecUpdater: NSObject, ObservableObject {
             driver.presentConfigurationError(error.localizedDescription)
         }
     }
-
-    var canCheckForUpdates: Bool { updater.canCheckForUpdates }
 
     func checkForUpdates() {
         guard updater.canCheckForUpdates else { return }
