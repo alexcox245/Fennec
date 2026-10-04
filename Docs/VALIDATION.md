@@ -748,3 +748,26 @@ artifacts. The final source audit passes with Xcode cache access. The feed
 currently retained in the candidate directory is still build 3 history;
 do not publish it until generation finishes and the build 4 signature check
 passes.
+
+
+### Signed build 4 feed and completed local release (T-104)
+
+After the maintainer's Keychain approval, Sparkle completed generation of
+`build/Release-1.0.1/updates/appcast.xml`. The public-key verifier confirms
+the feed signature and all three enclosure signatures: the build 4 ZIP,
+retained build 3 ZIP, and `Fennec4-3.delta`. The first item is version 1.0.1,
+build 4; the second remains build 3. Every enclosure points to the proposed
+GitHub `v1.0.1` tag, so the old ZIP must accompany the new assets there.
+
+Applying the signed delta to a temporary extracted build 3 bundle produces
+exactly the final notarized app's regular files and symlinks. That result
+passes strict deep code signatures, stapled-ticket validation, and Gatekeeper.
+No app was launched. The complete seven-file upload set is in
+`build/Release-1.0.1/Publish/`, with a checked flat `SHA256SUMS.txt`. Root
+checksums also cover the feed, both full archives, delta, DMG, and ZIP.
+The private signing key stayed in the login Keychain.
+
+T-104 is complete for local release creation. No publication, installation,
+helper registration, or audio repair was performed. Live fixed-candidate
+update/helper restoration remains unverified in T-064; Intel runtime remains
+unverified. The prospective asset URLs must be checked after publication.
