@@ -15,31 +15,30 @@ final class ReviewRegressionTests: XCTestCase {
         // dropped the daemon step, trashed the app, and reported success.
         XCTAssertFalse(RepairHelperState.awaitingApproval.isEnabled)
         let steps = UninstallPlan.steps(
-            helperInstalled: true, loginItemEnabled: false, keepLogs: true, canRemoveBundle: true
+            helperInstalled: true, loginItemRegistered: false, keepLogs: true, canRemoveBundle: true
         )
         XCTAssertEqual(steps.first?.kind, .helper)
     }
 
-    @MainActor
-    func testTheBundleIsNotTrashedWhenTheDaemonSurvived() async {
-        let uninstaller = Uninstaller()
-        // `.helper` will fail here: the test process has no registered daemon
-        // to unregister and no authorization to try, which is precisely the
-        // shape of the real failure.
-        await uninstaller.run(
-            keepLogs: true,
-            steps: UninstallPlan.steps(
-                helperInstalled: true, loginItemEnabled: false, keepLogs: true, canRemoveBundle: true
-            )
+    func testAnyUnfinishedRemovalStepKeepsTheAppAvailableForRetry() {
+        let steps = UninstallPlan.steps(
+            helperInstalled: true, loginItemRegistered: true, keepLogs: true, canRemoveBundle: true
         )
-        if uninstaller.results[.helper]?.succeeded == false {
-            XCTAssertEqual(
-                uninstaller.results[.bundle]?.succeeded, false,
-                "Trashing the app while a root daemon is registered is the exact state rule 12 forbids."
-            )
-            XCTAssertTrue(uninstaller.canRetry)
-            XCTAssertFalse(uninstaller.allSucceeded)
-            XCTAssertNotNil(uninstaller.failureSummary)
+        let preceding = Array(steps.prefix { $0.kind != .bundle })
+        let completed = Dictionary(uniqueKeysWithValues:
+            preceding.map { ($0.kind, UninstallStepResult.done) })
+        XCTAssertTrue(UninstallPlan.canRecycleBundle(steps: steps, results: completed))
+
+        for step in preceding {
+            var failed = completed
+            failed[step.kind] = .failed("macOS refused")
+            XCTAssertFalse(UninstallPlan.canRecycleBundle(steps: steps, results: failed),
+                           "A failed \(step.kind.rawValue) step must leave the app available.")
+
+            var missing = completed
+            missing.removeValue(forKey: step.kind)
+            XCTAssertFalse(UninstallPlan.canRecycleBundle(steps: steps, results: missing),
+                           "An unreported \(step.kind.rawValue) step cannot count as removed.")
         }
     }
 
@@ -56,7 +55,7 @@ final class ReviewRegressionTests: XCTestCase {
         // "helper: …" is a developer's label. The user needs to know which
         // thing is still on their Mac.
         let steps = UninstallPlan.steps(
-            helperInstalled: true, loginItemEnabled: true, keepLogs: false, canRemoveBundle: true
+            helperInstalled: true, loginItemRegistered: true, keepLogs: false, canRemoveBundle: true
         )
         for step in steps {
             XCTAssertFalse(step.title.lowercased() == step.kind.rawValue.lowercased())
@@ -194,10 +193,7 @@ final class ReviewRegressionTests: XCTestCase {
             SetupChecklist.steps(helper: .notConfigured, loginItem: .enabled, notificationsAuthorized: true)
                 .first { $0.kind == .helper }
         )
-        XCTAssertTrue(
-            step.detail.contains("cannot fix it on its own"),
-            "\"every repair asks for your password\" reads as if automatic repair merely prompts."
-        )
-        XCTAssertTrue(step.compactDetail.contains("cannot repair on its own"))
+        XCTAssertTrue(step.detail.contains("asks before each repair"))
+        XCTAssertTrue(step.compactDetail.contains("ask before repairing"))
     }
 }

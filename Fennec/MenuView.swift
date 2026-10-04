@@ -109,7 +109,7 @@ struct MenuView: View {
                     .fixedSize()
                     .help("Stop repairing automatically for a while. Repair Audio Now still works.")
 
-                    Text("Stops automatic repair only.")
+                    Text("Stops automatic repairs and repair requests.")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                     Spacer()
@@ -163,7 +163,7 @@ struct MenuView: View {
                 // "SIGNALS 0 · REPAIRS 7". The lifetime number lives in the
                 // header; this row says what it is.
                 metric(title: "FORMAT", value: sampleRateText)
-                metric(title: "SIGNALS TODAY", value: "\(model.overloadSignalCount + model.abnormalStopCount)")
+                metric(title: "SIGNALS THIS SESSION", value: "\(model.overloadSignalCount + model.abnormalStopCount)")
                 metric(title: "DETECTIONS", value: "\(model.detectionCount)")
             }
         }
@@ -177,18 +177,18 @@ struct MenuView: View {
 
     private var repairControls: some View {
         VStack(alignment: .leading, spacing: 11) {
-            Toggle(isOn: $settings.autoRepairEnabled) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Repair crackling automatically")
-                        .font(.subheadline.weight(.medium))
-                    Text(autoRepairDetail)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            Picker("Repair mode", selection: $settings.repairMode) {
+                ForEach(RepairMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
                 }
             }
-            .toggleStyle(.switch)
-            .disabled(!helper.state.isReachable)
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Repair mode")
+
+            Text(autoRepairDetail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             if let lastError = model.lastError {
                 VStack(alignment: .leading, spacing: 7) {
@@ -243,7 +243,7 @@ struct MenuView: View {
                 confirmationCard(confirmation)
             } else {
                 Button {
-                    model.requestManualRepair()
+                    model.requestRepairButton()
                 } label: {
                     HStack(spacing: 9) {
                         // A tool, not a refresh arrow. The circular arrows
@@ -253,10 +253,14 @@ struct MenuView: View {
                         // screwdriver over a hammer because a hammer is
                         // Xcode's Build symbol to anyone who has seen one,
                         // and this is a repair, not a build.
-                        Image(systemName: RepairCopy.primaryButtonSymbol(for: primaryPhase))
+                        Image(systemName: isFoxReplay
+                            ? RepairCopy.replayButtonSymbol
+                            : RepairCopy.primaryButtonSymbol(for: primaryPhase))
                             .font(.system(size: 15, weight: .semibold))
                             .contentTransition(.symbolEffect(.replace))
-                        Text(RepairCopy.primaryButtonTitle(for: primaryPhase))
+                        Text(isFoxReplay
+                            ? RepairCopy.onboardingReplayButton
+                            : RepairCopy.primaryButtonTitle(for: primaryPhase))
                             .font(.system(size: 14, weight: .semibold))
                             .lineLimit(1)
                         Spacer(minLength: 0)
@@ -265,15 +269,15 @@ struct MenuView: View {
                     .animation(.easeInOut(duration: 0.18), value: primaryPhase)
                 }
                 .buttonStyle(PrimaryRepairButtonStyle(
-                    readsAtFullStrengthWhileDisabled: primaryPhase == .repaired
+                    readsAtFullStrengthWhileDisabled: primaryPhase == .repaired && !isFoxReplay
                 ))
-                // Held through the confirmation too: "Audio repaired" is a
-                // result, not an offer, and a second restart is the last
-                // thing a user who just got their audio back wants to trigger
-                // by clicking what they are already reading.
-                .disabled(primaryPhase != .idle)
+                .disabled(isFoxReplay
+                    ? model.manualFoxRequestCount >= RepairFoxBurst.maximumTotal
+                    : primaryPhase != .idle)
                 .keyboardShortcut(.defaultAction)
-                .help("Fix crackling now. Sound stops for a moment.")
+                .help(isFoxReplay
+                    ? RepairCopy.onboardingReplayHelp
+                    : "Fix crackling now. Sound stops for a moment.")
             }
         }
         // On the Group, not the button. The confirmation card replaces the
@@ -422,6 +426,9 @@ struct MenuView: View {
                 WindowPresenter.shared.showSettings(model: model)
             } label: {
                 Label("Settings", systemImage: "gearshape")
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 5)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help("Open Fennec Settings.")
@@ -435,22 +442,6 @@ struct MenuView: View {
                 .help(model.setupSummary)
 
             Spacer()
-
-            Menu {
-                Button("Repair History") { model.showActivityWindow() }
-                Divider()
-                Button("What Fennec Does") { model.showWelcomeWindow() }
-                Button("About & Uninstall…") { model.showAboutWindow() }
-                Divider()
-                Button("Reveal Event Log") { model.openEventLog() }
-            } label: {
-                Label("More", systemImage: "info.circle")
-                    .labelStyle(.iconOnly)
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("What Fennec does to this Mac, the event log, and how to remove it.")
 
             Button("Quit") { model.quit() }
                 .buttonStyle(.plain)
@@ -478,6 +469,8 @@ struct MenuView: View {
         return showingRepairConfirmation ? .repaired : .idle
     }
 
+    private var isFoxReplay: Bool { model.manualFoxRequestCount > 0 }
+
     /// The second haptic: the tap that says the work landed, fired at the
     /// same instant the button turns into its own result, so the press and
     /// the outcome are bracketed by the same click.
@@ -504,21 +497,21 @@ struct MenuView: View {
     }
 
     private var autoRepairDetail: String {
+        guard settings.repairMode == .automatic else {
+            return "Fennec asks by notification when it hears crackling."
+        }
         if let pauseStatus = model.pauseStatusText {
             return "\(pauseStatus). Repair Audio Now still works."
         }
         // AirPods and Bluetooth headphones are the majority output on a modern
-        // Mac, and `skipBluetooth` defaults on. Without this the popover said
-        // "You hear the fault start, then it is gone" two rows under a
-        // BLUETOOTH badge, over a device it will never touch.
+        // Mac, and `skipBluetooth` defaults on. Without this, the popover
+        // promises a repair beneath a BLUETOOTH badge for a device it will
+        // never touch.
         if settings.skipBluetooth && model.currentDevice.transport.isBluetooth {
             return "Off for Bluetooth outputs, which is this one. Repair Audio Now still works."
         }
         guard helper.state.isReachable else {
-            return "Enable the helper below to let Fennec repair without a password prompt."
-        }
-        guard settings.autoRepairEnabled else {
-            return "Fennec will detect crackling but wait for you to press Repair Audio Now."
+            return "Fennec will ask before repairing until its helper is allowed."
         }
         return settings.sensitivity.detail
     }

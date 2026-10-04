@@ -2,6 +2,18 @@ import AppKit
 import Foundation
 import ServiceManagement
 
+enum FennecUpdateCache {
+    static var directory: URL {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(AppConstants.appBundleIdentifier, isDirectory: true)
+            .appendingPathComponent("org.sparkle-project.Sparkle", isDirectory: true)
+    }
+
+    static var exists: Bool {
+        FileManager.default.fileExists(atPath: directory.path)
+    }
+}
+
 /// Removing Fennec, completely.
 ///
 /// The failure this exists to prevent is the one a Mac forum reviewer can
@@ -18,6 +30,7 @@ enum UninstallPlan {
             case helper
             case loginItem
             case supportFiles
+            case updateCache
             case preferences
             case bundle
         }
@@ -37,9 +50,11 @@ enum UninstallPlan {
         /// keying this off `RepairHelperState.isEnabled` silently dropped the
         /// daemon from the plan and then reported "Fennec is removed".
         helperInstalled: Bool,
-        loginItemEnabled: Bool,
+        /// An item awaiting macOS approval is registered and must be removed.
+        loginItemRegistered: Bool,
         keepLogs: Bool,
-        canRemoveBundle: Bool
+        canRemoveBundle: Bool,
+        hasUpdateCache: Bool = false
     ) -> [Step] {
         var steps: [Step] = []
 
@@ -51,11 +66,18 @@ enum UninstallPlan {
                     + "that does not happen if you only drag Fennec to the Trash."
             ))
         }
-        if loginItemEnabled {
+        if loginItemRegistered {
             steps.append(Step(
                 kind: .loginItem,
                 title: "Remove the login item",
                 detail: "Fennec stops starting with your Mac."
+            ))
+        }
+        if hasUpdateCache {
+            steps.append(Step(
+                kind: .updateCache,
+                title: "Delete downloaded updates",
+                detail: "~/Library/Caches/com.ludicrousdesigns.Fennec/org.sparkle-project.Sparkle"
             ))
         }
         if !keepLogs {
@@ -65,11 +87,6 @@ enum UninstallPlan {
                 detail: "~/Library/Application Support/Fennec"
             ))
         }
-        steps.append(Step(
-            kind: .preferences,
-            title: "Forget Fennec's settings",
-            detail: "Sensitivity, safety switches, and the pause state."
-        ))
         if canRemoveBundle {
             steps.append(Step(
                 kind: .bundle,
@@ -77,14 +94,40 @@ enum UninstallPlan {
                 detail: "Then Fennec quits."
             ))
         }
+        steps.append(Step(
+            kind: .preferences,
+            title: "Forget Fennec's settings",
+            detail: "Sensitivity, safety switches, and the pause state."
+        ))
         return steps
     }
 
     /// The sentence above the button. Names the consequence, not the process.
-    static func summary(keepLogs: Bool) -> String {
-        keepLogs
-            ? "Fennec will unregister its root helper, remove its login item, forget its settings, and move itself to the Trash. Your event log and repair history stay where they are."
-            : "Fennec will unregister its root helper, remove its login item, delete its log and repair history, forget its settings, and move itself to the Trash."
+    static func summary(keepLogs: Bool, hasUpdateCache: Bool = false) -> String {
+        let updateClause = hasUpdateCache ? " delete downloaded updates," : ""
+        return keepLogs
+            ? "Fennec will unregister its root helper, remove its login item,\(updateClause) move itself to the Trash, and forget its settings. Your event log and repair history stay where they are."
+            : "Fennec will unregister its root helper, remove its login item,\(updateClause) delete its log and repair history, move itself to the Trash, and forget its settings."
+    }
+
+    /// The app must remain available to report and retry every earlier step.
+    /// Moving it to the Trash also makes macOS refuse to reactivate its UI.
+    static func canRecycleBundle(
+        steps: [Step],
+        results: [Step.Kind: UninstallStepResult]
+    ) -> Bool {
+        steps.prefix { $0.kind != .bundle }
+            .allSatisfy { results[$0.kind]?.succeeded == true }
+    }
+
+    /// A failed bundle move leaves the app launchable. Keep its preferences
+    /// so a subsequent launch cannot look like a new install and re-register
+    /// the login item while the user is retrying removal.
+    static func canForgetPreferences(
+        steps: [Step],
+        results: [Step.Kind: UninstallStepResult]
+    ) -> Bool {
+        !steps.contains { $0.kind == .bundle } || results[.bundle]?.succeeded == true
     }
 
     static let manualFallback = """
@@ -92,6 +135,7 @@ enum UninstallPlan {
 
         sudo launchctl bootout system/com.ludicrousdesigns.Fennec.helper
         rm -rf ~/Library/Application\\ Support/Fennec
+        rm -rf ~/Library/Caches/com.ludicrousdesigns.Fennec/org.sparkle-project.Sparkle
         defaults delete com.ludicrousdesigns.Fennec
         """
 }
@@ -113,8 +157,8 @@ final class Uninstaller: ObservableObject {
 
     private let helperService = SMAppService.daemon(plistName: AppConstants.helperPlistName)
 
-    /// Everything except quitting, which the caller does once it has shown the
-    /// results. Deliberately sequential and deliberately not transactional:
+    /// Everything except quitting, which the caller does after a successful
+    /// removal. Deliberately sequential and deliberately not transactional:
     /// each step is independently useful, so a failure part-way through still
     /// leaves the machine better off than it started.
     func run(keepLogs: Bool, steps: [UninstallPlan.Step]) async {
@@ -144,18 +188,29 @@ final class Uninstaller: ObservableObject {
                         try FileManager.default.removeItem(at: directory)
                     }
                 }
+            case .updateCache:
+                results[.updateCache] = perform {
+                    let cache = FennecUpdateCache.directory
+                    if FileManager.default.fileExists(atPath: cache.path) {
+                        try FileManager.default.removeItem(at: cache)
+                    }
+                }
             case .preferences:
-                UserDefaults.standard.removePersistentDomain(forName: AppConstants.appBundleIdentifier)
-                results[.preferences] = .done
+                if UninstallPlan.canForgetPreferences(steps: steps, results: results) {
+                    UserDefaults.standard.removePersistentDomain(forName: AppConstants.appBundleIdentifier)
+                    results[.preferences] = .done
+                } else {
+                    results[.preferences] = .failed(
+                        "Kept while Fennec is still installed so it can retry removal without restoring its login item."
+                    )
+                }
             case .bundle:
-                // Never trash the app while the daemon is still registered.
-                // That is precisely the state ground rule 12 exists to
-                // prevent: a root LaunchDaemon pointing at a binary in the
-                // Trash, and no app left to retry the removal from.
-                if results[.helper]?.succeeded == false {
+                // A process moved to the Trash cannot reliably receive the
+                // next click. Keep the app in place if any preceding step
+                // failed, so its failure report and retry remain usable.
+                if !UninstallPlan.canRecycleBundle(steps: steps, results: results) {
                     results[.bundle] = .failed(
-                        "Left in place on purpose: the root helper is still registered, "
-                        + "so Fennec is still here to retry."
+                        "Left in place so Fennec can report and retry the failed steps above."
                     )
                 } else {
                     results[.bundle] = await recycleBundle()
@@ -192,6 +247,7 @@ final class Uninstaller: ObservableObject {
         case .helper: return "Root helper"
         case .loginItem: return "Login item"
         case .supportFiles: return "Log and repair history"
+        case .updateCache: return "Downloaded updates"
         case .preferences: return "Settings"
         case .bundle: return "Move to Trash"
         }

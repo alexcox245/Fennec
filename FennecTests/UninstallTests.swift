@@ -14,7 +14,7 @@ final class UninstallPlanTests: XCTestCase {
     ) -> [UninstallPlan.Step] {
         UninstallPlan.steps(
             helperInstalled: helper,
-            loginItemEnabled: loginItem,
+            loginItemRegistered: loginItem,
             keepLogs: keepLogs,
             canRemoveBundle: bundle
         )
@@ -23,7 +23,7 @@ final class UninstallPlanTests: XCTestCase {
     func testAFullInstallRemovesEverythingInOrder() {
         XCTAssertEqual(
             steps().map(\.kind),
-            [.helper, .loginItem, .supportFiles, .preferences, .bundle]
+            [.helper, .loginItem, .supportFiles, .bundle, .preferences]
         )
     }
 
@@ -31,6 +31,19 @@ final class UninstallPlanTests: XCTestCase {
         // It is the only step with root behind it, and the only one a user
         // cannot undo themselves from the Finder.
         XCTAssertEqual(steps().first?.kind, .helper)
+    }
+
+    func testLoginItemAwaitingApprovalIsStillInTheRemovalPlan() {
+        let state = LoginItemState.requiresApproval
+        XCTAssertFalse(state.isEnabled)
+        XCTAssertTrue(state.isRegistered)
+        let plan = UninstallPlan.steps(
+            helperInstalled: false,
+            loginItemRegistered: state.isRegistered,
+            keepLogs: true,
+            canRemoveBundle: true
+        )
+        XCTAssertTrue(plan.contains { $0.kind == .loginItem })
     }
 
     func testTheHelperStepNamesTheTrapItExistsFor() throws {
@@ -54,10 +67,43 @@ final class UninstallPlanTests: XCTestCase {
         XCTAssertTrue(kept.contains { $0.kind == .preferences })
     }
 
+    func testDownloadedUpdateCacheIsRemovedWhenPresent() {
+        let steps = UninstallPlan.steps(
+            helperInstalled: false,
+            loginItemRegistered: false,
+            keepLogs: true,
+            canRemoveBundle: false,
+            hasUpdateCache: true
+        )
+        XCTAssertTrue(steps.contains { $0.kind == .updateCache })
+        XCTAssertTrue(steps.first { $0.kind == .updateCache }?.detail.contains("Library/Caches") == true)
+        XCTAssertTrue(UninstallPlan.summary(keepLogs: true, hasUpdateCache: true).contains("downloaded updates"))
+    }
+
+    func testUpdateCacheLocationUsesSparklesFennecCache() {
+        let cache = FennecUpdateCache.directory
+        XCTAssertEqual(cache.lastPathComponent, "org.sparkle-project.Sparkle")
+        XCTAssertEqual(cache.deletingLastPathComponent().lastPathComponent, AppConstants.appBundleIdentifier)
+    }
+
     func testPreferencesAreAlwaysForgotten() {
         // There is no configuration in which leaving them behind is useful.
         XCTAssertTrue(steps(helper: false, loginItem: false, keepLogs: true, bundle: false)
             .contains { $0.kind == .preferences })
+    }
+
+    func testFailedBundleMoveKeepsPreferencesForAnUninstallRetry() {
+        let plan = steps()
+        XCTAssertFalse(UninstallPlan.canForgetPreferences(steps: plan, results: [:]))
+        XCTAssertFalse(UninstallPlan.canForgetPreferences(
+            steps: plan, results: [.bundle: .failed("macOS refused")]
+        ))
+        XCTAssertTrue(UninstallPlan.canForgetPreferences(
+            steps: plan, results: [.bundle: .done]
+        ))
+        XCTAssertTrue(UninstallPlan.canForgetPreferences(
+            steps: steps(bundle: false), results: [:]
+        ))
     }
 
     func testTheSummaryChangesWithTheLogChoice() {

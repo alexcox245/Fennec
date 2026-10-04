@@ -46,6 +46,56 @@ Notification behaviour is proportional to what the user must do:
 | Repair failed | default | Try Again | The only case where the user has to act. |
 | Crackle detected, not repaired | default | Repair Now / Ignore | Something is off, protected, or cooling down. |
 
+## The repair crossing
+
+`WindowPresenter` owns `RepairFoxController` separately from its interactive
+windows. The controller presents a borderless, nonactivating `NSPanel` with
+mouse events ignored and no key/main-window eligibility. The panel spans a
+thin strip on the display containing the pointer at trigger time. Full display
+bounds determine entry, exit, and a foot baseline 10 points above the physical
+bottom edge. Its status-bar level keeps the fox visible across the Dock without
+intercepting Dock clicks. Moving the pointer does not redirect an in-flight fox.
+The panel is excluded from activation-policy and Dock-reopen decisions.
+
+The approved GIF is decoded on a utility task once, at Retina size, using
+ImageIO's unclamped frame delays. A discrete contents animation and linear
+position animation live in the same finite Core Animation group. A horizontal
+layer transform mirrors the artwork. `FoxRunMotion` derives travel from a
+measured paw stride, displayed scale, and loop duration, rather than choosing
+a duration per display. No display link or per-frame application timer runs.
+
+After the safety gates pass, `performRepair` requests a crossing immediately
+before the helper call. Success lets the crossing finish independently of
+`isRepairing`; failure, cancellation, and helper throttling cancel that attempt's
+ticket. The administrator-prompt path starts its crossing only after a successful
+return, since that API has no separate authorization callback. A fox reports
+activity, never a verified outcome, and it does not alter repair governance.
+
+Automatic repairs keep one ticket active, including while decoding; duplicate
+and overlapping requests are discarded. Every user-facing Repair Audio control
+(onboarding, popover, Settings, Audio menu, prompted window, and notification
+action) sends its first click through the normal safety and privilege gates.
+Further clicks in that repair's active burst request animation only, including
+while the first repair is still preparing. The administrator-prompt path starts
+the foxes only after a successful return. The shared burst queue accepts at
+most one hundred foxes total, starts them at least 40 milliseconds apart, and
+keeps no more than one hundred on screen. Extra clicks are discarded. Ordinary
+button bursts reset after their final crossing; the onboarding test remains
+animation-only until the welcome window closes. The first test does not start
+the app's automatic-repair cooldown.
+A cancelled ticket cannot be revived by a late decode, and an old completion
+cannot dismiss a newer crossing. An ordinary decode that misses the trigger
+by more than two seconds is discarded. Disablement,
+Reduce Motion, screen reconfiguration, sleep, session resignation, screen lock,
+app hiding, and termination tear down the panel and its animations. Lock
+notifications are best-effort, as in `SystemEventObserver`; workspace sleep and
+session notifications provide independent cleanup. Wake never replays a crossing.
+
+Settings' **Preview Fox** calls only the presenter: it cannot start a repair,
+install a helper, or modify repair history. The `showRepairFox` preference defaults
+on and lives in the existing preference domain removed by the uninstaller. The
+GIF ships inside the bundle; this feature adds nothing else persistent outside it.
+
 ## Privilege boundary
 
 The app itself runs as the signed-in user. The root helper is installed and managed through `SMAppService.daemon(plistName:)` and is demand-launched through its Mach service.
@@ -60,7 +110,9 @@ An `SMAppService` daemon registration binds to the bundle path and signature tha
 
 The fix is automatable because rebuilding a registration is not privileged: `unregister()` + `register()` from the running bundle rewrites the record with no password, and the user's standing approval either survives or macOS downgrades the daemon to `.requiresApproval`: a Settings toggle the setup UI already explains, and still not a password.
 
-`HelperHealPolicy` (pure, tested) is the only place that decides when: never unless macOS reports the daemon enabled (`.requiresApproval` and `.notRegistered` are the user's decision, and healing there would overrule it), never when the helper is answering, at most once per ten minutes automatically, always for a user-initiated attempt. `HelperManager.rebuildRegistration()` re-pings before touching anything so a stale "not answering" can never tear down a healthy registration, and re-pings up to three times afterwards because launchd spawns the helper on demand. `AppModel` runs the heal at three moments: shortly after launch (a registration that died while Fennec was not running should be rebuilt before the first 2am detection), when a confirmed detection would otherwise be skipped for an unreachable helper, and before a manual repair falls back to the administrator prompt. Every attempt and outcome is a `helper` event in the record: a daemon registration being rewritten is exactly what the event log exists to admit to.
+`HelperHealPolicy` (pure, tested) is the only place that decides when: never unless macOS reports the daemon enabled (`.requiresApproval` and `.notRegistered` are the user's decision, and healing there would overrule it), never when the helper is answering, at most once per ten minutes automatically, always for a user-initiated attempt. `HelperManager.rebuildRegistration()` re-pings before touching anything so a stale "not answering" can never tear down a healthy registration, and re-pings up to three times afterwards because launchd spawns the helper on demand. `AppModel` runs automatic healing shortly after launch only in Automatic mode, and when a confirmed Automatic-mode detection would otherwise be skipped for an unreachable helper. Ask me first leaves helper registration alone in the background. A user-requested repair may still try to reconnect an already enabled helper before showing the administrator prompt. Every attempt and outcome is a `helper` event in the record: a daemon registration being rewritten is exactly what the event log exists to admit to.
+
+The administrator password authorizes one `osascript` repair; Fennec cannot reuse it as approval for the daemon. When a repair notification explicitly offers automatic setup, a successful repair switches to Automatic and requests helper registration through `SMAppService`. macOS may require a separate approval under Login Items before the helper can run. Until the helper answers, Automatic mode keeps asking by notification. A canceled or failed repair leaves registration untouched.
 
 ## Detection trade-off
 

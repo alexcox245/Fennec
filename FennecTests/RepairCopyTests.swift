@@ -7,6 +7,20 @@ import XCTest
 /// pins the exact string is the cheapest way to keep that from eroding.
 final class RepairCopyTests: XCTestCase {
 
+    func testFirstRunOffersOneExplicitRepairAndQuietReplayCopy() {
+        XCTAssertEqual(RepairCopy.onboardingTestTitle, "Try it now")
+        XCTAssertEqual(RepairCopy.onboardingTestButton, "Run a Test Repair")
+        XCTAssertEqual(RepairCopy.onboardingTestWorking, "Repairing…")
+        XCTAssertEqual(
+            RepairCopy.onboardingTestDetail,
+            "Run a test repair. Sound restarts across this Mac; your apps stay open."
+        )
+        XCTAssertEqual(RepairCopy.onboardingReplayButton, "Run Again")
+        XCTAssertEqual(RepairCopy.onboardingReplayHelp, "Another fox runs. Only the first click repairs audio.")
+        XCTAssertEqual(RepairCopy.replayButtonSymbol, "play.fill")
+        XCTAssertFalse(RepairCopy.onboardingTestDetail.localizedCaseInsensitiveContains("fox"))
+    }
+
     // MARK: Durations
 
     func testSubSecondDurationsKeepTwoDecimals() {
@@ -93,6 +107,22 @@ final class RepairCopyTests: XCTestCase {
 
     // MARK: Notifications (the headline moment)
 
+    func testRepairRequestNotificationExplainsTheClickAndPassword() {
+        XCTAssertEqual(RepairCopy.notificationRepairQuestion, "Repair audio?")
+        XCTAssertEqual(
+            RepairCopy.notificationRepairRequest(reason: "Fennec heard crackling."),
+            "Fennec heard crackling. Repairing stops all sound. Click to repair; macOS may ask for your password."
+        )
+        XCTAssertEqual(
+            RepairCopy.notificationRepairSetupQuestion,
+            "Repair audio and enable automatic repairs?"
+        )
+        XCTAssertEqual(
+            RepairCopy.notificationRepairSetupRequest(reason: "Fennec heard crackling."),
+            "Fennec heard crackling. Repairing stops all sound. Click to repair and set up automatic repairs. macOS may ask for your password and separate helper approval."
+        )
+    }
+
     func testAutomaticSuccessSaysCrackleResolved() {
         let record = Fixture.repair(
             at: Fixture.epoch,
@@ -102,7 +132,7 @@ final class RepairCopyTests: XCTestCase {
             elapsed: 5.8,
             duration: 0.84
         )
-        XCTAssertEqual(RepairCopy.notificationTitle(for: record), "Audio repaired")
+        XCTAssertEqual(RepairCopy.notificationTitle(for: record), "Donesies")
         XCTAssertEqual(
             RepairCopy.notificationBody(for: record),
             "",
@@ -110,8 +140,8 @@ final class RepairCopyTests: XCTestCase {
         )
     }
 
-    /// The heads-up posted the moment the automatic path commits. Two short
-    /// clauses and nothing else; the user is mid-fault and mid-task.
+    /// The heads-up appears only after every safety check passes. Two short
+    /// clauses and nothing else; the result banner replaces it after repair.
     func testRepairStartingCopyIsTerse() {
         XCTAssertEqual(RepairCopy.repairStartingTitle(), "Crackle detected")
         XCTAssertEqual(RepairCopy.repairStartingBody(), "Resetting speakers...")
@@ -119,21 +149,13 @@ final class RepairCopyTests: XCTestCase {
         XCTAssertFalse(RepairCopy.repairStartingBody().contains("!"))
     }
 
-    /// The retraction that replaces the heads-up when the safety scan says
-    /// no. It must exist, because "Resetting speakers..." followed by
-    /// silence is a promise the product broke.
-    func testRepairCalledOffCopyNamesTheSkip() {
-        XCTAssertEqual(RepairCopy.repairCalledOffTitle(), "Crackle repair skipped")
-        XCTAssertFalse(RepairCopy.repairCalledOffTitle().contains("!"))
-    }
-
     /// Automatic and manual now read identically. Which one it was is
     /// Fennec's business, not news to the person whose audio just came back.
     func testEverySuccessfulRepairGetsTheSameLine() {
         let manual = Fixture.repair(at: Fixture.epoch, trigger: .manual, signal: nil, signalCount: 0, duration: 1.1)
         let automatic = Fixture.repair(at: Fixture.epoch, trigger: .automatic, signal: .processorOverload, signalCount: 2, duration: 0.4)
-        XCTAssertEqual(RepairCopy.notificationTitle(for: manual), "Audio repaired")
-        XCTAssertEqual(RepairCopy.notificationTitle(for: automatic), "Audio repaired")
+        XCTAssertEqual(RepairCopy.notificationTitle(for: manual), "Donesies")
+        XCTAssertEqual(RepairCopy.notificationTitle(for: automatic), "Donesies")
         XCTAssertEqual(RepairCopy.notificationBody(for: manual), "")
         XCTAssertEqual(RepairCopy.notificationBody(for: automatic), "")
     }
@@ -155,6 +177,26 @@ final class RepairCopyTests: XCTestCase {
     }
 
     // MARK: Voice
+
+    func testFoxPreviewCopyFollowsTheAnimationSetting() {
+        XCTAssertEqual(RepairCopy.foxPreview, "Run Preview")
+        XCTAssertEqual(
+            RepairCopy.foxDescription(enabled: true, reduceMotion: false),
+            "Press the preview button....you know you want to..."
+        )
+        XCTAssertEqual(
+            RepairCopy.foxDescription(enabled: false, reduceMotion: false),
+            "You turned off my cute little running fennec fox...🥺"
+        )
+        XCTAssertEqual(
+            RepairCopy.foxDescription(enabled: false, reduceMotion: true),
+            RepairCopy.foxDisabledDetail
+        )
+        XCTAssertEqual(
+            RepairCopy.foxDescription(enabled: true, reduceMotion: true),
+            RepairCopy.foxReducedMotion
+        )
+    }
 
     func testNoCopyShoutsOrUsesEmoji() {
         let samples: [RepairRecord] = [
@@ -201,7 +243,7 @@ final class RepairCopyTests: XCTestCase {
         XCTAssertEqual(RepairCopy.notificationTitle(for: manual), RepairCopy.repairedTitle)
         XCTAssertEqual(RepairCopy.primaryButtonTitle(for: .repaired), RepairCopy.repairedTitle)
         XCTAssertEqual(RepairCopy.receiptHeadline(for: manual), RepairCopy.repairedTitle)
-        XCTAssertEqual(RepairCopy.repairedTitle, "Audio repaired")
+        XCTAssertEqual(RepairCopy.repairedTitle, "Donesies")
     }
 
     // MARK: The plain-language rule (T-043)
@@ -221,8 +263,17 @@ final class RepairCopyTests: XCTestCase {
         strings += [
             RepairCopy.repairStartingTitle(),
             RepairCopy.repairStartingBody(),
-            RepairCopy.repairCalledOffTitle(),
-            RepairCopy.stallAdvisoryTitle()
+            RepairCopy.stallAdvisoryTitle(),
+            RepairCopy.onboardingTestDetail, RepairCopy.onboardingReplayButton,
+            RepairCopy.onboardingReplayHelp,
+            RepairCopy.foxSection, RepairCopy.foxSetting, RepairCopy.foxPreview, RepairCopy.foxPreviewHelp,
+            RepairCopy.foxDetail, RepairCopy.foxDisabledDetail, RepairCopy.foxReducedMotion,
+            RepairCopy.promptTitle, RepairCopy.promptMessage(deviceName: "Studio Display Speakers"),
+            RepairCopy.promptConsequence, RepairCopy.promptRepairTitle, RepairCopy.promptDismissTitle,
+            RepairCopy.notificationRepairQuestion,
+            RepairCopy.notificationRepairRequest(reason: "Fennec heard crackling."),
+            RepairCopy.notificationRepairSetupQuestion,
+            RepairCopy.notificationRepairSetupRequest(reason: "Fennec heard crackling.")
         ]
         for record in samples {
             strings += [
@@ -264,7 +315,7 @@ final class RepairCopyTests: XCTestCase {
     }
 
     func testTheButtonConfirmsWithACheckMark() {
-        XCTAssertEqual(RepairCopy.primaryButtonTitle(for: .repaired), "Audio repaired")
+        XCTAssertEqual(RepairCopy.primaryButtonTitle(for: .repaired), "Donesies")
         XCTAssertEqual(RepairCopy.primaryButtonSymbol(for: .repaired), "checkmark.circle.fill")
     }
 
@@ -299,7 +350,7 @@ final class RepairCopyTests: XCTestCase {
 
     func testManualReceiptIsWordedDifferently() {
         let record = Fixture.repair(at: Fixture.epoch, trigger: .manual, duration: 1.5)
-        XCTAssertEqual(RepairCopy.receiptHeadline(for: record), "Audio repaired")
+        XCTAssertEqual(RepairCopy.receiptHeadline(for: record), "Donesies")
     }
 
     func testFailedReceiptShowsTheError() {

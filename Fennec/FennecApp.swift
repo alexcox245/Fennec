@@ -45,15 +45,20 @@ struct FennecCommands: Commands {
         }
 
         CommandMenu("Audio") {
-            Button("Repair Audio Now") { model.requestManualRepair() }
+            Button(model.manualFoxRequestCount > 0
+                ? RepairCopy.onboardingReplayButton : "Repair Audio Now") {
+                model.requestRepairButton()
+            }
                 .keyboardShortcut("r", modifiers: .command)
-                .disabled(model.isRepairing)
+                .disabled(model.manualFoxRequestCount > 0
+                    ? model.manualFoxRequestCount >= RepairFoxBurst.maximumTotal
+                    : model.isRepairing || model.isPreparingRepair)
             Divider()
             if model.isPaused {
                 Button("Resume Watching") { model.resume() }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
             } else {
-                Menu("Pause Automatic Repair") {
+                Menu("Pause Repair Responses") {
                     ForEach(PauseSchedule.Option.allCases) { option in
                         Button(option.title) { model.pause(option) }
                     }

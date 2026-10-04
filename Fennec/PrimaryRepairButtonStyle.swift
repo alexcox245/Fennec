@@ -30,7 +30,7 @@ struct PrimaryRepairButtonStyle: ButtonStyle {
     /// A disabled button is drawn faded, which is right while a repair is
     /// running and wrong for the result flash that follows it. The
     /// confirmation is disabled so a click cannot start a second restart,
-    /// but "Audio repaired" is something the user should be able to read at
+    /// but the repair result is something the user should be able to read at
     /// full strength for the two seconds it is up.
     var readsAtFullStrengthWhileDisabled = false
 

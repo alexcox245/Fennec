@@ -16,6 +16,13 @@ enum LoginItemState: Equatable, Sendable {
 
     var isEnabled: Bool { self == .enabled }
     var requiresApproval: Bool { self == .requiresApproval }
+    /// An item awaiting approval still has a registration to remove.
+    var isRegistered: Bool {
+        switch self {
+        case .notRegistered, .notFound: return false
+        case .enabled, .requiresApproval, .unknown: return true
+        }
+    }
 
     var title: String {
         switch self {
@@ -51,6 +58,30 @@ enum LoginItemState: Equatable, Sendable {
     }
 }
 
+/// Register a new Applications install once. A completed first run without
+/// this marker belongs to an older build, so its existing Off state is kept.
+enum LoginItemDefaultPolicy {
+    enum Action: Equatable {
+        case waitForApplications
+        case preserveExistingChoice
+        case register
+        case alreadyHandled
+    }
+
+    static func action(
+        hasHandledDefault: Bool,
+        hasCompletedFirstRun: Bool,
+        isPendingInstall: Bool,
+        installLocation: InstallLocation
+    ) -> Action {
+        if hasHandledDefault { return .alreadyHandled }
+        if !hasCompletedFirstRun || isPendingInstall {
+            return installLocation == .applications ? .register : .waitForApplications
+        }
+        return .preserveExistingChoice
+    }
+}
+
 /// Launch at login, via `SMAppService.mainApp`.
 ///
 /// The hard part is not registering; it is that the answer can change
@@ -64,7 +95,10 @@ final class LoginItemManager: ObservableObject {
     @Published private(set) var lastError: String?
 
     private let service = SMAppService.mainApp
+    private let defaults = UserDefaults.standard
     private var activationObserver: NSObjectProtocol?
+    private static let defaultHandledKey = "loginItemDefaultHandled"
+    private static let pendingInstallKey = "loginItemDefaultPendingInstall"
 
     var isEnabled: Bool { state.isEnabled }
     var requiresApproval: Bool { state.requiresApproval }
@@ -92,11 +126,53 @@ final class LoginItemManager: ObservableObject {
         state = LoginItemState.from(service.status)
     }
 
+    /// New installs start at login without another setup button. Registration
+    /// may still require approval in macOS; show that state in onboarding and
+    /// Settings rather than opening System Settings over the user.
+    func configureDefaultIfNeeded(
+        hasCompletedFirstRun: Bool,
+        installLocation: InstallLocation
+    ) {
+        let action = LoginItemDefaultPolicy.action(
+            hasHandledDefault: defaults.bool(forKey: Self.defaultHandledKey),
+            hasCompletedFirstRun: hasCompletedFirstRun,
+            isPendingInstall: defaults.bool(forKey: Self.pendingInstallKey),
+            installLocation: installLocation
+        )
+        switch action {
+        case .waitForApplications:
+            defaults.set(true, forKey: Self.pendingInstallKey)
+            return
+        case .alreadyHandled:
+            return
+        case .preserveExistingChoice:
+            defaults.set(true, forKey: Self.defaultHandledKey)
+        case .register:
+            defaults.set(true, forKey: Self.defaultHandledKey)
+            defaults.removeObject(forKey: Self.pendingInstallKey)
+            do {
+                if service.status == .notRegistered || service.status == .notFound {
+                    try service.register()
+                }
+                lastError = nil
+            } catch {
+                // Registration can advance to approval-required before macOS
+                // returns an error. Report the resulting state, not the throw.
+                refresh()
+                lastError = state.isRegistered ? nil : Self.explain(error)
+                return
+            }
+            refresh()
+        }
+    }
+
     func setEnabled(_ enabled: Bool) {
         enabled ? enable() : disable()
     }
 
     func enable() {
+        defaults.set(true, forKey: Self.defaultHandledKey)
+        defaults.removeObject(forKey: Self.pendingInstallKey)
         do {
             if service.status == .notRegistered || service.status == .notFound {
                 try service.register()
@@ -121,6 +197,8 @@ final class LoginItemManager: ObservableObject {
     }
 
     func disable() {
+        defaults.set(true, forKey: Self.defaultHandledKey)
+        defaults.removeObject(forKey: Self.pendingInstallKey)
         do {
             if service.status != .notRegistered && service.status != .notFound {
                 try service.unregister()

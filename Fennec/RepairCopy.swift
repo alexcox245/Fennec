@@ -19,6 +19,53 @@ import Foundation
 /// answers a question nobody asked.
 enum RepairCopy {
 
+    // MARK: First run
+
+    static let onboardingTestTitle = "Try it now"
+    static let onboardingTestButton = "Run a Test Repair"
+    static let onboardingTestWorking = "Repairing…"
+    static let onboardingTestDetail = "Run a test repair. Sound restarts across this Mac; your apps stay open."
+    static let onboardingReplayButton = "Run Again"
+    static let onboardingReplayHelp = "Another fox runs. Only the first click repairs audio."
+    static let replayButtonSymbol = "play.fill"
+
+    // MARK: The repair fox
+
+    static let foxSection = "Repair Animation"
+    static let foxSetting = "Show fox during repairs"
+    static let foxPreview = "Run Preview"
+    static let foxPreviewHelp = "Preview the animation. Your sound stays on."
+    static let foxDetail = "Press the preview button....you know you want to..."
+    static let foxDisabledDetail = "You turned off my cute little running fennec fox...🥺"
+    static let foxReducedMotion = "The fox stays off while Reduce Motion is enabled in macOS."
+
+    static func foxDescription(enabled: Bool, reduceMotion: Bool) -> String {
+        if !enabled { return foxDisabledDetail }
+        return reduceMotion ? foxReducedMotion : foxDetail
+    }
+
+    // MARK: Prompted repair
+
+    static let promptTitle = "Fennec heard crackling."
+    static let promptConsequence = "Repairing stops all sound on this Mac."
+    static let promptRepairTitle = "Repair Audio"
+    static let promptDismissTitle = "Not now"
+    static let notificationRepairQuestion = "Repair audio?"
+    static let notificationRepairSetupQuestion = "Repair audio and enable automatic repairs?"
+
+    static func notificationRepairRequest(reason: String) -> String {
+        "\(reason) Repairing stops all sound. Click to repair; macOS may ask for your password."
+    }
+
+    static func notificationRepairSetupRequest(reason: String) -> String {
+        "\(reason) Repairing stops all sound. Click to repair and set up automatic repairs. macOS may ask for your password and separate helper approval."
+    }
+
+    static func promptMessage(deviceName: String) -> String {
+        let device = deviceName.isEmpty ? "your speakers" : deviceName
+        return "Crackling on \(device). \(promptConsequence)"
+    }
+
     // MARK: Numbers
 
     /// Durations the way an engineer reads them: precise when small, coarse
@@ -106,24 +153,14 @@ enum RepairCopy {
 
     // MARK: Notifications
 
-    /// The heads-up posted the moment the automatic path commits to a
-    /// repair, so the user who just heard the crackle is told Fennec is on
-    /// the case before the safety scan and the restart run. Two short
-    /// clauses, nothing else: the user is mid-fault and mid-task, and the
-    /// result banner that replaces this one carries the detail.
+    /// The heads-up posted once the automatic path passes its safety checks,
+    /// immediately before the restart. The result banner replaces it.
     static func repairStartingTitle() -> String {
         "Crackle detected"
     }
 
     static func repairStartingBody() -> String {
         "Resetting speakers..."
-    }
-
-    /// The retraction, when the safety scan vetoes a repair the heads-up
-    /// already promised. The body is the blocker itself ("Skipped: the
-    /// microphone is active."), which is the one thing the user can act on.
-    static func repairCalledOffTitle() -> String {
-        "Crackle repair skipped"
     }
 
     /// One line, and the same line whether Fennec caught it or the user
@@ -142,7 +179,7 @@ enum RepairCopy {
     /// The one sentence for "it worked", used everywhere it is said.
     /// Changing it here changes the banner, the button, and the receipt
     /// together, which is the point.
-    static let repairedTitle = "Audio repaired"
+    static let repairedTitle = "Donesies"
 
     /// A successful repair has an empty body on purpose. The title already
     /// says the only thing the user wanted to know, and a second line

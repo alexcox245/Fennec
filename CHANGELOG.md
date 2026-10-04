@@ -1,7 +1,25 @@
 # Changelog
 
-Notable changes, newest first. Fennec has not had a tagged release yet; these
-are the milestones on `main`.
+Notable changes, newest first.
+
+## 1.0.1 (build 4)
+
+- Preserve Automatic repair mode after an update when the approved helper
+  is slow to answer, and prevent launch recovery from racing restoration.
+- Retry helper registration once when it races macOS teardown; preserve
+  the approval-required fallback to Ask me first.
+- Re-enable Check for Updates after cancelling an update offer.
+
+## 1.0 (build 2) — release candidate
+
+- Recheck automatic-repair consent and safety after asynchronous helper
+  recovery, so a pause, mode change, output change, or new audio-use
+  protection cannot leave an automatic restart queued.
+- Include the final approved fox animation corrections and the bounded
+  manual-repair replay behavior.
+- Refresh installation and removal guidance and prepare the public launch
+  gallery and release notes. Distribution and live update validation remain
+  subject to the checks in `Docs/VALIDATION.md`.
 
 ## Unreleased
 

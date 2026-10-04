@@ -126,6 +126,19 @@
 		F8BCDB47852765D3F18F8EBE /* ReviewRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */; };
 		F68A3F6E9FF3639D44AFDF2B /* FennecBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0070FC9E50061BEA041F870 /* FennecBrand.swift */; };
 		DA6931C86D5F83496EB9AF62 /* FennecBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0070FC9E50061BEA041F870 /* FennecBrand.swift */; };
+		AA02EEB2A127AAA0EE37042F /* FoxRunMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F481C5228C65CF8FAF837DAB /* FoxRunMotion.swift */; };
+		D5CADE165E515EDBD6DE3043 /* FoxRunAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE27046A3669191A40F751 /* FoxRunAsset.swift */; };
+		6FE799749C51F4717259F9C9 /* RepairFoxController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F4AB87A496D03E7D6FE0DC /* RepairFoxController.swift */; };
+		09F3936A640CD119806CD6C7 /* fennec-run.gif in Resources */ = {isa = PBXBuildFile; fileRef = DCDD3680989676D1294EECE4 /* fennec-run.gif */; };
+		ABA13A28F63D4F2F99627B6F /* FoxRunMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F481C5228C65CF8FAF837DAB /* FoxRunMotion.swift */; };
+		8A4E65E771CA9B75F5F75F68 /* FoxRunAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76FE27046A3669191A40F751 /* FoxRunAsset.swift */; };
+		3D7654123D0CE9C5225A8739 /* FoxRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B2EF3114F43AF346DC8788 /* FoxRunTests.swift */; };
+		8CDF9470B1012B3822C9FB50 /* fennec-run.gif in Resources */ = {isa = PBXBuildFile; fileRef = DCDD3680989676D1294EECE4 /* fennec-run.gif */; };
+		A8D21C2AE10F4AC192320001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A8D21C2AE10F4AC192320002 /* Sparkle */; };
+		A8D21C2AE10F4AC192320004 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D21C2AE10F4AC192320005 /* Updater.swift */; };
+		A10300000000000000000001 /* HelperUpdateRestoration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10300000000000000000004 /* HelperUpdateRestoration.swift */; };
+		A10300000000000000000002 /* HelperUpdateRestoration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10300000000000000000004 /* HelperUpdateRestoration.swift */; };
+		A10300000000000000000003 /* HelperUpdateRestorationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10300000000000000000005 /* HelperUpdateRestorationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -236,6 +249,7 @@
 		396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperIdentity.swift; sourceTree = "<group>"; };
 		C4E25A70DAA04F3A79401019 /* Uninstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstaller.swift; sourceTree = "<group>"; };
 		0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		A8D21C2AE10F4AC192320005 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		BDB135AAE4E46F154D69E127 /* UninstallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallTests.swift; sourceTree = "<group>"; };
 		70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaysWithoutIncident.swift; sourceTree = "<group>"; };
 		7A64E84489F0B6AB889C87C9 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
@@ -252,6 +266,13 @@
 		DC3C0B967D88DB4B4C3463D8 /* HelperThrottle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperThrottle.swift; sourceTree = "<group>"; };
 		C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewRegressionTests.swift; sourceTree = "<group>"; };
 		C0070FC9E50061BEA041F870 /* FennecBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FennecBrand.swift; sourceTree = "<group>"; };
+		F481C5228C65CF8FAF837DAB /* FoxRunMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxRunMotion.swift; sourceTree = "<group>"; };
+		76FE27046A3669191A40F751 /* FoxRunAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxRunAsset.swift; sourceTree = "<group>"; };
+		67F4AB87A496D03E7D6FE0DC /* RepairFoxController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepairFoxController.swift; sourceTree = "<group>"; };
+		E8B2EF3114F43AF346DC8788 /* FoxRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxRunTests.swift; sourceTree = "<group>"; };
+		DCDD3680989676D1294EECE4 /* fennec-run.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Resources/fennec-run.gif; sourceTree = "<group>"; };
+		A10300000000000000000004 /* HelperUpdateRestoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperUpdateRestoration.swift; sourceTree = "<group>"; };
+		A10300000000000000000005 /* HelperUpdateRestorationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperUpdateRestorationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -267,6 +288,7 @@
 				6E225F03FD467727FB855895 /* ServiceManagement.framework in Frameworks */,
 				B6B697C3DE7C5D3C289EDEA3 /* SwiftUI.framework in Frameworks */,
 				54FFEFDEB90CCE55D7C0E2C4 /* UserNotifications.framework in Frameworks */,
+				A8D21C2AE10F4AC192320001 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -330,6 +352,10 @@
 		C8A1E76B6CA46DDC89E29CCD /* Fennec */ = {
 			isa = PBXGroup;
 			children = (
+				F481C5228C65CF8FAF837DAB /* FoxRunMotion.swift */,
+				76FE27046A3669191A40F751 /* FoxRunAsset.swift */,
+				67F4AB87A496D03E7D6FE0DC /* RepairFoxController.swift */,
+				DCDD3680989676D1294EECE4 /* fennec-run.gif */,
 				C0070FC9E50061BEA041F870 /* FennecBrand.swift */,
 				60ADD607CE7A1865D1083DDA /* DrainSchedule.swift */,
 				A1B7F005E2D34C5B6A7890F5 /* OverloadLogSchedule.swift */,
@@ -340,6 +366,7 @@
 				70EE3050B66F6548E8E7699A /* DaysWithoutIncident.swift */,
 				7A64E84489F0B6AB889C87C9 /* ActivityView.swift */,
 				0B7F07F9D2ACC1892A1AD81D /* AboutView.swift */,
+				A8D21C2AE10F4AC192320005 /* Updater.swift */,
 				C4E25A70DAA04F3A79401019 /* Uninstaller.swift */,
 				396E8D13C55BB71E3D8F7490 /* HelperIdentity.swift */,
 				C92F80F62BC00CAD462C6079 /* RepairGovernor.swift */,
@@ -354,6 +381,7 @@
 				913D3D17BD12D409AF0CCA1E /* PendingConfirmation.swift */,
 				6861F3028CCBA2DC05995389 /* NotificationBudget.swift */,
 				7A11C0FFEE00000000000001 /* HelperHealPolicy.swift */,
+				A10300000000000000000004 /* HelperUpdateRestoration.swift */,
 				5149679352762FC1CDFCE788 /* SystemEvents.swift */,
 				BBB6180F77631D5070D0FE7F /* MenuBarIcon.swift */,
 				04C47B7E3DA12A4BC92246E6 /* SetupChecklist.swift */,
@@ -415,6 +443,7 @@
 		B70DAAD309CBEAD7A46A048E /* FennecTests */ = {
 			isa = PBXGroup;
 			children = (
+				E8B2EF3114F43AF346DC8788 /* FoxRunTests.swift */,
 				C00E98676C2372A58DD7FF9B /* ReviewRegressionTests.swift */,
 				B15A3EA681C0B9F1408DB108 /* DrainScheduleTests.swift */,
 				A1B7F007E2D34C5B6A7890F7 /* OverloadLogScheduleTests.swift */,
@@ -426,6 +455,7 @@
 				931713A1E3250114DCB23200 /* FirstRunTests.swift */,
 				8BF3A1DBFA4C1AD8AEA54200 /* NotificationBudgetTests.swift */,
 				7A11C0FFEE00000000000002 /* HelperHealPolicyTests.swift */,
+				A10300000000000000000005 /* HelperUpdateRestorationTests.swift */,
 				38777CC9BF8FA1EA443340EA /* SetupChecklistTests.swift */,
 				00A7550D2019F59A504F3724 /* RepairHistoryStoreTests.swift */,
 				E9D89A79752B9E482A338E6C /* RepairCopyTests.swift */,
@@ -454,6 +484,9 @@
 			);
 			dependencies = (
 				0FBC5C7CDCE0FAEAE7CFE449 /* PBXTargetDependency */,
+			);
+			packageProductDependencies = (
+				A8D21C2AE10F4AC192320002 /* Sparkle */,
 			);
 			name = Fennec;
 			productName = Fennec;
@@ -532,14 +565,37 @@
 				C0DFCD4F7B9B74251BA3118B /* FennecHelper */,
 				059F418228F2A6AF2DD04FC1 /* FennecTests */,
 			);
+			packageReferences = (
+				A8D21C2AE10F4AC192320003 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 		};
 /* End PBXProject section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A8D21C2AE10F4AC192320003 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A8D21C2AE10F4AC192320002 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A8D21C2AE10F4AC192320003 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		253694B87BCB5FB6ECA0DC84 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				09F3936A640CD119806CD6C7 /* fennec-run.gif in Resources */,
 				31CBF21E7A33A03A50BD5350 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -555,6 +611,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8CDF9470B1012B3822C9FB50 /* fennec-run.gif in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -579,6 +636,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA02EEB2A127AAA0EE37042F /* FoxRunMotion.swift in Sources */,
+				D5CADE165E515EDBD6DE3043 /* FoxRunAsset.swift in Sources */,
+				6FE799749C51F4717259F9C9 /* RepairFoxController.swift in Sources */,
 				F68A3F6E9FF3639D44AFDF2B /* FennecBrand.swift in Sources */,
 				37F12AD758BF162F2F0E866A /* HelperThrottle.swift in Sources */,
 				BD41497897092C7F0B59F685 /* DrainSchedule.swift in Sources */,
@@ -604,6 +664,7 @@
 				3AB8DE40F373B62D6A5CC215 /* PendingConfirmation.swift in Sources */,
 				FC9C744B14C3A1BAEF9242AF /* NotificationBudget.swift in Sources */,
 				7A11C0FFEE00000000000003 /* HelperHealPolicy.swift in Sources */,
+				A10300000000000000000001 /* HelperUpdateRestoration.swift in Sources */,
 				1B136E8E28DFCDD2C9EFFB48 /* SystemEvents.swift in Sources */,
 				5DC0708A2097C7EAC747D4A9 /* MenuBarIcon.swift in Sources */,
 				5B7E4CB3BDE84E939D3B75BB /* SetupChecklist.swift in Sources */,
@@ -621,6 +682,7 @@
 				718DFE65EADFDAAE4B651A32 /* LoginItemManager.swift in Sources */,
 				E049477CCF731A07453CF8A9 /* MenuView.swift in Sources */,
 				9CCEC2E73B999823A8A60339 /* NotificationController.swift in Sources */,
+				A8D21C2AE10F4AC192320004 /* Updater.swift in Sources */,
 				1CD48FA92DE3437305698673 /* PrivilegedPromptRepair.swift in Sources */,
 				DA8245D65355DAEB558285D8 /* RecoverySafetyChecker.swift in Sources */,
 				2314A5D92FF4B8C71DC8321B /* SettingsStore.swift in Sources */,
@@ -636,6 +698,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ABA13A28F63D4F2F99627B6F /* FoxRunMotion.swift in Sources */,
+				8A4E65E771CA9B75F5F75F68 /* FoxRunAsset.swift in Sources */,
+				3D7654123D0CE9C5225A8739 /* FoxRunTests.swift in Sources */,
 				DA6931C86D5F83496EB9AF62 /* FennecBrand.swift in Sources */,
 				F8BCDB47852765D3F18F8EBE /* ReviewRegressionTests.swift in Sources */,
 				FAE57F84B5E7241F17F937CC /* HelperThrottle.swift in Sources */,
@@ -661,6 +726,8 @@
 				509835A308073938B26119FF /* PrivilegedPromptRepair.swift in Sources */,
 				13658AEC65AFDDB5652DFDBD /* NotificationBudgetTests.swift in Sources */,
 				7A11C0FFEE00000000000005 /* HelperHealPolicyTests.swift in Sources */,
+				A10300000000000000000002 /* HelperUpdateRestoration.swift in Sources */,
+				A10300000000000000000003 /* HelperUpdateRestorationTests.swift in Sources */,
 				49D4728514DC5C2DFE34C005 /* PendingConfirmation.swift in Sources */,
 				8C5B7B3FBD03A12136AC514F /* SystemEvents.swift in Sources */,
 				A3B00A0E6079547BE445B552 /* NotificationBudget.swift in Sources */,
@@ -764,7 +831,7 @@
 				CODE_SIGN_ENTITLEMENTS = Fennec/Fennec.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 249X253HS3;
 				ENABLE_APP_SANDBOX = NO;
@@ -775,7 +842,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.Fennec;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -842,7 +909,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 249X253HS3;
 				ENABLE_APP_SANDBOX = NO;
@@ -850,7 +917,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FennecHelper/Info.plist;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.Fennec.helper;
 				PRODUCT_NAME = FennecHelper;
 				SKIP_INSTALL = YES;
@@ -864,7 +931,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 249X253HS3;
 				ENABLE_APP_SANDBOX = NO;
@@ -872,7 +939,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FennecHelper/Info.plist;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.Fennec.helper;
 				PRODUCT_NAME = FennecHelper;
 				SKIP_INSTALL = YES;
@@ -887,7 +954,7 @@
 				CODE_SIGN_ENTITLEMENTS = Fennec/Fennec.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 249X253HS3;
 				ENABLE_APP_SANDBOX = NO;
@@ -898,7 +965,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.Fennec;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -913,7 +980,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_APP_SANDBOX = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -922,7 +989,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.2;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.FennecTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -935,7 +1002,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_APP_SANDBOX = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -944,7 +1011,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.2;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ludicrousdesigns.FennecTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;

@@ -29,6 +29,11 @@ jobs:
       - name: Static audit
         run: zsh Scripts/audit-source.sh
 
+      - name: Release signature regression checks
+        run: |
+          xcrun swiftc Scripts/verify-updates.swift -o /tmp/fennec-verify-updates
+          xcrun swift Scripts/test-update-verification.swift /tmp/fennec-verify-updates
+
       - name: Unit tests
         run: |
           xcodebuild -project Fennec.xcodeproj -scheme Fennec \

@@ -8,7 +8,7 @@ import SwiftUI
 /// LaunchDaemon, that is not the information anyone actually wants. This one
 /// answers the four questions a person evaluating that decision asks:
 ///
-/// 1. What can it do to my Mac? (all three privileged paths, verbatim)
+/// 1. What can it do to my Mac? (all four privileged paths, verbatim)
 /// 2. What is *actually* running as root right now? (the helper's own build
 ///    and path, read back over XPC, because after an in-place update the app
 ///    and the daemon can disagree)
@@ -19,6 +19,8 @@ import SwiftUI
 struct AboutView: View {
     @ObservedObject var model: AppModel
     @ObservedObject private var helper: HelperManager
+    @StateObject private var updater: FennecUpdater
+    @ObservedObject private var updateDriver: FennecUpdateDriver
     @StateObject private var uninstaller = Uninstaller()
 
     @State private var showingUninstall = false
@@ -29,14 +31,17 @@ struct AboutView: View {
     init(model: AppModel) {
         self.model = model
         _helper = ObservedObject(wrappedValue: model.helperManager)
+        let updater = FennecUpdater(model: model)
+        _updater = StateObject(wrappedValue: updater)
+        _updateDriver = ObservedObject(wrappedValue: updater.driver)
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 16) {
                 masthead
-                privilegeSection
-                verifySection
+                updateSection
+                detailsSection
                 removalSection
             }
             .padding(28)
@@ -52,7 +57,7 @@ struct AboutView: View {
             Button("Remove Helper", role: .destructive) { helper.unregister() }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Automatic repair stops immediately. Turning it back on needs your approval in System Settings again. Repair Audio Now will still work, using your administrator password.")
+            Text("Automatic repair stops immediately. Fennec can still ask before a repair that uses your administrator password.")
         }
     }
 
@@ -74,64 +79,22 @@ struct AboutView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
-                Text(PrivilegeDisclosure.whyNotAShellAlias)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
             }
             Spacer(minLength: 0)
         }
     }
 
-    private var privilegeSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            sectionTitle("What Fennec can do to this Mac", symbol: "lock.shield")
+    private var updateSection: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            sectionTitle("Software Update", symbol: "arrow.down.circle")
+            Text("Check when you choose. Fennec downloads a signed update only after you ask, then waits for Install & Relaunch.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
-            ForEach(PrivilegeDisclosure.privilegedActions) { item in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.title).font(.callout.weight(.semibold))
-                    Text(item.detail)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if let code = item.code {
-                        Text(code)
-                            .font(.callout.monospaced())
-                            .textSelection(.enabled)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 5)
-                            .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    }
-                }
-                .accessibilityElement(children: .combine)
-            }
-
-            Divider()
-
-            // LabeledContent only spreads inside a Form; here it would render
-            // the label and value jammed together on the left.
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text("Helper running as root")
-                    .font(.callout)
-                Spacer(minLength: 12)
-                Text(helperDescription)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .accessibilityElement(children: .combine)
-
-            if let mismatch = helper.versionMismatch {
-                Label(mismatch, systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(FennecBrand.dune)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            updateStatus
         }
-        .padding(18)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay {
@@ -140,41 +103,170 @@ struct AboutView: View {
         }
     }
 
-    private var verifySection: some View {
+    @ViewBuilder
+    private var updateStatus: some View {
+        switch updateDriver.presentation {
+        case .idle:
+            Button("Check for Updates") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
+        case .checking:
+            updateProgress("Checking for updates…", progress: nil)
+            Button("Cancel") { updateDriver.cancelCurrentOperation() }
+        case let .available(version, notes, informationOnly, _):
+            VStack(alignment: .leading, spacing: 7) {
+                Text("Version \(version) is available.")
+                    .font(.callout.weight(.medium))
+                if !notes.isEmpty {
+                    Text(notes)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                }
+            }
+            HStack {
+                if informationOnly {
+                    Button("View Release") { updateDriver.openInformationURL() }
+                        .buttonStyle(.borderedProminent)
+                } else {
+                    Button("Download Update") { updateDriver.chooseDownload() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(FennecBrand.sky)
+                }
+                Button("Cancel") { updateDriver.cancelAvailableUpdate() }
+            }
+        case let .downloading(progress):
+            updateProgress("Downloading…", progress: progress)
+            Button("Cancel Download") { updateDriver.cancelCurrentOperation() }
+        case let .extracting(progress):
+            updateProgress("Verifying update…", progress: progress)
+        case let .preparingInstall(version):
+            updateProgress("Preparing version \(version)…", progress: nil)
+            Text("Waiting for any active repair to finish.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button("Cancel") { updateDriver.cancelPendingInstallation() }
+        case let .readyToInstall(version):
+            Text("Version \(version) is ready.")
+                .font(.callout.weight(.medium))
+            HStack {
+                Button("Install & Relaunch") { updateDriver.installAndRelaunch() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(FennecBrand.sky)
+                Button("Cancel") { updateDriver.cancelPendingInstallation() }
+            }
+        case .installing:
+            updateProgress("Installing…", progress: nil)
+        case .current:
+            Label("Fennec is up to date.", systemImage: "checkmark.circle")
+                .font(.callout)
+                .foregroundStyle(FennecBrand.sky)
+            Button("Check Again") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
+        case let .failed(message):
+            Label(message, systemImage: "exclamationmark.triangle")
+                .font(.callout)
+                .foregroundStyle(FennecBrand.dune)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+            Button("Try Again") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
+        }
+    }
+
+    private func updateProgress(_ title: String, progress: Double?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                if let progress {
+                    ProgressView(value: progress)
+                        .frame(maxWidth: 180)
+                    Text("\(Int(progress * 100))%")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                } else {
+                    ProgressView().controlSize(.small)
+                }
+                Text(title).font(.callout)
+            }
+        }
+    }
+
+    private var detailsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Check this build", symbol: "checkmark.seal")
-            Text("Fennec ships a SHA-256 of every source file it was built from. "
-                 + "These three commands say whether the code you can read is the code that is running.")
+            DisclosureGroup("What Fennec can do") {
+                VStack(alignment: .leading, spacing: 11) {
+                    Text(PrivilegeDisclosure.whyNotAShellAlias)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ForEach(PrivilegeDisclosure.privilegedActions) { item in
+                        disclosureRow(item)
+                    }
+                    LabeledContent("Helper running as root", value: helperDescription)
+                        .textSelection(.enabled)
+                    if let mismatch = helper.versionMismatch {
+                        Label(mismatch, systemImage: "exclamationmark.triangle.fill")
+                            .font(.callout)
+                            .foregroundStyle(FennecBrand.dune)
+                    }
+                }
+                .padding(.top, 8)
+            }
+
+            DisclosureGroup("Privacy and files") {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(PrivilegeDisclosure.facts) { item in
+                        disclosureRow(item)
+                    }
+                }
+                .padding(.top, 8)
+            }
+
+            DisclosureGroup("Verify this copy") {
+                VStack(alignment: .leading, spacing: 9) {
+                    Text("Fennec includes a SHA-256 manifest for its source files.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Text(Self.verifyCommands)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                    HStack(spacing: 10) {
+                        Button(copiedCommands ? "Copied" : "Copy Commands") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(Self.verifyCommands, forType: .string)
+                            copiedCommands = true
+                            Task {
+                                try? await Task.sleep(for: .milliseconds(1_500))
+                                copiedCommands = false
+                            }
+                        }
+                        .disabled(copiedCommands)
+                        Button("Reveal Event Log") { model.openEventLog() }
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+        .font(.callout)
+    }
+
+    private func disclosureRow(_ item: PrivilegeDisclosure.Item) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(item.title).font(.callout.weight(.semibold))
+            Text(item.detail)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-
-            Text(Self.verifyCommands)
-                .font(.callout.monospaced())
-                .textSelection(.enabled)
-                .padding(11)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-            HStack(spacing: 10) {
-                Button(copiedCommands ? "Copied" : "Copy Commands") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(Self.verifyCommands, forType: .string)
-                    // A button that writes the pasteboard and changes nothing
-                    // is indistinguishable from one that did not work.
-                    copiedCommands = true
-                    Task {
-                        try? await Task.sleep(for: .milliseconds(1_500))
-                        copiedCommands = false
-                    }
-                }
-                .disabled(copiedCommands)
-                .help("Copies the three verification commands to the clipboard.")
-                Button("Reveal Event Log") { model.openEventLog() }
-                    .help("The raw JSONL stream Fennec writes: every signal, every skipped repair, every device change.")
-                Spacer()
+            if let code = item.code {
+                Text(code)
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             }
         }
+        .accessibilityElement(children: .combine)
     }
 
     private var removalSection: some View {
@@ -210,9 +302,10 @@ struct AboutView: View {
             // registered, and dropping it from the plan produced "Fennec is
             // removed" over a root helper that was still there.
             helperInstalled: helper.isRegistered,
-            loginItemEnabled: model.loginItemManager.isEnabled,
+            loginItemRegistered: model.loginItemManager.state.isRegistered,
             keepLogs: keepLogs,
-            canRemoveBundle: true
+            canRemoveBundle: true,
+            hasUpdateCache: FennecUpdater.hasUpdateCache
         )
     }
 
@@ -224,7 +317,7 @@ struct AboutView: View {
 
             if uninstaller.finished {
                 Text(uninstaller.allSucceeded
-                     ? "Fennec is removed. Quit to finish."
+                     ? "Fennec is removed. Quitting…"
                      : (uninstaller.failureSummary ?? "Some steps did not complete."))
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
@@ -239,7 +332,7 @@ struct AboutView: View {
                         .background(FennecBrand.card, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 }
             } else {
-                Text(UninstallPlan.summary(keepLogs: keepLogs))
+                Text(UninstallPlan.summary(keepLogs: keepLogs, hasUpdateCache: FennecUpdater.hasUpdateCache))
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -275,25 +368,26 @@ struct AboutView: View {
                 Spacer()
 
                 if uninstaller.finished {
-                    // Always an exit. A sheet whose only control is "Quit" is
-                    // a dead end for anyone reading a partial-failure report.
-                    Button("Close") { showingUninstall = false }
-                        .keyboardShortcut(.cancelAction)
-                    if !uninstaller.allSucceeded && uninstaller.canRetry {
-                        Button("Try Again") {
-                            uninstaller.reset()
+                    if !uninstaller.allSucceeded {
+                        Button("Close") { showingUninstall = false }
+                            .keyboardShortcut(.cancelAction)
+                        if uninstaller.canRetry {
+                            Button("Try Again") {
+                                uninstaller.reset()
+                            }
                         }
                     }
-                    Button("Quit Fennec") { model.quit() }
-                        .keyboardShortcut(.defaultAction)
-                        .buttonStyle(.borderedProminent)
                 } else {
                     Button("Cancel") { showingUninstall = false }
                         .keyboardShortcut(.cancelAction)
                         .disabled(uninstaller.isRunning)
                     Button("Uninstall") {
+                        model.loginItemManager.refresh()
                         let steps = uninstallSteps
-                        Task { await uninstaller.run(keepLogs: keepLogs, steps: steps) }
+                        Task {
+                            await uninstaller.run(keepLogs: keepLogs, steps: steps)
+                            if uninstaller.allSucceeded { model.quitAfterSuccessfulUninstall() }
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
@@ -317,7 +411,7 @@ struct AboutView: View {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = info?["CFBundleVersion"] as? String ?? "1"
-        return "Version \(version) (build \(build)) · local only, no network"
+        return "Version \(version) (build \(build))"
     }
 
     private var helperDescription: String {

@@ -176,7 +176,7 @@ final class RepairOutcomeCopyTests: XCTestCase {
     }
 
     func testAManualRepairThatHeldIsNotCreditedToFennec() {
-        XCTAssertEqual(RepairCopy.receiptHeadline(for: record(.held, trigger: .manual)), "Audio repaired")
+        XCTAssertEqual(RepairCopy.receiptHeadline(for: record(.held, trigger: .manual)), "Donesies")
     }
 
     func testNoOutcomeProducesEmptyOrShoutingCopy() {

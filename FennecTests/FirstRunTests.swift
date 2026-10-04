@@ -67,18 +67,19 @@ final class InstallLocationTests: XCTestCase {
 /// only the XPC surface is a true statement engineered to mislead, because
 /// there is a second privileged path.
 final class PrivilegeDisclosureTests: XCTestCase {
-    func testAllThreePrivilegedPathsAreListed() {
+    func testEveryPrivilegedPathIsListed() {
         let ids = PrivilegeDisclosure.privilegedActions.map(\.id)
-        XCTAssertEqual(ids, ["helper", "command", "prompt"])
+        XCTAssertEqual(ids, ["helper", "command", "prompt", "update"])
     }
 
     func testTheAdministratorPromptIsDisclosedNotOmitted() throws {
         let item = try XCTUnwrap(PrivilegeDisclosure.privilegedActions.first { $0.id == "prompt" })
         XCTAssertTrue(item.detail.contains("password"))
         XCTAssertTrue(
-            item.detail.contains("asks you first"),
+            item.detail.contains("click its repair notification"),
             "The whole point is that this never happens unannounced."
         )
+        XCTAssertTrue(item.detail.contains("separate approval in Login Items"))
     }
 
     func testTheDisclosedCommandIsTheCommandThatRuns() throws {
@@ -99,6 +100,15 @@ final class PrivilegeDisclosureTests: XCTestCase {
         XCTAssertTrue(ids.contains("limitation"), "Fennec detects the signal, not the sound.")
         XCTAssertTrue(ids.contains("network"))
         XCTAssertTrue(ids.contains("files"))
+    }
+
+    func testTheUpdateDisclosureNamesTheManualSignedFeedAndPrivacyChoice() throws {
+        let item = try XCTUnwrap(PrivilegeDisclosure.facts.first { $0.id == "network" })
+        XCTAssertTrue(item.title.contains("only when you ask"))
+        XCTAssertTrue(item.detail.contains("signed release feed"))
+        XCTAssertTrue(item.detail.contains("Install & Relaunch"))
+        XCTAssertTrue(item.detail.contains("no system profile"))
+        XCTAssertFalse(item.detail.contains("no network"))
     }
 
     func testTheShellAliasQuestionIsAnswered() {
@@ -147,21 +157,38 @@ final class FirstRunPreferenceTests: XCTestCase {
     }
 
     func testFirstLaunchHasNotCompletedFirstRun() {
-        XCTAssertFalse(SettingsStore(defaults: defaults).hasCompletedFirstRun)
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertFalse(store.hasCompletedFirstRun)
+        XCTAssertTrue(store.shouldShowWelcomeOnReopen)
     }
 
     func testCompletionPersistsAcrossRelaunch() {
         let store = SettingsStore(defaults: defaults)
         store.hasCompletedFirstRun = true
-        XCTAssertTrue(SettingsStore(defaults: defaults).hasCompletedFirstRun)
+        let reopened = SettingsStore(defaults: defaults)
+        XCTAssertTrue(reopened.hasCompletedFirstRun)
+        XCTAssertFalse(reopened.shouldShowWelcomeOnReopen)
     }
 
-    func testAutomaticRepairDefaultsOnAndBalancedIsTheDefaultThreshold() {
+    func testFreshInstallStartsWithAutomaticAndBalancedDetection() {
         let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.repairMode, .automatic)
         XCTAssertTrue(store.autoRepairEnabled)
+        XCTAssertEqual(defaults.string(forKey: "repairMode"), RepairMode.automatic.rawValue)
         XCTAssertEqual(store.sensitivity, .balanced)
         XCTAssertTrue(store.notifyOnRepair)
+        XCTAssertTrue(store.showRepairFox)
         XCTAssertEqual(store.cooldownSeconds, 45)
+    }
+
+    func testAnExistingAskFirstChoiceSurvivesTheNewDefault() {
+        defaults.set(RepairMode.askFirst.rawValue, forKey: "repairMode")
+        XCTAssertEqual(SettingsStore(defaults: defaults).repairMode, .askFirst)
+    }
+
+    func testCompletedLegacyInstallKeepsItsImplicitAutomaticDefault() {
+        defaults.set(true, forKey: "hasCompletedFirstRun")
+        XCTAssertEqual(SettingsStore(defaults: defaults).repairMode, .automatic)
     }
 
     func testTheSafetyDefaultsAreAllProtective() {
@@ -176,7 +203,21 @@ final class FirstRunPreferenceTests: XCTestCase {
         defaults.set("immediate", forKey: "sensitivity")
         let store = SettingsStore(defaults: defaults)
         XCTAssertFalse(store.autoRepairEnabled)
+        XCTAssertEqual(store.repairMode, .askFirst)
         XCTAssertEqual(store.sensitivity, .immediate)
+    }
+
+    func testLegacyAutomaticPreferenceMigratesAndPersistsAsAMode() {
+        defaults.set(true, forKey: "autoRepairEnabled")
+        let store = SettingsStore(defaults: defaults)
+        XCTAssertEqual(store.repairMode, .automatic)
+        XCTAssertEqual(defaults.string(forKey: "repairMode"), RepairMode.automatic.rawValue)
+    }
+
+    func testExplicitRepairModeTakesPrecedenceOverTheLegacyBoolean() {
+        defaults.set(true, forKey: "autoRepairEnabled")
+        defaults.set(RepairMode.askFirst.rawValue, forKey: "repairMode")
+        XCTAssertEqual(SettingsStore(defaults: defaults).repairMode, .askFirst)
     }
 
     func testAnUnrecognisedSensitivityFallsBackToBalanced() {

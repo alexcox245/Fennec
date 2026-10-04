@@ -6,13 +6,16 @@ to report it when the boundary is wrong.
 
 ## Reporting a vulnerability
 
-Open a private security advisory on the repository, or email the maintainer at
-the address on the GitHub profile that owns it. Please include the macOS
+Use the repository's **Report a vulnerability** button when it is available.
+If private vulnerability reporting is not enabled yet, the maintainer has not
+published a private reporting channel; avoid posting exploit details in a
+public issue. Please include the macOS
 version, the Fennec build number (**About Fennec** shows it), and what you did.
 
 Expect an acknowledgement within **7 days** and an assessment within **30**.
-Fennec is a single-maintainer project with no network surface; if that timeline
-is not acceptable for what you have found, say so in the first message.
+Fennec is a single-maintainer project with a narrow, user-triggered update
+surface; if that timeline is not acceptable for what you have found, say so in
+the first message.
 
 Please do not open a public issue for anything that would let a local process
 escalate privilege.
@@ -41,9 +44,9 @@ The helper enforces its own 20-second floor between restarts, independently of
 anything the app asks for, and confirms a new `coreaudiod` process actually
 appeared before reporting success.
 
-## The second privileged path
+## Other privileged paths
 
-There is one, and it is disclosed in the app rather than buried here. When the
+The administrator-prompt repair path is also disclosed in the app. When the
 helper is **not** installed, Fennec can run the same command through a standard
 macOS administrator prompt (`osascript … with administrator privileges`). It
 always asks first and always shows the literal command before macOS asks for a
@@ -51,11 +54,22 @@ password. It will never take this path on its own after an XPC failure. That
 behaviour existed, and was removed, because an unexplained admin-password
 dialog is the visual signature of credential phishing.
 
+When you choose **Install & Relaunch**, Sparkle replaces Fennec with a signed
+release. If your account cannot write to `/Applications`, macOS may ask for
+administrator authorization. This path does not touch audio or change helper
+permissions.
+
 ## What Fennec does not do
 
-No network code of any kind. No telemetry, no crash reporting, no update
-check. No kernel extension, no audio driver, no virtual device. It writes two
-files, both under `~/Library/Application Support/Fennec`, both plain text.
+The monitor and repair path do not send observed audio signals or repair
+records off the Mac. Sparkle contacts the signed GitHub release feed only when
+the user chooses **Check for Updates**, and downloads only after the user
+chooses **Download Update**. Automatic checks, automatic downloads, automatic
+installation, system profiling, telemetry, and crash reporting are disabled.
+Fennec keeps its event log and repair receipts under
+`~/Library/Application Support/Fennec`; Sparkle keeps temporary update files
+under `~/Library/Caches/com.ludicrousdesigns.Fennec/org.sparkle-project.Sparkle`.
+No kernel extension, audio driver, or virtual device.
 
 ## Verifying a build
 
