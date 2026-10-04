@@ -123,14 +123,14 @@ struct SettingsView: View {
             Section("Notifications") {
                 Toggle("Tell me after Fennec repairs the audio", isOn: $settings.notifyOnRepair)
                 Toggle("Tell me when crackling is detected but not repaired", isOn: $settings.notifyOnDetection)
-                Text("Ask me first always sends a repair request notification.")
+                Text("Ask me first needs notifications to request a repair.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if notifications.authorizationChecked && !notifications.isAuthorized {
-                    // The switches still control banners; the repair prompt
-                    // remains available even when notification access is off.
+                    // The switches control optional banners. Ask me first
+                    // also needs notification access to request a repair.
                     Label {
                         Text("macOS is not allowing Fennec to notify you, so these do nothing.")
                             .font(.caption)
