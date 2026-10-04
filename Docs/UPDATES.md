@@ -21,13 +21,22 @@ For each release:
    file). Keep the notes specific and brief, without repair timings or
    internal framework names.
 3. Run `zsh Scripts/release-developer-id.sh`. It audits the source, builds,
-   signs, notarizes, staples, verifies, and zips the app, then uses Sparkle's
-   `generate_appcast` to sign an appcast in `build/updates/`.
+   signs, notarizes, staples, and verifies the app. It creates a signed,
+   notarized `build/DeveloperID/Fennec.dmg` with an Applications shortcut
+   for first installs, plus a ZIP for the in-app updater. Sparkle's
+   `generate_appcast` signs an appcast in `build/updates/`, and
+   `Scripts/verify-updates.swift` verifies the feed and every local archive
+   against the exported app's public key. It also checks the update security
+   settings and confirms the feed includes the exported build.
 4. Review the appcast and release archive, create a GitHub release tagged
-   `v<MARKETING_VERSION>`, and upload the new app archive, any new delta
-   archives, and `build/updates/appcast.xml`. The feed must keep entries and
+   `v<MARKETING_VERSION>`, and upload `Fennec.dmg`, `Fennec.zip`,
+   `SHA256SUMS.txt`, every archive and delta referenced by the generated feed,
+   and `build/updates/appcast.xml`. The feed must keep entries and
    assets for still-supported earlier versions. Keep `build/updates/` between
    releases so Sparkle can preserve the feed history and produce deltas.
+   The generator applies the current release's download prefix to retained
+   archives, so upload those archives to the new release too. Check each
+   enclosure URL anonymously before publishing the release as latest.
 
 The script prepares files but does not publish a release. Never commit the
 private signing key or export it into a build artifact. If it is lost, rotate
@@ -44,7 +53,48 @@ stapled archive, and verify both the feed and enclosure Ed25519 signatures
 against the exported app's `SUPublicEDKey`; an enclosure signature alone does
 not establish that the feed is signed.
 
-The website's Download buttons point to the latest public GitHub release.
-Publish both `Fennec.zip` for visitors and the versioned ZIP referenced by the
-signed feed, with identical contents and a `SHA256SUMS.txt` file. Verify the
-anonymous download after publication.
+## DMG installs and later updates
+
+The first-install download can use
+`https://github.com/alexcox245/Fennec/releases/latest/download/Fennec.dmg`.
+Publish and verify the DMG before switching the website buttons to that URL;
+until then, they use the existing `Fennec.zip` asset. Both downloads contain
+the same app and the same signed updater. Users open the DMG, drag Fennec
+into Applications, eject the image, and open Fennec from Applications.
+
+Users installed from a DMG receive later updates inside **About Fennec →
+Check for Updates**. They choose **Download Update**, then **Install &
+Relaunch**. Sparkle downloads the ZIP, verifies it, and replaces the app;
+users do not need another manual DMG install. Publishing a release makes it
+available to checks; it does not silently install it on anyone's Mac.
+Increment both targets' build numbers for every update, even when the
+marketing version stays the same. ZIP names include both version and build
+to avoid overwriting an earlier signed archive.
+Use a new GitHub tag for each release. The default is `v<MARKETING_VERSION>`;
+if that version was already published, set `FENNEC_RELEASE_TAG` to a new tag
+such as `v1.0-build4` when running the release script. The feed uses that exact
+tag in its archive URLs. Existing users compare build numbers, so a higher
+build is offered even when the displayed marketing version is unchanged.
+
+The website can stay on HostGator. Its button points directly to the release
+asset; GitHub serves the files and the already-configured signed feed.
+Moving the feed to HostGator would require a signed app update that changes
+`SUFeedURL`; keep the existing feed working for users who have not upgraded.
+
+For an app already exported and notarized through Organizer, create the DMG
+without rebuilding or re-signing the app:
+
+```bash
+zsh Scripts/create-dmg.sh build/WebsiteRelease/Fennec.app build/WebsiteRelease/Fennec.dmg --notarize
+xcrun swift Scripts/verify-updates.swift build/WebsiteRelease/Fennec.app build/WebsiteRelease/updates/appcast.xml
+```
+
+`--notarize` requires the `fennec-notary` Keychain profile (or
+`FENNEC_NOTARY_PROFILE`). Omitting it produces a signed draft DMG containing
+the notarized app, but reports that the disk image itself still needs
+notarization. Do not publish that draft until `notarytool submit`,
+`stapler staple`, `stapler validate`, and
+`spctl --assess --type open --context context:primary-signature` succeed.
+No packaging or verification command installs the app, registers a helper,
+or exercises the audio repair path. Live updater installation and helper
+restoration still require the supervised T-064 validation.

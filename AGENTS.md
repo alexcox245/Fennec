@@ -134,7 +134,9 @@ LICENSE · SECURITY.md · UNINSTALL.md · CHANGELOG.md
 .github/workflows/ci.yml       audit + tests + build matrix + a warning ceiling
 FennecTests/                   standalone XCTest bundle (no TEST_HOST)
 
-Scripts/                       audit-source.sh, build-release.sh, update-manifest.sh
+Scripts/                       audit-source.sh, build-release.sh, update-manifest.sh,
+                               create-dmg.sh, verify-updates.swift,
+                               test-update-verification.swift
 Docs/                          ARCHITECTURE.md, VALIDATION.md, UPDATES.md,
                                RELEASE_NOTES_v1.0.md, SOURCE_MANIFEST.sha256
 Brand/                         Fennec-AppIcon-Master.png (1254×1254), README.md,
@@ -185,9 +187,9 @@ Writes to `build/DerivedData/`, which is gitignored. It ends by *printing* the `
 zsh Scripts/release-developer-id.sh
 ```
 
-Archives with Developer ID, exports, notarizes, staples, zips, and finishes with the exact `spctl` assessment Gatekeeper runs on a downloaded copy. Its preflights fail loudly with the one-time setup steps (a Developer ID Application certificate for the team, and `xcrun notarytool store-credentials fennec-notary`; override the profile name with `FENNEC_NOTARY_PROFILE`). Distribution is **direct download only**: the Mac App Store requires App Sandbox, which `SMAppService` daemon registration rules out (§2), and would not admit a root helper that kills `coreaudiod` in any case.
+Archives with Developer ID, exports, notarizes, staples, creates a signed and notarized DMG for first installs plus ZIP archives for in-app updates, and finishes with the exact `spctl` assessments Gatekeeper runs on the app and disk image. `Scripts/create-dmg.sh` can also package an existing notarized export without rebuilding it. `Scripts/verify-updates.swift` cryptographically verifies the feed and local enclosures against the shipped app key; no private key is needed for verification. Its preflights fail loudly with the one-time setup steps (a Developer ID Application certificate for the team, and `xcrun notarytool store-credentials fennec-notary`; override the profile name with `FENNEC_NOTARY_PROFILE`). Distribution is **direct download only**: the Mac App Store requires App Sandbox, which `SMAppService` daemon registration rules out (§2), and would not admit a root helper that kills `coreaudiod` in any case.
 
-If the command-line notary profile is absent, an already signed-in Xcode account can use Organizer's **Direct Distribution** and **Export Notarized App**; see `Docs/UPDATES.md`. Before publishing, cryptographically verify both the feed and archive signatures against the exported app's public key. The release script's enclosure-signature grep alone is insufficient (T-095).
+If the command-line notary profile is absent, an already signed-in Xcode account can use Organizer's **Direct Distribution** and **Export Notarized App**; see `Docs/UPDATES.md`. Before publishing, cryptographically verify both the feed and archive signatures against the exported app's public key. The release script uses `Scripts/verify-updates.swift` for this check. T-095 still tracks the signed-feed failure-expiry decision.
 
 **Regenerate `Docs/SOURCE_MANIFEST.sha256` after editing tracked files:**
 
@@ -219,6 +221,13 @@ A change is not done until:
 - [ ] `Docs/SOURCE_MANIFEST.sha256` regenerated
 - [ ] The task ledger in §8 updated: entry moved to Done, or a new entry appended
 - [ ] Anything requiring a physical device or root is explicitly listed in your report as *not verified*
+
+**Release signature regression checks (also run by CI; ephemeral test keys, no app launch):**
+
+```bash
+xcrun swiftc Scripts/verify-updates.swift -o /tmp/fennec-verify-updates
+xcrun swift Scripts/test-update-verification.swift /tmp/fennec-verify-updates
+```
 
 ### Git conventions
 
@@ -356,7 +365,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-100**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-102**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -385,14 +394,16 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 | T-092 | P1 | Exclude debuggable clients from the production helper trust policy | Open | · | Both ordinary Debug and Apple Development Release app builds have get-task-allow and satisfy the current production peer requirement. A tested entitlement exclusion rejected them and accepted an older Developer ID export. Preserve Team ID/bundle checks and explicit development isolation; no injection or live XPC exploit was run. |
 | T-093 | P1 | Authenticate daemon exemptions in microphone protection | Open | · | The pure safety decision ignores an active-input process named coreaudiod or corespeechd even with an unrelated bundle ID. Verify Apple executable identity outside the RT callback and test conflicting, absent, copied, and reused identities while preserving the real speech-daemon exemption. |
 | T-094 | P2 | Harden local log and repair-history storage | Open | · | A temporary events.jsonl symlink made the production logger append to an unrelated temporary file. Use descriptor-based symlink/ownership checks, private modes, and bounded history loading. Same-user integrity/availability issue; no root file write was demonstrated. |
-| T-095 | P1 | Verify generated feed signatures and define feed failure expiry | Open | · | The release script's grep accepts an unsigned feed containing an enclosure signature. Verify feed/archive signatures against the built public key and assert security settings; explicitly choose Sparkle's documented 20-day signed-feed failure fallback policy. Existing T-064 still owns supervised updater lifecycle validation. |
+| T-095 | P1 | Verify generated feed signatures and define feed failure expiry | Open | · | T-100 replaced the grep with public-key verification of the feed and archives plus update security settings, covered by 17 regression checks in CI. Remaining: explicitly choose Sparkle's documented 20-day signed-feed failure fallback policy. Existing T-064 still owns supervised updater lifecycle validation. |
 | T-096 | P2 | Harden helper target identity and bound subprocess work | Open | · | Name-only pgrep included an inert user-owned coreaudiod impostor. Authenticate the actual daemon, bound/drain child output, use deadlines and a monotonic throttle, and define helper-side session policy. Root execution, output-flood stalls, and fast-user-switch behavior remain unverified. |
 
+| T-101 | P1 | Notarize and publish the prepared DMG, then switch the website download buttons | Open | · | Signed draft at build/WebsiteRelease/Fennec.dmg contains the current notarized build 3 app and an Applications shortcut. App signatures, ticket, Gatekeeper, and byte identity pass after read-only mounting. The disk image itself is not yet notarized: notarytool reports no Keychain password item for profile fennec-notary. Configure that profile (or supply an existing profile name), submit/staple/assess the disk image, publish it with updated checksums, and verify anonymous download before changing website links. No DMG publication or website switch has occurred. |
 
 ### Done
 
 | ID | Task | Completed | Commit | Notes |
 |---|---|---|---|---|
+| T-100 | Set up DMG distribution with the existing signed in-app updater | 2026-10-04 | This ledger commit | Added create-dmg.sh for signed APFS/lzfse images containing the notarized app, an Applications shortcut, and install/update instructions; the release script notarizes/staples/assesses the DMG and creates immutable version/build ZIP names. Added public-key verification of feed/archives/security flags, 17 inert regression checks, and CI coverage. Existing updater and app binaries are unchanged; a fresh locally generated feed verifies against the current notarized app key. All app/helper Debug and Release configurations, 298 tests, source audit, and manifest pass. Current DMG is a signed draft awaiting disk-image notarization/publication (T-101). Full notarized release pipeline, live update installation, helper lifecycle, and repair were not exercised; T-064 remains open. |
 | T-099 | Update the website headline and make both Mac buttons download the release archive | 2026-10-04 | This ledger commit | Updated local source and the existing HostGator homepage to the owner’s exact “Stop mac audio crackling” headline; both buttons now use the latest Fennec.zip asset URL. Fresh public response and Chrome render confirm the live changes; anonymous archive request returns HTTP 200 with attachment filename Fennec.zip. Browser download-event capture timed out, so actual browser download completion is unverified. All app/helper Debug and Release configurations, 298 standalone tests, and source audit pass. Existing hosting cache may show older HTML until refreshed. No installation, helper registration, repair, or updater installation exercised. |
 | T-098 | Research Show HN guidance and prepare an unpublished Fennec submission in the owner's browser | 2026-10-04 | This ledger commit | Read official Show HN guidelines and moderator presentation advice; verified MIT license, public repository, and live v1.0 release. Filled title, repository URL, and introduction in the logged-in Chrome submission form and verified all field values. Kept the tab open for owner handoff; never clicked submit. Told owner that HN prohibits generated text and to rewrite the draft in their own voice before publishing. No app sources or behavior changed; no audio repair, helper registration, or installation exercised. |
 | T-090 | Review Fennec's security from an adversarial perspective and document mitigations | 2026-10-04 | 40fad04 | Docs/SECURITY_REVIEW.md records six findings, inert evidence, attack prerequisites, and mitigations. Added T-091–T-096 for unresolved fixes. 298 tests, all four signed app/helper builds, source audit, and manifest verification pass; Gitleaks reports no matches across 95 commits. No application behavior changed. No helper lifecycle, live XPC exploitation, debugger injection, audio repair, or updater installation was exercised. |
