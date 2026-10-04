@@ -121,11 +121,13 @@ requires it.
 
 ## Install
 
-Download the notarized [Fennec.zip](https://github.com/alexcox245/Fennec/releases/latest/download/Fennec.zip)
+Download [Fennec.dmg](https://github.com/alexcox245/Fennec/releases/latest/download/Fennec.dmg)
 from the [website](https://fennec.ludicrousdesigns.com/) or
 [latest GitHub release](https://github.com/alexcox245/Fennec/releases/latest).
-Unzip it, move `Fennec.app` to `/Applications`, and open it there. Release 1.0
-build 3 is signed with Developer ID, notarized by Apple, and stapled.
+Open the disk image, drag `Fennec.app` into Applications, eject the image, and
+open Fennec from `/Applications`. Version 1.0.1 build 4 is signed with
+Developer ID, notarized by Apple, and stapled. The outer disk image is unsigned
+and carries that signed, notarized app. ZIP archives serve the in-app updater.
 You can also build from source:
 
 ```zsh
@@ -213,11 +215,13 @@ zsh Scripts/build-release.sh
 
 ## Validation status
 
-On 2026-10-04, release 1.0 build 3 passed all four signed app/helper Debug and
-Release builds, 298 standalone tests, the source audit, strict signature
+On 2026-10-04, release 1.0.1 build 4 passed all four signed app/helper Debug and
+Release builds, 306 standalone tests, the source audit, strict signature
 verification, notarization ticket validation, and Gatekeeper assessment.
-Both the signed update feed and archive verify against the exported app's
-public key. Supervised audio repair, helper lifecycle, and updater installation
+The signed update feed, both full archives, and the build 3-to-4 delta verify
+against the exported app's public key; applying the delta reproduces the
+notarized app. The 17 update-signature/security regressions also pass.
+Supervised audio repair, helper lifecycle, and build 4 updater installation
 remain unverified for this candidate; see
 [`Docs/VALIDATION.md`](Docs/VALIDATION.md) for exact evidence and remaining
 hands-on checks. Do not switch detection to **Immediate** until T-005 in
