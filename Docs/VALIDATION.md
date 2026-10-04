@@ -552,3 +552,27 @@ The app executable has SHA-256
 No app installation, app launch, helper registration, audio repair, or updater
 installation was performed. T-005 and T-064 remain open. The existing security
 findings T-091–T-096 remain open and are linked from the public release notes.
+
+
+## Updater verification started 2026-10-04 (T-064)
+
+The installed `/Applications/Fennec.app` is version 1.0, build 2, running as
+PID 926. A read-only launchd inspection shows its existing helper running
+as PID 934, with parent bundle version 2. The public feed offers build 3.
+The installed app and published app use the same HTTPS feed URL and
+Ed25519 public key. Automatic checks, downloads, installation, and system
+profiling are disabled; signed feeds and verification before extraction
+are enabled in both bundles.
+
+A fresh anonymous appcast download verifies against the shipped public key
+and the already-verified build 3 archive. The existing 17 update signature
+and security-setting regression checks all pass. These checks do not
+exercise the running updater's user driver or installation.
+
+Computer Use timed out twice when selecting the installed menu-bar-only
+app, and the system status-menu target timed out as well. The owner was
+asked to open the About window so live checking and downloading can
+continue. No update was installed, and no helper registration or audio
+repair was performed. Check/download cancellation, Install & Relaunch,
+repair-in-progress gating, helper unregister/restore, relaunch, and
+approval-required fallback remain unverified; T-064 stays in progress.
