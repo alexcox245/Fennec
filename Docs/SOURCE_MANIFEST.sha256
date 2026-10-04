@@ -1,6 +1,6 @@
 b4f799a080ed09e2c98be7e68745653bbcf80bcf66d0c1c189ce1d53e234d61a  ./.github/workflows/ci.yml
 889843dea70d4f39222c327485bbd9a131fc0dd9983778bbd1b86cf89638bc92  ./.gitignore
-8820cb25ae7c87b8bbc072ef1511525a475083959f95f551fabfed6a4ca00b25  ./AGENTS.md
+6336695d236b4067af5177d8c3aa4548f2a38722d9a0b7410bf600e0f9186c38  ./AGENTS.md
 298d797f35a20453f4ca8a74856f43ab1d4472be0803577e41852844fc500dd7  ./Brand/Fennec-AppIcon-Master.png
 58cdf0bf4627e6c7348710d2d373854f746c0c3260b7cf2b5e46d99992da358c  ./Brand/ProductHunt/PROMPTS.md
 4ee6693ee7258fb9d41a03201452d5bf01f6e4c99bf586e512e570a228b9f61f  ./Brand/ProductHunt/README.md
@@ -24,8 +24,8 @@ fb3f37e3517a1385db5f85ed0e0284c0055bde004c4e34ea5d4f5408691f40f0  ./Brand/README
 35f8af51adb52a067b590bf55191b6192c637a2fc2e81b00845912729c4ba982  ./Docs/RELEASE_NOTES_v1.0.md
 6784cfd89a833e801d87bf138cf684e01d2c0bb199143e546fad5a649f5f25f7  ./Docs/ROADMAP.md
 f130a0f17232760545b870ebfe541fa48b879d106b92050bf5cca41602a1269b  ./Docs/SECURITY_REVIEW.md
-594186a15e26656a34c75a518c5abe39b374eccc1ac234bfc863ea749c8cffc3  ./Docs/UPDATES.md
-47dc6a22faf7d2e6238b573a13e33326df856840b81a0e229b4593f3bcc22647  ./Docs/VALIDATION.md
+4fc88cef53d020a2cd4da69c7abf76af55ecc12359e0b2df8eb544685a05ccc4  ./Docs/UPDATES.md
+92ab91bfad9141793c757d78b97b0ca82347620be5967b02df8208e8e01bd73f  ./Docs/VALIDATION.md
 dd10b9c3e92df22d2c47570c5e25e9a81021b5c18c64ed63f10f86a310244a89  ./Fennec.xcodeproj/project.pbxproj
 2f22dc4829e4beacca8aad49a8d4f72e8541fc59578010fa9398477b5277c8ad  ./Fennec.xcodeproj/project.xcworkspace/contents.xcworkspacedata
 f562ccda2138c7710e2118be2fe231fd4561ae2cce10e7474e747326a072c244  ./Fennec.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
@@ -126,7 +126,7 @@ f3b127eefd99aa7ae1c6aee90516fa03307376b3298d56fca364e5bf7a6ede50  ./FennecTests/
 adbaa9b0153902680f49b6f9dbf7b37e5024811f1543781950b02be66ba59062  ./FennecTests/UninstallTests.swift
 a565d1f139ca400807dd31d2c066a393e1765325e6db540dac02ba1332f874dc  ./LICENSE
 4ea3d82084f716e2b800b133b0b0f128852ce1cdc2abe209b4e5c72663ecdd77  ./LaunchDaemons/com.ludicrousdesigns.Fennec.helper.plist
-f4fb5ac98e3c6c71c36730a52974aae101b387a5de7394fbc8fd64067cf3fa06  ./README.md
+170b6c56407cb2de5fd1bad33df17020372b8aabe327f2516fe4c42c7102a87e  ./README.md
 2b0668661a9d8144fc863b786df51808cd176a712ab6fb21177ca99e2ae31a09  ./SECURITY.md
 b5a23517054f405c73e0649a771c67e952c6e0c72b5eea6bb150d7a6daf56753  ./Scripts/ExportOptions-developer-id.plist
 a6083da46e4eaecdcca111315dd10507c78e933338ee7bf3ae551fdd070ee7c5  ./Scripts/audit-source.sh

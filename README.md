@@ -110,11 +110,12 @@ requires it.
 
 ## Install
 
-For a published release, download `Fennec.zip` from the
-[latest GitHub release](https://github.com/alexcox245/Fennec/releases/latest),
-unzip it, move `Fennec.app` to `/Applications`, and open it there. Check that
-the release identifies the archive as notarized before installing. Until the
-first public release is posted, you can build from source:
+Download the notarized [Fennec.zip](https://github.com/alexcox245/Fennec/releases/latest/download/Fennec.zip)
+from the [website](https://fennec.ludicrousdesigns.com/) or
+[latest GitHub release](https://github.com/alexcox245/Fennec/releases/latest).
+Unzip it, move `Fennec.app` to `/Applications`, and open it there. Release 1.0
+build 3 is signed with Developer ID, notarized by Apple, and stapled.
+You can also build from source:
 
 ```zsh
 git clone https://github.com/alexcox245/Fennec.git
@@ -201,10 +202,12 @@ zsh Scripts/build-release.sh
 
 ## Validation status
 
-The latest recorded complete check built all four app/helper Debug and Release
-configurations with signing, passed 290 standalone tests and the source audit,
-and verified a notarized Developer ID export of the previous candidate. The
-final build 2 candidate requires its own verification; see
+On 2026-10-04, release 1.0 build 3 passed all four signed app/helper Debug and
+Release builds, 298 standalone tests, the source audit, strict signature
+verification, notarization ticket validation, and Gatekeeper assessment.
+Both the signed update feed and archive verify against the exported app's
+public key. Supervised audio repair, helper lifecycle, and updater installation
+remain unverified for this candidate; see
 [`Docs/VALIDATION.md`](Docs/VALIDATION.md) for exact evidence and remaining
 hands-on checks. Do not switch detection to **Immediate** until T-005 in
 `AGENTS.md` §8 is complete.

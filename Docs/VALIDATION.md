@@ -506,3 +506,43 @@ comment is in `Brand/ProductHunt/`. Public repository/release links, the
 Product Hunt listing, the signed feed, and the updater lifecycle remain
 unverified or unpublished. No real repair, helper registration, app install,
 merge, repository visibility change, or public posting was performed here.
+
+## Public notarized release — 2026-10-04
+
+Fennec 1.0 build 3 is published at
+[GitHub Releases](https://github.com/alexcox245/Fennec/releases/tag/v1.0),
+which the live website's two Download buttons reach through `releases/latest`.
+The release tag points to `59f97b2`; app/helper/project/test sources are unchanged
+from the verified archive's source `74b6fe6`. Removing signatures from temporary
+executable copies proves the notarized app and helper match that archive.
+
+Xcode Organizer's Direct Distribution submitted the current build 3 archive,
+and Apple accepted submission `3551DE23-B788-420A-BED3-5F7C937A9177`.
+Export Notarized App produced `build/WebsiteRelease/Fennec.app`. The command-line
+`fennec-notary` profile remains absent; the successful path used Xcode's existing
+signed-in account. The old build 2 exports and appcasts were not reused.
+
+- All four signed app/helper Debug and Release builds pass.
+- All 298 standalone tests pass with zero failures.
+- The source audit and regenerated source manifest pass.
+- Only the four catalogued Swift warnings remain; Xcode also emits its existing
+  App Intents metadata notice for the app target.
+- Strict signatures verify for the app, embedded helper, and Sparkle contents.
+  App and helper have Team ID `249X253HS3` and Developer ID signatures, with
+  hardened runtime and no debugger entitlement.
+- `stapler validate` succeeds and `spctl --assess --type execute` reports
+  `accepted`, `source=Notarized Developer ID`.
+- A fresh Sparkle feed selects build 3. CryptoKit verifies both its embedded
+  Ed25519 feed signature and its archive enclosure signature against the
+  notarized app's `SUPublicEDKey`. Automatic update checks, downloads,
+  installation, and system profiling remain disabled; signed feeds are required.
+- GitHub's uploaded digests match all four local release assets.
+
+Both ZIP assets have SHA-256
+`523e863d162caa7ce07f9397d00fed158b303d69286a706015088bf2653137f4`.
+The app executable has SHA-256
+`ff34b2d5eabc18bcf8ed285f8986c455e0bd02b17e3e49ce38bd9cc2089716da`.
+
+No app installation, app launch, helper registration, audio repair, or updater
+installation was performed. T-005 and T-064 remain open. The existing security
+findings T-091–T-096 remain open and are linked from the public release notes.

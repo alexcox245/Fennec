@@ -32,3 +32,19 @@ For each release:
 The script prepares files but does not publish a release. Never commit the
 private signing key or export it into a build artifact. If it is lost, rotate
 the public key only through a planned, signed application update.
+
+If `fennec-notary` is absent but the maintainer is already signed in to Xcode,
+open the verified `.xcarchive` in Organizer, choose **Distribute App → Direct
+Distribution**, and wait for **Ready to distribute**. Use **Export Notarized
+App** on that same Organizer archive; opening an external archive imports a
+copy, so the original path does not acquire the notarization metadata.
+Validate the exported app with strict code-signature checks, `stapler validate`,
+and `spctl --assess` before packaging it. Generate a fresh feed from the
+stapled archive, and verify both the feed and enclosure Ed25519 signatures
+against the exported app's `SUPublicEDKey`; an enclosure signature alone does
+not establish that the feed is signed.
+
+The website's Download buttons point to the latest public GitHub release.
+Publish both `Fennec.zip` for visitors and the versioned ZIP referenced by the
+signed feed, with identical contents and a `SHA256SUMS.txt` file. Verify the
+anonymous download after publication.
