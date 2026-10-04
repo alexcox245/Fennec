@@ -366,7 +366,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-105**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-106**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -377,6 +377,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 
 | ID | P | Task | Status | Owner | Notes |
 |---|---|---|---|---|---|
+| T-105 | P1 | Publish verified 1.0.1 build 4 and merge the release update into main | In progress | Codex / root / 2026-10-04 | Owner explicitly requested public download availability and merge to main. Verified local assets and signed feed are in build/Release-1.0.1/Publish/. Check upstream divergence, complete merge validation, publish all feed-referenced assets, and verify anonymous downloads and the latest feed. No app install, helper registration, or audio repair is authorized by this task. |
 | T-005 | P0 | Run the 9-step on-device runtime validation in `Docs/VALIDATION.md` §"Still required on a device" | Open | · | **Requires a human.** Owner's build 1 logs prove overload detection, Bluetooth auto-skip, manual repair success, output reconnection events, and a held result. Audible recovery, eligible-output automatic repair, notification, helper removal, and final candidate behavior remain unverified. Agents must not trigger repair or helper registration unsupervised (rule 4). |
 | T-007 | P2 | Fix 2 unsafe-pointer warnings in `CoreAudioProperty.swift:192` and `:223` | Open | · | "forming `UnsafeMutableRawPointer` to a variable of type `T` / `Optional<CFString>`; may contain an object reference." Real hazard for the `CFString` case. Touches Core Audio property reads; verify carefully. |
 | T-008 | P2 | Fix 2 non-`Sendable` capture warnings in `HelperManager.swift:96` and `:141` | Open | · | `NSXPCConnection` captured in `@Sendable` closures. Will become an error under Swift 6 language mode; project is currently `SWIFT_VERSION = 5.0`. |
