@@ -537,6 +537,12 @@ signed-in account. The old build 2 exports and appcasts were not reused.
   notarized app's `SUPublicEDKey`. Automatic update checks, downloads,
   installation, and system profiling remain disabled; signed feeds are required.
 - GitHub's uploaded digests match all four local release assets.
+- Anonymous public ZIP and feed downloads match the local files byte for byte.
+  The downloaded app passes strict signatures, ticket validation, and Gatekeeper;
+  its feed and archive signatures verify against its own public key.
+  The versioned archive URL and website's latest-release destination both return
+  HTTP 200. Slow transfer/connection timeouts were recovered with range requests;
+  no credentials were used for the public downloads.
 
 Both ZIP assets have SHA-256
 `523e863d162caa7ce07f9397d00fed158b303d69286a706015088bf2653137f4`.
