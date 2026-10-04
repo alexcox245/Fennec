@@ -51,7 +51,10 @@ enum SetupChecklist {
             installStep(for: location, required: repairMode == .automatic),
             helperStep(for: helper, required: repairMode == .automatic),
             loginItemStep(for: loginItem),
-            notificationStep(authorized: notificationsAuthorized)
+            notificationStep(
+                authorized: notificationsAuthorized,
+                required: repairMode == .askFirst
+            )
         ]
     }
 
@@ -76,17 +79,18 @@ enum SetupChecklist {
             }
     }
 
-    /// True when Fennec can do its whole job without asking for anything.
+    /// True when the chosen mode can respond to a detected fault.
     static func isReady(
         helper: RepairHelperState,
         loginItem: LoginItemState,
+        notificationsAuthorized: Bool,
         repairMode: RepairMode = .automatic,
         location: InstallLocation = .applications
     ) -> Bool {
         switch repairMode {
         case .automatic:
             return helper.isReachable && installStep(for: location, required: true).isComplete
-        case .askFirst: return true
+        case .askFirst: return notificationsAuthorized
         }
     }
 
@@ -111,7 +115,9 @@ enum SetupChecklist {
                 : "Ask me first is ready."
         }
         let required = outstanding.count
-        return "\(required) step\(required == 1 ? "" : "s") before automatic repair is ready."
+        return repairMode == .askFirst
+            ? "Allow notifications so Fennec can ask before repairing."
+            : "\(required) step\(required == 1 ? "" : "s") before automatic repair is ready."
     }
 
     // MARK: Individual steps
@@ -233,19 +239,23 @@ enum SetupChecklist {
         }
     }
 
-    private static func notificationStep(authorized: Bool) -> SetupStep {
+    private static func notificationStep(authorized: Bool, required: Bool) -> SetupStep {
         SetupStep(
             kind: .notifications,
-            title: "Tell me when you fix something",
+            title: required ? "Allow repair requests" : "Tell me when you fix something",
             detail: authorized
-                ? "Fennec will post a quiet banner after each repair."
-                : "Without notifications, automatic repairs still work. Fennec records each result in Activity.",
+                ? (required
+                    ? "Fennec will ask by notification before each detected repair."
+                    : "Fennec will post a quiet banner after each repair.")
+                : (required
+                    ? "Fennec needs notifications to ask before a detected repair. Repair Audio Now remains available."
+                    : "Without notifications, automatic repairs still work. Fennec records each result in Activity."),
             compactDetail: authorized
-                ? "A quiet banner after each repair."
-                : "Repair results stay in Activity.",
+                ? (required ? "Fennec can ask before repairing." : "A quiet banner after each repair.")
+                : (required ? "Allow notifications for repair requests." : "Repair results stay in Activity."),
             actionTitle: authorized ? "Allowed" : "Open Notifications…",
             isComplete: authorized,
-            isRequired: false
+            isRequired: required
         )
     }
 }

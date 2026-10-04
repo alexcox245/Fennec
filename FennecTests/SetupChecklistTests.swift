@@ -27,9 +27,15 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertTrue(steps.allSatisfy(\.isRequired))
     }
 
-    func testAskFirstNeedsNoBackgroundPermissions() {
-        XCTAssertTrue(remaining(repairMode: .askFirst).isEmpty)
-        XCTAssertTrue(SetupChecklist.isReady(helper: .notConfigured, loginItem: .notRegistered, repairMode: .askFirst))
+    func testAskFirstNeedsNotificationsToAskForDetectedRepairs() throws {
+        let steps = remaining(repairMode: .askFirst)
+        let notificationStep = try XCTUnwrap(steps.first { $0.kind == .notifications })
+        XCTAssertTrue(notificationStep.isRequired)
+        XCTAssertTrue(notificationStep.detail.contains("Repair Audio Now remains available"))
+        XCTAssertFalse(SetupChecklist.isReady(
+            helper: .notConfigured, loginItem: .notRegistered,
+            notificationsAuthorized: false, repairMode: .askFirst
+        ))
         XCTAssertEqual(
             SetupChecklist.summary(
                 helper: .notConfigured,
@@ -37,8 +43,13 @@ final class SetupChecklistTests: XCTestCase {
                 notificationsAuthorized: false,
                 repairMode: .askFirst
             ),
-            "Ask me first is ready."
+            "Allow notifications so Fennec can ask before repairing."
         )
+        XCTAssertTrue(remaining(notifications: true, repairMode: .askFirst).isEmpty)
+        XCTAssertTrue(SetupChecklist.isReady(
+            helper: .notConfigured, loginItem: .notRegistered,
+            notificationsAuthorized: true, repairMode: .askFirst
+        ))
     }
 
     func testAFullyConfiguredMacHasNothingLeft() {
@@ -215,10 +226,10 @@ final class SetupChecklistTests: XCTestCase {
     // MARK: Readiness and the summary line
 
     func testAutomaticReadinessNeedsTheHelperButNotTheLoginItem() {
-        XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .enabled))
-        XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .notRegistered))
-        XCTAssertFalse(SetupChecklist.isReady(helper: .enabled(reachable: false), loginItem: .enabled))
-        XCTAssertFalse(SetupChecklist.isReady(helper: .notConfigured, loginItem: .enabled))
+        XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .enabled, notificationsAuthorized: false))
+        XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .notRegistered, notificationsAuthorized: false))
+        XCTAssertFalse(SetupChecklist.isReady(helper: .enabled(reachable: false), loginItem: .enabled, notificationsAuthorized: false))
+        XCTAssertFalse(SetupChecklist.isReady(helper: .notConfigured, loginItem: .enabled, notificationsAuthorized: false))
     }
 
     func testSummaryCountsOnlyBlockingWork() {
@@ -237,7 +248,7 @@ final class SetupChecklistTests: XCTestCase {
     }
 
     func testLoginItemDoesNotBlockAutomaticRepairReadiness() {
-        XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .notRegistered))
+        XCTAssertTrue(SetupChecklist.isReady(helper: .enabled(reachable: true), loginItem: .notRegistered, notificationsAuthorized: false))
         XCTAssertEqual(
             SetupChecklist.summary(helper: .enabled(reachable: true), loginItem: .notRegistered, notificationsAuthorized: true),
             "Automatic repair is ready."

@@ -140,8 +140,10 @@ The first window lets you choose **Automatically** or **Ask me first**.
 Automatic repair needs the approved helper. Asked repairs work without it and
 show the administrator command before macOS asks for a password. A new copy in
 Applications starts at login by default; you can turn that off in Settings.
-macOS may ask you to approve the login item. Notifications and the one-time
-test repair are optional.
+macOS may ask you to approve the login item. **Ask me first** needs notifications
+to request a repair when crackling is detected; **Repair Audio Now** still works
+without them. Notifications are optional for automatic repair, and the one-time
+test repair is optional in either mode.
 
 Recommended settings for the MacBook + heavy-local-workload case: **Balanced**,
 protections on, skip Bluetooth on, cooldown 45 s. Move to **Immediate** only

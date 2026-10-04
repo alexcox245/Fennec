@@ -97,11 +97,11 @@ final class FennecUpdateDriver: NSObject, ObservableObject, SPUUserDriver {
         let reason = (userInfo[SPUNoUpdateFoundReasonKey] as? NSNumber)
             .flatMap { SPUNoUpdateFoundReason(rawValue: OSStatus($0.int32Value)) }
         switch reason {
-        case .onLatestVersion, .onNewerThanLatestVersion, .none:
+        case .onLatestVersion, .onNewerThanLatestVersion:
             presentation = .current
         case .systemIsTooOld, .systemIsTooNew, .hardwareDoesNotSupportARM64:
             presentation = .failed("No compatible Fennec update is available for this Mac.")
-        case .unknown:
+        case .unknown, .none:
             presentation = .failed(error.localizedDescription)
         @unknown default:
             presentation = .failed(error.localizedDescription)
