@@ -60,7 +60,7 @@ output-device reconnection events, and a `repairHeld` result after the quiet
 verification window. Those records do not establish audible playback quality,
 automatic repair on an eligible output, helper registration or removal,
 notification delivery, or a signed update install. The exact build hash and
-macOS version were not provided. The final build 2 candidate needs fresh
+macOS version were not provided. The current build 3 candidate needs fresh
 checks. Keep automatic repair at **Balanced** until these gaps are closed.
 
 1. Select an Apple Development or Developer ID team for both targets and build
