@@ -708,3 +708,43 @@ The draft is signed but not notarized; it must not replace the public
 release. No new feed, DMG, public asset, installation, helper registration,
 or repair has been produced/performed at this checkpoint. T-104 remains
 in progress pending notarization, stapled export, and final signed packaging.
+
+
+### Approved Xcode notarization and packaging for build 4 (T-104)
+
+The owner explicitly approved uploading the signed build 4 app and helper to
+Apple. Xcode's existing account uploaded distribution
+`6346D0C1-D8A5-4F4D-B039-8D098F737178` with Developer ID export options and
+`destination=upload`; `-exportNotarizedApp` then succeeded. The final app is
+`build/Release-1.0.1/Notarized/Fennec.app`, version 1.0.1 build 4. It passes
+strict deep signature checks for all architectures, stapled-ticket validation,
+and Gatekeeper as **Notarized Developer ID**. The helper also has a strict
+Developer ID signature for Team 249X253HS3 and hardened runtime. The app and
+helper code match the archive after signature removal on temporary copies.
+
+`Scripts/create-dmg.sh --xcode-export` produced `build/Release-1.0.1/Fennec.dmg`.
+The outer image is unsigned; its contained app remains signed, notarized,
+and stapled. The image integrity check passes. Its read-only mounted app and
+a quarantined extracted copy both pass strict signatures, ticket validation,
+and Gatekeeper. Every regular file and symlink in those bundles matches the
+notarized export. The image was ejected; neither copy was launched.
+
+All 17 feed-signature and security-setting regressions pass. Update-feed
+signing is awaiting the maintainer's macOS Keychain prompt at this checkpoint.
+No new release was published or installed, no helper registration was
+performed, and no audio repair was triggered. Fixed-candidate live updater
+and helper restoration behavior remains in T-064; Intel runtime remains
+unverified.
+
+
+Final packaged artifact SHA-256 values:
+
+- `Fennec.dmg`: `60e335ea4d72c498f2c911af687924c44a29229aa36a1ef6a21e91def83bc8e5`
+- `Fennec.zip` and `updates/Fennec-1.0.1-4.zip`: `e8190b52a5b5a80814b6163188c68397a4deaabf7adb1818a6f1851309ec0652`
+
+The ZIP was extracted without launch, and every file and symlink matches the
+notarized export. `build/Release-1.0.1/SHA256SUMS.txt` verifies these three
+artifacts. The final source audit passes with Xcode cache access. The feed
+currently retained in the candidate directory is still build 3 history;
+do not publish it until generation finishes and the build 4 signature check
+passes.

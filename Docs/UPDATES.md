@@ -53,6 +53,27 @@ stapled archive, and verify both the feed and enclosure Ed25519 signatures
 against the exported app's `SUPublicEDKey`; an enclosure signature alone does
 not establish that the feed is signed.
 
+## Xcode command-line notarization with its existing account
+
+The same Xcode account can submit an archive without a `notarytool` profile.
+After the maintainer authorizes sending the compiled app to Apple, copy the
+Developer ID export options and change only the destination to `upload`:
+
+```bash
+cp Scripts/ExportOptions-developer-id.plist /tmp/fennec-notarize.plist
+/usr/libexec/PlistBuddy -c 'Set :destination upload' /tmp/fennec-notarize.plist
+xcodebuild -exportArchive -archivePath build/Release-1.0.1/Fennec-1.0.1-b4.xcarchive -exportPath build/Release-1.0.1/Notarization -exportOptionsPlist /tmp/fennec-notarize.plist
+xcodebuild -exportNotarizedApp -archivePath build/Release-1.0.1/Fennec-1.0.1-b4.xcarchive -exportPath build/Release-1.0.1/Notarized
+```
+
+Adjust the archive and output paths for the candidate. Upload success alone
+is not acceptance; the notarized export must succeed, then pass strict
+signature verification, `xcrun stapler validate`, and Gatekeeper assessment.
+This route was verified with Xcode 26.6 for 1.0.1 build 4. Use that notarized
+export for packaging, rather than an earlier signed draft. Sparkle feed
+signing may separately prompt for access to its existing login Keychain key;
+the maintainer completes that macOS prompt without sharing the password.
+
 ## Repair mode after an update
 
 After relaunch, Fennec restores only the helper registration that existed
