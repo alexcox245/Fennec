@@ -356,7 +356,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-098**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-099**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -393,6 +393,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 
 | ID | Task | Completed | Commit | Notes |
 |---|---|---|---|---|
+| T-098 | Research Show HN guidance and prepare an unpublished Fennec submission in the owner's browser | 2026-10-04 | This ledger commit | Read official Show HN guidelines and moderator presentation advice; verified MIT license, public repository, and live v1.0 release. Filled title, repository URL, and introduction in the logged-in Chrome submission form and verified all field values. Kept the tab open for owner handoff; never clicked submit. Told owner that HN prohibits generated text and to rewrite the draft in their own voice before publishing. No app sources or behavior changed; no audio repair, helper registration, or installation exercised. |
 | T-090 | Review Fennec's security from an adversarial perspective and document mitigations | 2026-10-04 | 40fad04 | Docs/SECURITY_REVIEW.md records six findings, inert evidence, attack prerequisites, and mitigations. Added T-091–T-096 for unresolved fixes. 298 tests, all four signed app/helper builds, source audit, and manifest verification pass; Gitleaks reports no matches across 95 commits. No application behavior changed. No helper lifecycle, live XPC exploitation, debugger injection, audio repair, or updater installation was exercised. |
 | T-089 | Add the landing page source to the Fennec repository and push it | 2026-10-04 | 0985b17 | Added the static site and local demo assets to `codex/onboarding-settings-fixes` and pushed to `alexcox245/Fennec`. JavaScript syntax, local asset references, and source audit pass. Hosting remains in T-087. |
 | T-085 | Review source and comments, validate the release candidate, and push the launch branch to GitHub | 2026-10-04 | 3f382ee, a2cc0eb | Reviewed the release-sensitive paths and static scans, fixed two findings, and pushed the build 3 candidate branch. 298 tests, four app/helper builds, source audit, and clean signed build passed with only four catalogued warnings. Public release still requires T-005/T-060/T-061/T-064; no PR or release asset was published. |
