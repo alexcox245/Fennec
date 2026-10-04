@@ -57,8 +57,8 @@ not establish that the feed is signed.
 
 The first-install download can use
 `https://github.com/alexcox245/Fennec/releases/latest/download/Fennec.dmg`.
-Publish and verify the DMG before switching the website buttons to that URL;
-until then, they use the existing `Fennec.zip` asset. Both downloads contain
+The website buttons use that URL. Publish and verify each new DMG before
+updating the latest release. Both downloads contain
 the same app and the same signed updater. Users open the DMG, drag Fennec
 into Applications, eject the image, and open Fennec from Applications.
 
@@ -98,3 +98,23 @@ notarization. Do not publish that draft until `notarytool submit`,
 No packaging or verification command installs the app, registers a helper,
 or exercises the audio repair path. Live updater installation and helper
 restoration still require the supervised T-064 validation.
+
+## Xcode-only first-install packaging
+
+When Xcode Organizer has exported the signed, notarized, stapled app, an
+unsigned DMG can carry that app without a second notarization submission:
+
+```bash
+zsh Scripts/create-dmg.sh build/WebsiteRelease/Fennec.app build/XcodeDMG/Fennec.dmg --xcode-export
+```
+
+This mode leaves the app's Developer ID signature and Apple ticket intact.
+It does not sign the outer image. A signed disk image without its own
+notarization must not be published. Apple Developer Technical Support
+[documents this packaging option](https://developer.apple.com/forums/thread/741219),
+while recommending signing and notarizing the outer image when available.
+Verify the image checksum, mount it read-only, and verify the contained app
+with strict signatures, `stapler validate`, and Gatekeeper before publishing.
+Verify a quarantined extracted copy as well. Never remove quarantine or
+disable Gatekeeper to make a release pass. Keep the signed ZIP update feed
+and archives unchanged when adding a DMG of the same app build.

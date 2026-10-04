@@ -1,10 +1,11 @@
 #!/bin/zsh
 # Package an already notarized app. This never installs or launches Fennec.
-# --notarize also submits, staples, and assesses the signed disk image.
+# --notarize submits, staples, and assesses a signed disk image.
+# --xcode-export creates an unsigned container around the notarized app.
 set -euo pipefail
 
-[[ $# -ge 2 && $# -le 3 && (${3:-} == "" || ${3:-} == "--notarize") ]] || {
-  print -u2 "Usage: zsh Scripts/create-dmg.sh /path/Fennec.app /path/Fennec.dmg [--notarize]"
+[[ $# -ge 2 && $# -le 3 && (${3:-} == "" || ${3:-} == "--notarize" || ${3:-} == "--xcode-export") ]] || {
+  print -u2 "Usage: zsh Scripts/create-dmg.sh /path/Fennec.app /path/Fennec.dmg [--notarize|--xcode-export]"
   exit 1
 }
 APP="${1:A}"
@@ -42,8 +43,10 @@ Fennec downloads only after you choose Download Update and installs only
 after Install & Relaunch.' > "$STAGING/Install Fennec.txt"
 mkdir -p "${DMG:h}"
 hdiutil create -volname Fennec -fs APFS -format ULFO -srcfolder "$STAGING" "$DMG"
-codesign --sign "$IDENTITY" --timestamp "$DMG"
-codesign --verify --strict "$DMG"
+if [[ ${3:-} != "--xcode-export" ]]; then
+  codesign --sign "$IDENTITY" --timestamp "$DMG"
+  codesign --verify --strict "$DMG"
+fi
 hdiutil verify "$DMG"
 
 if [[ ${3:-} == "--notarize" ]]; then
@@ -52,6 +55,9 @@ if [[ ${3:-} == "--notarize" ]]; then
   xcrun stapler validate "$DMG"
   spctl --assess --type open --context context:primary-signature "$DMG"
   print "Ready to publish: $DMG"
+elif [[ ${3:-} == "--xcode-export" ]]; then
+  print "Ready for verification: $DMG"
+  print "Unsigned disk image; the contained app remains Developer ID signed, notarized, and stapled."
 else
   print "Prepared: $DMG"
   print "The app is notarized; the disk image still needs notarization before publication."
