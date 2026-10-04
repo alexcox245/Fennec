@@ -79,7 +79,7 @@ The existing local draft feed has Sparkle's trailing feed-signature comment, so 
 
 ### Helper process identity and execution bounds
 
-[HelperService.swift](../FennecHelper/HelperService.swift#L96) identifies a replacement solely with `/usr/bin/pgrep -x coreaudiod`. An independent query included the harmless user-owned impostor's PID. A new same-name process can therefore enter the set used to establish success. The fixed `killall` also selects by name across owners. The demonstrated consequence is weak target identification; false repair success was not induced because no signal was sent.
+[HelperService.swift](../FennecHelper/HelperService.swift#L99) identifies a replacement solely with `/usr/bin/pgrep -x coreaudiod`. An independent query included the harmless user-owned impostor's PID. A new same-name process can therefore enter the set used to establish success. The fixed `killall` also selects by name across owners. The demonstrated consequence is weak target identification; false repair success was not induced because no signal was sent.
 
 The [subprocess runner](../FennecHelper/HelperService.swift#L122) waits for exit before draining either pipe and has no execution timeout. Large output can block a child on a full pipe while the parent waits. The app's XPC timeout invalidates its connection, but does not terminate helper work. These are source-established availability risks; resource flooding was not performed. The helper's 20-second limiter uses wall time and resets with the helper process, so it is not a durable authorization boundary.
 
