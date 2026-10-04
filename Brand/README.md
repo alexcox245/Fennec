@@ -11,3 +11,5 @@ Palette:
 - Ink: `#1F1F1C`
 
 The product UI uses the sky blue for healthy/listening states and the primary repair action, dune orange for audio/output accents and warnings, and cream sparingly in mascot framing. Native macOS materials and typography remain intact so the app still feels like a system utility.
+
+`Fennec-AppIcon-Rounded.png` is the 1254 × 1254 PNG variant with transparent outer corners, used by the repository README. The master artwork remains the source asset.

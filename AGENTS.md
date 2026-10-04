@@ -342,7 +342,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 ### Protocol
 
 1. Before starting, read this section and claim a task by setting **Status** to `In progress` and putting your agent/session identifier in **Owner**.
-2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-045**.
+2. IDs are `T-NNN`, assigned sequentially and **never reused**. Next free ID: **T-098**.
 3. New work discovered mid-task → append a new row to **Open**. Do not silently expand the task you claimed.
 4. On completion, move the row to **Done** with the completion date and the commit SHA.
 5. If you abandon a task, set Status back to `Open`, clear Owner, and add a note saying what you learned. A dead end recorded is worth more than a blank row.
@@ -353,6 +353,7 @@ Waveform/equalizer bar clichés · neon or cyberpunk gradients · distressed gru
 
 | ID | P | Task | Status | Owner | Notes |
 |---|---|---|---|---|---|
+| T-097 | P2 | Publish the rounded icon with transparent corners to main | In progress | Codex / root / 2026-10-04 | Add the owner-requested PNG as a separate brand asset and use it in the README. |
 | T-005 | P0 | Run the 9-step on-device runtime validation in `Docs/VALIDATION.md` §"Still required on macOS" | Open | · | **Requires a human.** Needs signing, `/Applications` install, helper approval in System Settings, and reproducing the audible fault. Until this is done, nobody should trust automatic repair or switch detection to Immediate. Agents must not attempt this unsupervised (rule 4). |
 | T-007 | P2 | Fix 2 unsafe-pointer warnings in `CoreAudioProperty.swift:192` and `:223` | Open | · | "forming `UnsafeMutableRawPointer` to a variable of type `T` / `Optional<CFString>`; may contain an object reference." Real hazard for the `CFString` case. Touches Core Audio property reads; verify carefully. |
 | T-008 | P2 | Fix 2 non-`Sendable` capture warnings in `HelperManager.swift:96` and `:141` | Open | · | `NSXPCConnection` captured in `@Sendable` closures. Will become an error under Swift 6 language mode; project is currently `SWIFT_VERSION = 5.0`. |

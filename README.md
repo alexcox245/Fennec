@@ -19,7 +19,7 @@ the fault is confirmed and its safety checks pass, it restarts Core Audio
 through a tightly scoped root helper, leaving every application open, and
 tells you what it did, in numbers.
 
-<img src="Brand/Fennec-AppIcon-Master.png" width="180" alt="Fennec app icon">
+<img src="Brand/Fennec-AppIcon-Rounded.png" width="180" alt="Fennec app icon">
 
 ## Why this is not a shell alias
 
