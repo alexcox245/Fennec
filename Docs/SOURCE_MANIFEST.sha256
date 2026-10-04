@@ -1,6 +1,6 @@
 4c8862b2da6420bce55a1bcbd3251b5f7f22136f077841b00ad48a159759db13  ./.github/workflows/ci.yml
 889843dea70d4f39222c327485bbd9a131fc0dd9983778bbd1b86cf89638bc92  ./.gitignore
-e2fd447beacfec9684d518a2c6fa1bbfde536bd01d8824c2db4a8a44b1ac9d57  ./AGENTS.md
+1a92c57f1a7e83a393d6c6b8d685f050b7ca4df4f2114c6232956cccf0272478  ./AGENTS.md
 298d797f35a20453f4ca8a74856f43ab1d4472be0803577e41852844fc500dd7  ./Brand/Fennec-AppIcon-Master.png
 58cdf0bf4627e6c7348710d2d373854f746c0c3260b7cf2b5e46d99992da358c  ./Brand/ProductHunt/PROMPTS.md
 4ee6693ee7258fb9d41a03201452d5bf01f6e4c99bf586e512e570a228b9f61f  ./Brand/ProductHunt/README.md
@@ -26,7 +26,7 @@ fd4bec0c6e32a788d650749777125886640502344e0ff40a0f6b1dcb6bab8da5  ./Docs/RELEASE
 6784cfd89a833e801d87bf138cf684e01d2c0bb199143e546fad5a649f5f25f7  ./Docs/ROADMAP.md
 f130a0f17232760545b870ebfe541fa48b879d106b92050bf5cca41602a1269b  ./Docs/SECURITY_REVIEW.md
 54a60e8326e4022c7bdeb0d4ce0ad991610275bbdc177bda495ceb5bb9bd3fb0  ./Docs/UPDATES.md
-a0313ab15a3424767e79fb9376dd72a140145a68541f82afd1bbbaabf0639751  ./Docs/VALIDATION.md
+fdbec23707636efb82c3beb57cd3a97a4c3d767330cecad507af3cc6bc854553  ./Docs/VALIDATION.md
 ece1f9543c8ddba3115274bd20c232b354a2076bfcc45850305242be15c50e48  ./Fennec.xcodeproj/project.pbxproj
 2f22dc4829e4beacca8aad49a8d4f72e8541fc59578010fa9398477b5277c8ad  ./Fennec.xcodeproj/project.xcworkspace/contents.xcworkspacedata
 f562ccda2138c7710e2118be2fe231fd4561ae2cce10e7474e747326a072c244  ./Fennec.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved

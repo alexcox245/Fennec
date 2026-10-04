@@ -674,3 +674,37 @@ performed, and no repair was triggered. Installed/public build 3 remains the
 older code, and the installed repair preference was not changed. A supervised
 signed update using the fixed candidate is still required to verify this
 behavior with macOS Background Task Management; T-064 remains in progress.
+
+### Xcode 1.0.1 build 4 release preparation (T-104)
+
+Source commit 4baf3d1 includes the cancellation UI fix (cb5c84b),
+Automatic-mode preservation (59bb83e), matching version/build changes for
+app and helper, and release notes. Xcode 26.6 (17F113) built
+`build/Release-1.0.1/Fennec-1.0.1-b4.xcarchive`. All 306 standalone tests,
+app/helper Debug and Release builds, source audit, and archive pass. Only
+the four catalogued Swift warnings and existing App Intents metadata notice
+appear. The archive contains both arm64 and x86_64; Intel runtime behavior
+has not been tested.
+
+Xcode's Developer ID export at
+`build/Release-1.0.1/DeveloperID-draft/Fennec.app` has strict signatures for
+all architectures, hardened runtime, Developer ID Application identity for
+A & A Design Inc., Team ID 249X253HS3, and no app debugger entitlement.
+The daemon plist is valid. Both exported executables match the archive's
+code byte for byte after removing signatures on temporary comparison copies.
+The update key/feed URL and all manual/signed update security flags are intact.
+The signed draft ZIP SHA-256 is
+`94cf628773fca931c87c8501dcfaf351647887a854ecb4971527d5fa27cae45f`.
+
+Computer Use repeatedly reopened Xcode's Go to Folder sheet instead of
+advancing the archive picker. The owner was asked to open the exact new
+archive. Xcode's command-line Developer ID upload destination was then
+prepared as another supported Xcode route, but automatic approval review
+rejected execution before any upload: it requires explicit permission to
+send the compiled app and helper to Apple's notarization service. That
+permission was requested. No attempt was made through another upload path.
+
+The draft is signed but not notarized; it must not replace the public
+release. No new feed, DMG, public asset, installation, helper registration,
+or repair has been produced/performed at this checkpoint. T-104 remains
+in progress pending notarization, stapled export, and final signed packaging.
